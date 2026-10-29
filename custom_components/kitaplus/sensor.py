@@ -19,6 +19,8 @@ from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity
 from .helpers import meals_on, pending_replies
 
+PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
+
 _MAX_ITEMS = 5
 _MAX_TEXT = 500
 _NOTHING_ORDERED = {"de": "Nichts bestellt", "en": "Nothing ordered"}

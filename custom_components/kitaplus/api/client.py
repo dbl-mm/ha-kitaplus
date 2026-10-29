@@ -169,14 +169,16 @@ class KitaPlusClient:
                 f"{API_BASE_URL}{path}", params=params, headers=headers, timeout=_TIMEOUT
             ) as resp:
                 if resp.status >= 400:
-                    body = await resp.json(content_type=None) if resp.content_length else {}
-                    if isinstance(body, dict) and body.get("isWartungAktiv"):
+                    try:  # content_length is unset for gzip/chunked answers, so just try to read it
+                        body = await resp.json(content_type=None)
+                    except (aiohttp.ClientError, ValueError):
+                        body = {}
+                    if not isinstance(body, dict):
+                        body = {}
+                    if body.get("isWartungAktiv"):
                         raise KitaPlusMaintenanceError("KitaPlus maintenance")
                     if resp.status in (401, 403):
-                        raise KitaPlusAuthError(
-                            "Token rejected",
-                            server_message=body.get("message") if isinstance(body, dict) else None,
-                        )
+                        raise KitaPlusAuthError("Token rejected", server_message=body.get("message"))
                     raise KitaPlusApiError(f"{path} returned {resp.status}")
                 data = await resp.json(content_type=None)
         except (aiohttp.ClientError, TimeoutError) as err:

@@ -7,6 +7,10 @@
         "data": {
           "email": "Email",
           "password": "Password"
+        },
+        "data_description": {
+          "email": "The email address of your KitaPlus parent account (the one you use at eltern.kitaplus.de). It is sent exactly as you type it.",
+          "password": "Your KitaPlus password. It is only used for this sign-in and is never stored."
         }
       },
       "two_factor": {
@@ -14,6 +18,9 @@
         "description": "Enter the code KitaPlus asks for: from your authenticator app or by email, depending on your account settings.",
         "data": {
           "auth_code": "Code"
+        },
+        "data_description": {
+          "auth_code": "The code from your authenticator app or the email KitaPlus just sent you."
         }
       },
       "reauth_confirm": {
@@ -21,6 +28,9 @@
         "description": "The sign-in for {email} has expired or was rejected. Enter your current password. Exactly one sign-in attempt is made. Too many failed attempts lock the account, only the Kita management can unlock it.",
         "data": {
           "password": "Password"
+        },
+        "data_description": {
+          "password": "Your current KitaPlus password. Exactly one sign-in attempt is made."
         }
       }
     },
@@ -107,6 +117,9 @@
         "description": "How often Home Assistant asks KitaPlus, in minutes (15 to 240). A higher value is gentler on the KitaPlus servers.",
         "data": {
           "scan_interval": "Interval (minutes)"
+        },
+        "data_description": {
+          "scan_interval": "How often Home Assistant asks KitaPlus for new data. Shorter than 15 minutes is not allowed."
         }
       }
     }

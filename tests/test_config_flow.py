@@ -150,3 +150,160 @@ async def test_restarting_the_flow_does_not_reset_the_failure_counter(hass: Home
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "cooling_down"
     assert login.call_count == 2  # the third attempt never reached KitaPlus
+
+
+# ---- every branch of the flows, including recovery after an error
+
+
+def _ok_login():
+    async def login(self, email, password, auth_code=None):
+        self.set_tokens(Tokens("j", "r", 4102444800.0))
+
+    return login
+
+
+async def test_plain_sign_in_creates_the_entry(hass: HomeAssistant) -> None:
+    with patch(LOGIN, new=_ok_login()):
+        result = await hass.config_entries.flow.async_configure((await _start(hass))["flow_id"], CREDS)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert "password" not in result["data"]
+
+
+async def test_error_then_recovery_creates_the_entry(hass: HomeAssistant) -> None:
+    """A connection problem is not a wrong password: the same form works again afterwards."""
+    from custom_components.kitaplus.api.exceptions import KitaPlusApiError, KitaPlusConnectionError
+
+    flow_id = (await _start(hass))["flow_id"]
+    for error, key in (
+        (KitaPlusConnectionError("down"), "cannot_connect"),
+        (KitaPlusApiError("odd"), "unknown"),
+    ):
+        with patch(LOGIN, side_effect=error):
+            result = await hass.config_entries.flow.async_configure(flow_id, CREDS)
+        assert result["errors"] == {"base": key}
+        assert result["description_placeholders"]["attempt"] == "0"  # never counted
+    with patch(LOGIN, new=_ok_login()):
+        result = await hass.config_entries.flow.async_configure(flow_id, CREDS)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_same_account_cannot_be_added_twice_and_does_not_touch_kitaplus(hass: HomeAssistant) -> None:
+    MockConfigEntry(domain=DOMAIN, unique_id="a@b.de", data={"email": "a@b.de"}).add_to_hass(hass)
+    with patch(LOGIN) as login:
+        result = await hass.config_entries.flow.async_configure((await _start(hass))["flow_id"], CREDS)
+    assert result["reason"] == "already_configured"
+    login.assert_not_called()
+
+
+async def test_wrong_two_factor_code_can_be_corrected(hass: HomeAssistant) -> None:
+    from custom_components.kitaplus.api.exceptions import KitaPlusConnectionError
+
+    calls = []
+
+    async def login(self, email, password, auth_code=None):
+        calls.append(auth_code)
+        if auth_code is None or auth_code == "bad":
+            raise KitaPlusTwoFactorRequired(1)
+        self.set_tokens(Tokens("j", "r", 4102444800.0))
+
+    with patch(LOGIN, new=login):
+        flow_id = (await _start(hass))["flow_id"]
+        await hass.config_entries.flow.async_configure(flow_id, CREDS)
+        wrong = await hass.config_entries.flow.async_configure(flow_id, {"auth_code": "bad"})
+        assert wrong["errors"] == {"base": "invalid_code"}
+    with patch(LOGIN, side_effect=KitaPlusConnectionError("down")):
+        down = await hass.config_entries.flow.async_configure(flow_id, {"auth_code": "x"})
+        assert down["errors"] == {"base": "cannot_connect"}
+    with patch(LOGIN, new=login):
+        done = await hass.config_entries.flow.async_configure(flow_id, {"auth_code": "000000"})
+    assert done["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_two_factor_failures_also_stop_the_flow(hass: HomeAssistant) -> None:
+    async def login(self, email, password, auth_code=None):
+        if auth_code is None:
+            raise KitaPlusTwoFactorRequired(2)
+        raise KitaPlusAuthError("rejected", server_message="Falscher Code")
+
+    with patch(LOGIN, new=login):
+        flow_id = (await _start(hass))["flow_id"]
+        await hass.config_entries.flow.async_configure(flow_id, CREDS)
+        await hass.config_entries.flow.async_configure(flow_id, {"auth_code": "1"})
+        result = await hass.config_entries.flow.async_configure(flow_id, {"auth_code": "2"})
+    assert result["reason"] == "too_many_attempts"
+
+
+def _reauth_entry(hass: HomeAssistant) -> MockConfigEntry:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="a@b.de",
+        data={"email": "A@B.de", "client_id": "cid", "refresh_token": "old", "refresh_expires": 1},
+    )
+    entry.add_to_hass(hass)
+    return entry
+
+
+async def test_reauth_with_the_right_password_renews_the_session(hass: HomeAssistant) -> None:
+    entry = _reauth_entry(hass)
+    with patch(LOGIN, new=_ok_login()) as _:
+        flow = await entry.start_reauth_flow(hass)
+        assert flow["step_id"] == "reauth_confirm"
+        assert flow["description_placeholders"]["email"] == "A@B.de"
+        done = await hass.config_entries.flow.async_configure(flow["flow_id"], {"password": "pw"})
+    assert done["reason"] == "reauth_successful"
+    assert entry.data["refresh_token"] == "r"
+    assert "password" not in entry.data
+
+
+async def test_reauth_wrong_password_is_counted_and_then_paused(hass: HomeAssistant) -> None:
+    entry = _reauth_entry(hass)
+    wrong = KitaPlusAuthError("rejected", server_message="Falsches Passwort")
+    with patch(LOGIN, side_effect=wrong) as login:
+        flow = await entry.start_reauth_flow(hass)
+        first = await hass.config_entries.flow.async_configure(flow["flow_id"], {"password": "x"})
+        assert first["errors"] == {"base": "invalid_auth"}
+        second = await hass.config_entries.flow.async_configure(flow["flow_id"], {"password": "y"})
+        assert second["reason"] == "too_many_attempts"
+    assert login.call_count == 2
+
+
+async def test_reauth_with_two_factor(hass: HomeAssistant) -> None:
+    entry = _reauth_entry(hass)
+
+    async def login(self, email, password, auth_code=None):
+        if auth_code is None:
+            raise KitaPlusTwoFactorRequired(1)
+        self.set_tokens(Tokens("j", "fresh", 4102444800.0))
+
+    with patch(LOGIN, new=login):
+        flow = await entry.start_reauth_flow(hass)
+        step = await hass.config_entries.flow.async_configure(flow["flow_id"], {"password": "pw"})
+        assert step["step_id"] == "two_factor"
+        done = await hass.config_entries.flow.async_configure(flow["flow_id"], {"auth_code": "000000"})
+    assert done["reason"] == "reauth_successful"
+    assert entry.data["refresh_token"] == "fresh"
+
+
+async def test_reauth_is_refused_during_the_pause(hass: HomeAssistant) -> None:
+    entry = _reauth_entry(hass)
+    wrong = KitaPlusAuthError("rejected", server_message="Falsches Passwort")
+    with patch(LOGIN, side_effect=wrong) as login:
+        flow = await entry.start_reauth_flow(hass)
+        await hass.config_entries.flow.async_configure(flow["flow_id"], {"password": "x"})
+        stopped = await hass.config_entries.flow.async_configure(flow["flow_id"], {"password": "y"})
+        assert stopped["reason"] == "too_many_attempts"
+        login.reset_mock()
+        again = await entry.start_reauth_flow(hass)  # a brand new dialog must not reset the counter
+        result = await hass.config_entries.flow.async_configure(again["flow_id"], {"password": "z"})
+    assert result["reason"] == "cooling_down"
+    login.assert_not_called()
+
+
+async def test_options_flow_saves_a_valid_interval(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, unique_id="a@b.de", data={"email": "a@b.de", "client_id": "c"})
+    entry.add_to_hass(hass)
+    form = await hass.config_entries.options.async_init(entry.entry_id)
+    assert form["type"] is FlowResultType.FORM
+    done = await hass.config_entries.options.async_configure(form["flow_id"], {"scan_interval": 60})
+    assert done["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["scan_interval"] == 60

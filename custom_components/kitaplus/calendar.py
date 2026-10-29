@@ -14,14 +14,14 @@ from . import KitaPlusConfigEntry
 from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity
 
+PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
+
 
 def _parse(value: str | None) -> datetime | None:
     """KitaPlus sends local times without an offset. Unparsable values give None."""
     if not value:
         return None
-    parsed = dt_util.parse_datetime(value)
-    if parsed is None and (day := dt_util.parse_date(value)):
-        parsed = datetime.combine(day, datetime.min.time())
+    parsed = dt_util.parse_datetime(value)  # also understands a date without a time
     if parsed is None:
         return None
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=dt_util.get_default_time_zone())
@@ -57,7 +57,7 @@ class _EventCalendar(CalendarEntity):
     """Common event lookup."""
 
     def _events(self) -> list[CalendarEvent]:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover - implemented by the subclasses
 
     @property
     def event(self) -> CalendarEvent | None:

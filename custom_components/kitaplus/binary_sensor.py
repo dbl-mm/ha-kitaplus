@@ -15,6 +15,8 @@ from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity
 from .helpers import is_closed_on, meals_on
 
+PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
+
 
 class ClosedSensor(KitaPlusEntity, BinarySensorEntity):
     """Kita closed today or tomorrow (closure day or public holiday)."""

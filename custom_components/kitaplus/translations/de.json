@@ -7,6 +7,10 @@
         "data": {
           "email": "E-Mail-Adresse",
           "password": "Passwort"
+        },
+        "data_description": {
+          "email": "Die E-Mail-Adresse deines KitaPlus-Eltern-Zugangs (die du auf eltern.kitaplus.de benutzt). Sie wird genau so gesendet, wie du sie eingibst.",
+          "password": "Dein KitaPlus-Passwort. Es wird nur für diese Anmeldung verwendet und nie gespeichert."
         }
       },
       "two_factor": {
@@ -14,6 +18,9 @@
         "description": "Gib den Code ein, den KitaPlus verlangt: aus deiner Authenticator-App oder per E-Mail, je nach Einstellung deines Kontos.",
         "data": {
           "auth_code": "Code"
+        },
+        "data_description": {
+          "auth_code": "Der Code aus deiner Authenticator-App oder aus der E-Mail, die KitaPlus dir gerade geschickt hat."
         }
       },
       "reauth_confirm": {
@@ -21,6 +28,9 @@
         "description": "Die Anmeldung für {email} ist abgelaufen oder wurde abgelehnt. Bitte gib dein aktuelles Passwort ein. Es wird genau ein Anmeldeversuch gemacht. Zu viele Fehlversuche sperren das Konto, nur die Kita-Leitung kann es entsperren.",
         "data": {
           "password": "Passwort"
+        },
+        "data_description": {
+          "password": "Dein aktuelles KitaPlus-Passwort. Es wird genau ein Anmeldeversuch gemacht."
         }
       }
     },
@@ -107,6 +117,9 @@
         "description": "Wie oft Home Assistant bei KitaPlus nachfragt, in Minuten (15 bis 240). Ein höherer Wert schont die KitaPlus-Server.",
         "data": {
           "scan_interval": "Intervall (Minuten)"
+        },
+        "data_description": {
+          "scan_interval": "Wie oft Home Assistant bei KitaPlus nach neuen Daten fragt. Weniger als 15 Minuten ist nicht erlaubt."
         }
       }
     }

@@ -8,8 +8,10 @@ from aioresponses import aioresponses
 
 from custom_components.kitaplus.api.client import KitaPlusClient, Tokens
 from custom_components.kitaplus.api.exceptions import (
+    KitaPlusApiError,
     KitaPlusAuthError,
     KitaPlusConnectionError,
+    KitaPlusMaintenanceError,
     KitaPlusTwoFactorRequired,
 )
 from custom_components.kitaplus.const import API_BASE_URL
@@ -159,3 +161,111 @@ async def test_refresh_without_expiry_keeps_the_known_expiry(client):
         await client.async_get_board()
     assert client.tokens.refresh_token == "new"
     assert client.tokens.refresh_expires == far  # not shortened to 24 hours
+
+
+# ---- error paths: every one of them must end in the right exception, never in a wrong "password" verdict
+
+
+async def test_login_during_maintenance_is_not_a_credentials_error(client):
+    with aioresponses() as m:
+        m.post(
+            f"{API_BASE_URL}/app/login_check",
+            status=503,
+            payload={"isWartungAktiv": True, "message": "Wartung"},
+        )
+        with pytest.raises(KitaPlusMaintenanceError):
+            await client.async_login("a@b.de", "pw")
+
+
+async def test_login_network_error_is_a_connection_error(client):
+    with aioresponses() as m:
+        m.post(f"{API_BASE_URL}/app/login_check", exception=aiohttp.ClientConnectionError("down"))
+        with pytest.raises(KitaPlusConnectionError):
+            await client.async_login("a@b.de", "pw")
+
+
+async def test_login_answer_without_token_is_an_api_error(client):
+    with aioresponses() as m:
+        m.post(f"{API_BASE_URL}/app/login_check", payload={"success": True})
+        with pytest.raises(KitaPlusApiError):
+            await client.async_login("a@b.de", "pw")
+
+
+async def test_login_with_a_non_json_answer_is_not_a_wrong_password(client):
+    with aioresponses() as m:
+        m.post(f"{API_BASE_URL}/app/login_check", status=200, body="<html>oops</html>")
+        with pytest.raises(KitaPlusApiError):
+            await client.async_login("a@b.de", "pw")
+
+
+async def test_refresh_errors_are_classified(client):
+    client.set_tokens(Tokens("", "r", time.time() + 3600))
+    for status, expected in (
+        (401, KitaPlusAuthError),
+        (503, KitaPlusConnectionError),
+        (200, KitaPlusApiError),
+    ):
+        with aioresponses() as m:
+            m.post(f"{API_BASE_URL}/app/refresh_token", status=status, payload={})
+            with pytest.raises(expected):
+                await client.async_get_board()
+
+
+async def test_requests_without_a_session_ask_for_a_login(client):
+    with pytest.raises(KitaPlusAuthError):
+        await client.async_get_board()
+
+
+async def _logged_in(client, m):
+    m.post(f"{API_BASE_URL}/app/login_check", payload=_ok())
+    await client.async_login("a@b.de", "pw")
+
+
+async def test_get_errors_are_classified(client):
+    url = f"{API_BASE_URL}/orga_nachrichten/index?limit=15&page=1&start=0"
+    cases = (
+        (dict(status=503, payload={"isWartungAktiv": True}), KitaPlusMaintenanceError),
+        (dict(status=403, payload={"message": "no"}), KitaPlusAuthError),
+        (dict(status=404, payload={}), KitaPlusApiError),
+        (dict(status=200, payload={"success": False}), KitaPlusApiError),
+        (dict(status=200, payload=[1, 2]), KitaPlusApiError),
+        (dict(exception=aiohttp.ClientConnectionError("down")), KitaPlusConnectionError),
+    )
+    for reply, expected in cases:
+        with aioresponses() as m:
+            await _logged_in(client, m)
+            m.get(url, **reply)
+            with pytest.raises(expected):
+                await client.async_get_board()
+
+
+async def test_all_read_endpoints_return_their_payload(client):
+    with aioresponses() as m:
+        await _logged_in(client, m)
+        m.get(
+            f"{API_BASE_URL}/nachrichten/getNachrichten?limit=15&page=1&start=0",
+            payload={"success": True, "data": [1]},
+        )
+        m.get(f"{API_BASE_URL}/vpp/verpflegungskonten", payload={"success": True, "data": [2]})
+        m.get(
+            f"{API_BASE_URL}/termin/getTermine?limit=100&month=6&openEnd=1&page=1&start=0&year=2026",
+            payload={"success": True, "data": [3]},
+        )
+        meals = {"success": True, "data": [{"tage": [{"datum": "2026-06-13T00:00:00"}]}]}
+        m.get(
+            f"{API_BASE_URL}/vpp/bestelldaten?elternkontoId=7&enddatum=2026-06-27&ignoriereSchliesstage=1"
+            "&kindId=1&startdatum=2026-06-13",
+            payload=meals,
+        )
+        m.get(
+            f"{API_BASE_URL}/vpp/bestelldaten?elternkontoId=7&enddatum=2026-06-27&ignoriereSchliesstage=1"
+            "&kindId=2&startdatum=2026-06-13",
+            payload={"success": True, "data": []},
+        )
+        assert await client.async_get_messages() == [1]
+        assert await client.async_get_accounts() == [2]
+        assert await client.async_get_events(2026, 6) == [3]
+        assert await client.async_get_meals(1, 7, "2026-06-13", "2026-06-27") == [
+            {"datum": "2026-06-13T00:00:00"}
+        ]
+        assert await client.async_get_meals(2, 7, "2026-06-13", "2026-06-27") == []
