@@ -46,6 +46,8 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+TimerKey = tuple[str, int, date]  # ("deadline" or "remind", child id, day)
+
 CHILDREN_REFRESH = timedelta(hours=24)
 MEAL_DAYS_AHEAD = 14
 
@@ -79,8 +81,9 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
         client.set_token_listener(self._save_tokens)
         self.deadline_rule = self._read_deadline_rule()
         self._lead = timedelta(minutes=entry.options.get(CONF_LEAD_MINUTES, DEFAULT_LEAD_MINUTES))
-        self._timers: list[CALLBACK_TYPE] = []
+        self._timers: dict[TimerKey, CALLBACK_TYPE] = {}
         self._reminded: set[tuple[int, date]] = set()
+        self._reminding: set[tuple[int, date]] = set()
         self._children: list[Child] = []
         self._children_at: datetime | None = None
         self._seen_board: set[int] | None = None
@@ -233,75 +236,85 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
 
     async def async_shutdown(self) -> None:
         """Stop the deadline timers together with the coordinator."""
-        self._cancel_timers()
-        await super().async_shutdown()
-
-    def _cancel_timers(self) -> None:
-        for cancel in self._timers:
+        for cancel in self._timers.values():
             cancel()
         self._timers.clear()
+        await super().async_shutdown()
 
     def _schedule_deadlines(self, data: KitaPlusData) -> None:
         """Plan what has to happen at each deadline.
 
         At every deadline the entities are refreshed, so the order status turns to "missed" on the minute.
         Shortly before it, a reminder is prepared for every day that is still open.
+
+        Timers are kept per child and day and stay as long as they are wanted. They are not thrown away and
+        rebuilt on every update: an update that finishes at the very moment a timer is due would otherwise
+        cancel that timer before its callback has run and the reminder would be lost.
         """
-        self._cancel_timers()
         now = dt_util.now()
         self._reminded = {key for key in self._reminded if key[1] >= now.date()}
+        wanted: dict[TimerKey, datetime] = {}
         for child in data.children:
-            for order in open_orders(data.meals.get(child["id"], []), self.deadline_rule, now):
+            child_id = child["id"]
+            for order in open_orders(data.meals.get(child_id, []), self.deadline_rule, now):
                 if order.deadline is None:
                     continue
-                self._timers.append(
-                    async_track_point_in_time(self.hass, self._deadline_reached, order.deadline)
-                )
-                remind_at = order.deadline - self._lead
+                wanted[("deadline", child_id, order.day)] = order.deadline
                 if (
                     self._lead > timedelta(0)
-                    and remind_at > now
-                    and (child["id"], order.day) not in self._reminded
+                    and (child_id, order.day) not in self._reminded | self._reminding
                 ):
-                    self._timers.append(
-                        async_track_point_in_time(
-                            self.hass, partial(self._reminder_due, child["id"], order.day), remind_at
-                        )
-                    )
+                    wanted[("remind", child_id, order.day)] = order.deadline - self._lead
+        for key in [k for k in self._timers if k not in wanted]:
+            self._timers.pop(key)()  # not wanted any more, for example because the day was ordered
+        for key, when in wanted.items():
+            if key not in self._timers:
+                callback = self._deadline_reached if key[0] == "deadline" else self._reminder_due
+                # a reminder whose time has passed while the deadline has not is made up for right away
+                self._timers[key] = async_track_point_in_time(
+                    self.hass, partial(callback, key), max(when, now)
+                )
 
     @callback
-    def _deadline_reached(self, _now: datetime) -> None:
+    def _deadline_reached(self, key: TimerKey, _now: datetime) -> None:
+        self._timers.pop(key, None)
         self.async_update_listeners()  # entities work out "open" or "missed" from the clock
 
     @callback
-    def _reminder_due(self, child_id: int, day: date, _now: datetime) -> None:
-        self.hass.async_create_task(self._async_remind(child_id, day))
+    def _reminder_due(self, key: TimerKey, _now: datetime) -> None:
+        self._timers.pop(key, None)
+        self.hass.async_create_task(self._async_remind(key[1], key[2]))
 
     async def _async_remind(self, child_id: int, day: date) -> None:
         """Ask KitaPlus for current data, then remind only if the day is still open."""
-        if (child_id, day) in self._reminded:
+        key = (child_id, day)
+        if key in self._reminded or key in self._reminding:
             return
-        await self.async_refresh()
-        now = dt_util.now()
-        orders = open_orders(self.data.meals.get(child_id, []), self.deadline_rule, now)
-        order = next((o for o in orders if o.day == day), None)
-        if order is None or order.deadline is None:
-            return  # ordered in the meantime, or the deadline has passed
-        self._reminded.add((child_id, day))
-        name = next((c.get("vorname") for c in self.data.children if c["id"] == child_id), None)
-        self.hass.bus.async_fire(
-            EVENT_ORDER_DEADLINE,
-            {
-                "child": name,
-                "child_id": child_id,
-                "day": day.isoformat(),
-                "days_ahead": (day - now.date()).days,
-                "weekday": day.weekday(),
-                "deadline": order.deadline.isoformat(),
-                "minutes_left": int((order.deadline - now).total_seconds() // 60),
-                "fresh": self.last_update_success,
-            },
-        )
+        self._reminding.add(key)  # the refresh below plans timers again; it must not plan this reminder again
+        try:
+            await self.async_refresh()
+            now = dt_util.now()
+            orders = open_orders(self.data.meals.get(child_id, []), self.deadline_rule, now)
+            order = next((o for o in orders if o.day == day), None)
+            if order is None or order.deadline is None:
+                return  # ordered in the meantime, or the deadline has passed
+            self._reminded.add(key)
+            name = next((c.get("vorname") for c in self.data.children if c["id"] == child_id), None)
+            self.hass.bus.async_fire(
+                EVENT_ORDER_DEADLINE,
+                {
+                    "child": name,
+                    "child_id": child_id,
+                    "day": day.isoformat(),
+                    "days_ahead": (day - now.date()).days,
+                    "weekday": day.weekday(),
+                    "deadline": order.deadline.isoformat(),
+                    "minutes_left": int((order.deadline - now).total_seconds() // 60),
+                    "fresh": self.last_update_success,
+                },
+            )
+        finally:
+            self._reminding.discard(key)
 
     def _fire_events(self, data: KitaPlusData) -> None:
         """Fire events for new items, but never on the first refresh."""

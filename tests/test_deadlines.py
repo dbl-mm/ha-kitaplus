@@ -312,3 +312,90 @@ async def test_a_day_is_never_reminded_twice(hass, stack, freezer) -> None:
     )  # e.g. a second timer for the same day
     await hass.async_block_till_done()
     assert len(fired) == 1
+
+
+async def test_a_poll_finishing_at_the_due_moment_does_not_swallow_the_reminder(hass, stack, freezer) -> None:
+    """The regular update and the reminder can become due in the same instant, in either order.
+
+    Here the update runs first and re-plans the timers before the reminder's own timer callback has run. The
+    reminder must survive that (this was a real race: the re-planning cancelled it, found by a flaky test).
+    """
+    await clock(hass, freezer, "2026-10-27T20:00:00")
+    entry = await setup_integration(
+        hass,
+        stack,
+        entry=make_entry(RULE_OPTIONS),
+        async_get_meals=[meal_day(THURSDAY, ordered=False, orderable=True)],
+    )
+    fired = async_capture_events(hass, EVENT)
+    coordinator = entry.runtime_data
+    freezer.move_to(local("2026-10-28T09:00:00"))  # the reminder is due now, its callback has not run yet
+    coordinator._schedule_deadlines(coordinator.data)  # what a finishing update does
+    async_fire_time_changed(hass, local("2026-10-28T09:00:00"))
+    await hass.async_block_till_done()
+    assert len(fired) == 1
+
+
+async def test_a_reminder_time_that_has_already_passed_is_made_up_for_while_the_day_is_open(
+    hass, stack, freezer
+) -> None:
+    """Home Assistant starts at 10:00; the 9:00 reminder was missed but ordering is open until 11:00."""
+    await clock(hass, freezer, "2026-10-28T10:00:00")
+    fired = async_capture_events(hass, EVENT)
+    entry = await setup_integration(
+        hass,
+        stack,
+        entry=make_entry(RULE_OPTIONS),
+        async_get_meals=[meal_day(THURSDAY, ordered=False, orderable=True)],
+    )
+    assert fired == [], "with a frozen test clock a timer for 'now' waits until the clock moves"
+    calls = stack.enter_context(
+        patch(f"{CLIENT}.async_get_meals", return_value=[meal_day(THURSDAY, ordered=False, orderable=True)])
+    )
+    async_fire_time_changed(
+        hass, local("2026-10-28T10:00:01")
+    )  # in real life time flows and it starts at once
+    await hass.async_block_till_done()
+    assert len(fired) == 1 and fired[0].data["minutes_left"] == 60
+    assert calls.call_count == 1, (
+        "making up for the reminder asks KitaPlus once and starts no loop of updates"
+    )
+    assert entry.runtime_data._timers.keys() == {("deadline", fired[0].data["child_id"], date(2026, 10, 29))}
+
+
+async def test_two_reminders_for_the_same_day_at_the_same_time_send_one_message(hass, stack, freezer) -> None:
+    import asyncio
+
+    await clock(hass, freezer, "2026-10-27T20:00:00")
+    entry = await setup_integration(
+        hass,
+        stack,
+        entry=make_entry(RULE_OPTIONS),
+        async_get_meals=[meal_day(THURSDAY, ordered=False, orderable=True)],
+    )
+    fired = async_capture_events(hass, EVENT)
+    coordinator = entry.runtime_data
+    child_id = coordinator.data.children[0]["id"]
+    freezer.move_to(local("2026-10-28T09:00:00"))
+    first = hass.async_create_task(coordinator._async_remind(child_id, date(2026, 10, 29)))
+    second = hass.async_create_task(coordinator._async_remind(child_id, date(2026, 10, 29)))
+    await asyncio.gather(first, second)
+    await hass.async_block_till_done()
+    assert len(fired) == 1
+
+
+async def test_timers_of_days_that_are_no_longer_open_are_removed(hass, stack, freezer) -> None:
+    await clock(hass, freezer, "2026-10-27T20:00:00")
+    entry = await setup_integration(
+        hass,
+        stack,
+        entry=make_entry(RULE_OPTIONS),
+        async_get_meals=[meal_day(THURSDAY, ordered=False, orderable=True)],
+    )
+    coordinator = entry.runtime_data
+    assert {key[0] for key in coordinator._timers} == {"deadline", "remind"}
+    stack.enter_context(
+        patch(f"{CLIENT}.async_get_meals", return_value=[meal_day(THURSDAY, ordered=True, orderable=True)])
+    )
+    await coordinator.async_refresh()
+    assert coordinator._timers == {}, "ordered meanwhile: neither a reminder nor a deadline update is needed"
