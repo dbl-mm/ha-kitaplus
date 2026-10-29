@@ -2,8 +2,9 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
-## [Unveröffentlicht]
+## [0.3.2]
 ### Geändert
+- GitHub Actions sind auf feste Commit-Versionen gesetzt und werden über Dependabot aktuell gehalten.
 - Sicherheit: Der Diagnose-Export zeigt nur noch eine feste Liste harmloser Felder (statt unbekannte Felder durchzulassen) und schwärzt die Konto-ID. Meldungen des KitaPlus-Servers werden im Anmeldeformular und in den Reparaturen als reiner, gekürzter Text angezeigt. Dashboard-Texte können keine Links mehr enthalten.
 - Dashboard: kleine Zeichen (✓ ○ ✕) statt großer Symbole, Abstand zwischen den Zeilen, „1 Nachricht“.
 - Dashboard: Ist die Frist vorbei und nichts bestellt, meldet die Statuskarte neutral „Nicht bestellt. Die Frist ist vorbei.“ (gelb statt rot, ohne „Bitte bei der Kita nachfragen“), denn oft ist das Absicht. Die Statuskarte hat keinen doppelten Rahmen mehr.
