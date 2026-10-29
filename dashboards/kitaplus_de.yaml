@@ -125,6 +125,18 @@ views:
       icon: mdi:silverware-fork-knife
       state_content:
       - state
+    - type: tile
+      entity: sensor.kind_bestellstatus_morgen
+      name: Bestellung morgen
+      icon: mdi:cart-outline
+      state_content:
+      - state
+    - type: tile
+      entity: sensor.kind_nachste_bestellfrist
+      name: Nächste Bestellfrist
+      icon: mdi:timer-sand
+      state_content:
+      - state
   - type: grid
     cards:
     - type: heading
@@ -249,4 +261,5 @@ views:
       - sensor.kind_essen_morgen
       - sensor.kind_bestellstatus_heute
       - sensor.kind_bestellstatus_morgen
+      - sensor.kind_nachste_bestellfrist
       - binary_sensor.kind_morgen_nicht_bestellt

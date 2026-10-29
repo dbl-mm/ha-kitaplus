@@ -110,6 +110,9 @@
           "missed": "Frist verpasst",
           "not_offered": "Kein Essen"
         }
+      },
+      "next_order_deadline": {
+        "name": "Nächste Bestellfrist"
       }
     },
     "calendar": {
@@ -163,10 +166,18 @@
         "title": "Abfrageintervall",
         "description": "Wie oft Home Assistant bei KitaPlus nachfragt, in Minuten (15 bis 240). Ein höherer Wert schont die KitaPlus-Server.",
         "data": {
-          "scan_interval": "Intervall (Minuten)"
+          "scan_interval": "Intervall (Minuten)",
+          "order_deadline_days": "Bestellfrist: Tage vor dem Essen",
+          "order_deadline_time": "Bestellfrist: Uhrzeit",
+          "order_deadline_workdays": "Nur Werktage zählen (Montag bis Freitag)",
+          "reminder_lead_minutes": "Erinnerung vor der Frist (Minuten)"
         },
         "data_description": {
-          "scan_interval": "Wie oft Home Assistant bei KitaPlus nach neuen Daten fragt. Weniger als 15 Minuten ist nicht erlaubt."
+          "scan_interval": "Wie oft Home Assistant bei KitaPlus nach neuen Daten fragt. Weniger als 15 Minuten ist nicht erlaubt.",
+          "order_deadline_days": "Das legt deine Kita fest. Beispiel: „1 Tage vor Essenausgabe um 11:00 Uhr“ bedeutet hier 1 und unten 11:00. 0 heißt am Tag selbst. Leer lassen, wenn du die Frist nicht kennst. Du findest sie in der KitaPlus-App unter Verpflegung → Hilfe → Bestellfristen.",
+          "order_deadline_time": "Die Uhrzeit, zu der die Bestellung schließt, zum Beispiel 11:00.",
+          "order_deadline_workdays": "Einschalten, wenn deine Kita Samstag und Sonntag nicht mitzählt (eine Mahlzeit am Montag schließt dann am Freitag).",
+          "reminder_lead_minutes": "Wie lange vor der Frist das Ereignis kitaplus_order_deadline ausgelöst wird, falls der Tag noch nicht bestellt ist. 0 schaltet es aus."
         }
       }
     }

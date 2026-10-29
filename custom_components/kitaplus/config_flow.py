@@ -25,6 +25,13 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    BooleanSelector,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+    TimeSelector,
+)
 
 from .api.client import KitaPlusClient
 from .api.exceptions import (
@@ -38,14 +45,21 @@ from .const import (
     CONF_ACCOUNT_ID,
     CONF_AUTH_CODE,
     CONF_CLIENT_ID,
+    CONF_DEADLINE_DAYS,
+    CONF_DEADLINE_TIME,
+    CONF_DEADLINE_WORKDAYS,
     CONF_EMAIL,
+    CONF_LEAD_MINUTES,
     CONF_PASSWORD,
     CONF_REFRESH_EXPIRES,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
+    DEFAULT_DEADLINE_TIME,
+    DEFAULT_LEAD_MINUTES,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     LOGIN_COOLDOWN_MINUTES,
+    MAX_DEADLINE_DAYS,
     MAX_LOGIN_ATTEMPTS,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
@@ -273,19 +287,40 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class KitaPlusOptionsFlow(OptionsFlowWithReload):
-    """Polling interval. Not below 15 minutes, to be gentle with the service."""
+    """Polling interval and the Kita's order deadline."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
-        current = self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+            data = dict(user_input)
+            if CONF_DEADLINE_DAYS in data:
+                data[CONF_DEADLINE_DAYS] = int(data[CONF_DEADLINE_DAYS])
+            data[CONF_LEAD_MINUTES] = int(data[CONF_LEAD_MINUTES])
+            return self.async_create_entry(data=data)
+        current = self.config_entry.options
+        days = current.get(CONF_DEADLINE_DAYS)
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SCAN_INTERVAL, default=current): vol.All(
-                        vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)
-                    )
+                    vol.Required(
+                        CONF_SCAN_INTERVAL, default=current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+                    ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)),
+                    vol.Optional(CONF_DEADLINE_DAYS, description={"suggested_value": days}): NumberSelector(
+                        NumberSelectorConfig(
+                            min=0, max=MAX_DEADLINE_DAYS, step=1, mode=NumberSelectorMode.BOX
+                        )
+                    ),
+                    vol.Optional(
+                        CONF_DEADLINE_TIME, default=current.get(CONF_DEADLINE_TIME, DEFAULT_DEADLINE_TIME)
+                    ): TimeSelector(),
+                    vol.Optional(
+                        CONF_DEADLINE_WORKDAYS, default=current.get(CONF_DEADLINE_WORKDAYS, False)
+                    ): BooleanSelector(),
+                    vol.Optional(
+                        CONF_LEAD_MINUTES, default=current.get(CONF_LEAD_MINUTES, DEFAULT_LEAD_MINUTES)
+                    ): NumberSelector(
+                        NumberSelectorConfig(min=0, max=1440, step=15, mode=NumberSelectorMode.BOX)
+                    ),
                 }
             ),
         )

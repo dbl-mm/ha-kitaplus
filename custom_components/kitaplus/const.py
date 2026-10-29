@@ -31,3 +31,14 @@ LOGIN_COOLDOWN_MINUTES = 15
 
 MANUFACTURER = "kitaplus"
 CONFIGURATION_URL = "https://eltern.kitaplus.de"
+
+# The order deadline is set by each Kita. KitaPlus only tells us per meal whether it can still be ordered, so
+# the rule ("1 day before at 11:00") is entered in the options and then makes the status exact to the minute.
+CONF_DEADLINE_DAYS = "order_deadline_days"
+CONF_DEADLINE_TIME = "order_deadline_time"
+CONF_DEADLINE_WORKDAYS = "order_deadline_workdays"
+CONF_LEAD_MINUTES = "reminder_lead_minutes"
+DEFAULT_DEADLINE_TIME = "11:00:00"
+DEFAULT_LEAD_MINUTES = 120
+MAX_DEADLINE_DAYS = 14
+EVENT_ORDER_DEADLINE = f"{DOMAIN}_order_deadline"

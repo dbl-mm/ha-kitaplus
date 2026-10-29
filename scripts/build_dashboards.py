@@ -47,6 +47,7 @@ SLUGS: dict[str, dict[str, str]] = {
         "no_order": "morgen_nicht_bestellt",
         "status_today": "bestellstatus_heute",
         "status_tomorrow": "bestellstatus_morgen",
+        "next_deadline": "nachste_bestellfrist",
     },
     "en": {
         "board": "bulletin_board",
@@ -64,6 +65,7 @@ SLUGS: dict[str, dict[str, str]] = {
         "no_order": "nothing_ordered_tomorrow",
         "status_today": "order_status_today",
         "status_tomorrow": "order_status_tomorrow",
+        "next_deadline": "next_order_deadline",
     },
 }
 
@@ -81,6 +83,7 @@ TEXT: dict[str, dict[str, str]] = {
         "order_meal_tomorrow": "Essen für morgen bestellen",
         "order_meal_today": "Essen für heute noch bestellen",
         "order_status": "Bestellung morgen",
+        "next_deadline": "Nächste Bestellfrist",
         "deadline_hint": "Die Bestellfrist legt deine Kita fest. Du findest sie in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*.",
         "open_replies": "Rückmeldungen offen",
         "all_done": "Nichts zu tun",
@@ -118,6 +121,7 @@ TEXT: dict[str, dict[str, str]] = {
         "order_meal_tomorrow": "Order tomorrow's meal",
         "order_meal_today": "Order today's meal while you still can",
         "order_status": "Order for tomorrow",
+        "next_deadline": "Next order deadline",
         "deadline_hint": "Your Kita sets the order deadline. You can find it in the KitaPlus app under *Verpflegung → Hilfe → Bestellfristen*.",
         "open_replies": "Replies needed",
         "all_done": "Nothing to do",
@@ -291,6 +295,15 @@ def child_cards(t: dict[str, str], ids: Ids, display: str) -> list[dict]:
             "mdi:silverware-fork-knife",
             content=["state"],
         ),
+        tile(
+            ids.of_child("sensor", "status_tomorrow"),
+            t["order_status"],
+            "mdi:cart-outline",
+            content=["state"],
+        ),
+        tile(
+            ids.of_child("sensor", "next_deadline"), t["next_deadline"], "mdi:timer-sand", content=["state"]
+        ),
     ]
 
 
@@ -370,6 +383,7 @@ def diagnostics_cards(t: dict[str, str], account: Ids, ids_for: list[Ids]) -> li
     for ids in ids_for:
         values += [ids.of_child("sensor", "meal_today"), ids.of_child("sensor", "meal_tomorrow")]
         values += [ids.of_child("sensor", "status_today"), ids.of_child("sensor", "status_tomorrow")]
+        values.append(ids.of_child("sensor", "next_deadline"))
         values.append(ids.of_child("binary_sensor", "no_order"))
     return [
         heading(t["connection"], "mdi:cloud-check-outline"),

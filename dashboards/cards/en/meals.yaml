@@ -17,3 +17,15 @@ cards:
   icon: mdi:silverware-fork-knife
   state_content:
   - state
+- type: tile
+  entity: sensor.kind_order_status_tomorrow
+  name: Order for tomorrow
+  icon: mdi:cart-outline
+  state_content:
+  - state
+- type: tile
+  entity: sensor.kind_next_order_deadline
+  name: Next order deadline
+  icon: mdi:timer-sand
+  state_content:
+  - state

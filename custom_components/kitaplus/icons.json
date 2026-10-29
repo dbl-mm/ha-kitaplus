@@ -36,6 +36,9 @@
           "missed": "mdi:cart-off",
           "not_offered": "mdi:minus-circle-outline"
         }
+      },
+      "next_order_deadline": {
+        "default": "mdi:timer-sand"
       }
     },
     "binary_sensor": {

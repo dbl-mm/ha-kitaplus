@@ -1,6 +1,6 @@
 # Blueprints
 
-Sieben fertige Automationen für den Alltag. Sie liegen im Ordner [`blueprints/automation/kitaplus/`](../blueprints/automation/kitaplus)
+Acht fertige Automationen für den Alltag. Sie liegen im Ordner [`blueprints/automation/kitaplus/`](../blueprints/automation/kitaplus)
 und werden **nicht** automatisch installiert, Home Assistant legt sie erst an, wenn du sie importierst.
 
 **Importieren:** Auf den Knopf im [README](../README.md#blueprints) klicken (öffnet deine Home-Assistant-Instanz), oder
@@ -16,6 +16,7 @@ Alle Blueprints folgen denselben Regeln:
 
 | Blueprint | Wann | Variablen für deine Aktion |
 |---|---|---|
+| [Erinnerung vor der Bestellfrist](../blueprints/automation/kitaplus/bestellfrist_erinnerung.yaml) | **kurz vor der Frist deiner Kita** (zum Beispiel 2 Stunden vorher), wenn noch nichts bestellt ist; die Frist trägst du einmal bei der Integration ein | `message`, `child`, `day`, `day_label`, `time_left`, `deadline_time`, `minutes_left`, `fresh` |
 | [Essen-Erinnerung](../blueprints/automation/kitaplus/essen_erinnerung.yaml) | abends für morgen und auf Wunsch morgens als „letzte Chance“ für heute, **solange KitaPlus noch Bestellungen annimmt**; holt vorher frische Daten, meldet die verpasste Frist nur auf Wunsch | `message`, `child`, `day`, `status`, `entity_id` |
 | [Schließtag](../blueprints/automation/kitaplus/schliesstag.yaml) | am Vorabend ein Hinweis, am Morgen des Schließtags optional eine Aktion (zum Beispiel Wecker aus) | `message`, `reason`, `when` |
 | [Neue Mitteilung](../blueprints/automation/kitaplus/neue_mitteilung.yaml) | bei jedem neuen Beitrag am Schwarzen Brett oder neuer Nachricht, optional nur mit Stichwörtern | `title`, `source`, `source_label`, `message` |
@@ -25,6 +26,8 @@ Alle Blueprints folgen denselben Regeln:
 | [Tagesbriefing](../blueprints/automation/kitaplus/tagesbriefing.yaml) | eine Zusammenfassung zur Uhrzeit: Schließtage, Essen, Rückmeldungen, Guthaben | `message`, `lines` |
 
 ## Bestellfristen berücksichtigen
+**Am genauesten:** Trage die Frist deiner Kita bei der Integration ein (README, Abschnitt „Bestellfristen“) und nimm den Blueprint „Erinnerung vor der Bestellfrist“. Er braucht keine Uhrzeit, der Zeitpunkt ergibt sich aus der Frist. Mit festen Uhrzeiten (Blueprint „Essen-Erinnerung“) gilt:
+
 Jede Kita setzt ihre eigene Frist (zum Beispiel „bis 9:00 Uhr am selben Tag“). Die Blueprints kennen die Uhrzeit nicht, sondern
 verlassen sich auf den **Bestellstatus**, den KitaPlus liefert (*Offen* = noch bestellbar, *Frist verpasst* = zu spät, siehe
 [README](../README.md#bestellfristen)). Deshalb:

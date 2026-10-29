@@ -255,3 +255,17 @@ def test_the_order_reminder_only_shows_while_ordering_is_still_possible(language
     assert len(reminders) == 2, "one for today and one for tomorrow"
     hint = gen.TEXT[language]["deadline_hint"]
     assert all(any(inner.get("content") == hint for inner in c["card"]["cards"]) for c in reminders)
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_every_child_section_shows_meals_order_status_and_the_next_deadline(language) -> None:
+    """A rule that exists only in the text-key table but not on the dashboard is no help to anybody."""
+    section = yaml.safe_load(design_subjects(language)["generated"])["views"][0]["sections"][2]["cards"]
+    entities = [c.get("entity") for c in section if c.get("type") == "tile"]
+    slugs = gen.SLUGS[language]
+    assert entities == [
+        f"sensor.kind_{slugs['meal_today']}",
+        f"sensor.kind_{slugs['meal_tomorrow']}",
+        f"sensor.kind_{slugs['status_tomorrow']}",
+        f"sensor.kind_{slugs['next_deadline']}",
+    ]

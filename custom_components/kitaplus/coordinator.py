@@ -5,12 +5,15 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
+from functools import partial
 from typing import TYPE_CHECKING
 
+from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -19,15 +22,23 @@ from .api.exceptions import KitaPlusAuthError, KitaPlusError, KitaPlusMaintenanc
 from .api.models import Account, BoardPost, Child, Day, Event, Message
 from .const import (
     CONF_ACCOUNT_ID,
+    CONF_DEADLINE_DAYS,
+    CONF_DEADLINE_TIME,
+    CONF_DEADLINE_WORKDAYS,
     CONF_EMAIL,
+    CONF_LEAD_MINUTES,
     CONF_REFRESH_EXPIRES,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
+    DEFAULT_DEADLINE_TIME,
+    DEFAULT_LEAD_MINUTES,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     EVENT_NEW_BOARD_POST,
     EVENT_NEW_MESSAGE,
+    EVENT_ORDER_DEADLINE,
 )
+from .helpers import DeadlineRule, OpenOrder, open_orders
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -66,10 +77,28 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
         )
         self.client = client
         client.set_token_listener(self._save_tokens)
+        self.deadline_rule = self._read_deadline_rule()
+        self._lead = timedelta(minutes=entry.options.get(CONF_LEAD_MINUTES, DEFAULT_LEAD_MINUTES))
+        self._timers: list[CALLBACK_TYPE] = []
+        self._reminded: set[tuple[int, date]] = set()
         self._children: list[Child] = []
         self._children_at: datetime | None = None
         self._seen_board: set[int] | None = None
         self._seen_messages: set[int] | None = None
+
+    def _read_deadline_rule(self) -> DeadlineRule | None:
+        """The Kita's order deadline from the options, or None while it is not set."""
+        options = self.config_entry.options
+        days = options.get(CONF_DEADLINE_DAYS)
+        if days is None:
+            return None
+        at = dt_util.parse_time(options.get(CONF_DEADLINE_TIME, DEFAULT_DEADLINE_TIME)) or time(11, 0)
+        return DeadlineRule(int(days), at, bool(options.get(CONF_DEADLINE_WORKDAYS, False)))
+
+    def next_open_order(self, child_id: int) -> OpenOrder | None:
+        """The next day that can still be ordered for this child, if the Kita's deadline is known."""
+        days = self.data.meals.get(child_id, [])
+        return next((o for o in open_orders(days, self.deadline_rule, dt_util.now()) if o.deadline), None)
 
     @property
     def _issue_id(self) -> str:
@@ -184,6 +213,7 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
 
         ir.async_delete_issue(self.hass, DOMAIN, self._issue_id)
         self._remove_stale_devices(data)
+        self._schedule_deadlines(data)
         self._fire_events(data)
         return data
 
@@ -200,6 +230,78 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
                     CONF_REFRESH_EXPIRES: tokens.refresh_expires,
                 },
             )
+
+    async def async_shutdown(self) -> None:
+        """Stop the deadline timers together with the coordinator."""
+        self._cancel_timers()
+        await super().async_shutdown()
+
+    def _cancel_timers(self) -> None:
+        for cancel in self._timers:
+            cancel()
+        self._timers.clear()
+
+    def _schedule_deadlines(self, data: KitaPlusData) -> None:
+        """Plan what has to happen at each deadline.
+
+        At every deadline the entities are refreshed, so the order status turns to "missed" on the minute.
+        Shortly before it, a reminder is prepared for every day that is still open.
+        """
+        self._cancel_timers()
+        now = dt_util.now()
+        self._reminded = {key for key in self._reminded if key[1] >= now.date()}
+        for child in data.children:
+            for order in open_orders(data.meals.get(child["id"], []), self.deadline_rule, now):
+                if order.deadline is None:
+                    continue
+                self._timers.append(
+                    async_track_point_in_time(self.hass, self._deadline_reached, order.deadline)
+                )
+                remind_at = order.deadline - self._lead
+                if (
+                    self._lead > timedelta(0)
+                    and remind_at > now
+                    and (child["id"], order.day) not in self._reminded
+                ):
+                    self._timers.append(
+                        async_track_point_in_time(
+                            self.hass, partial(self._reminder_due, child["id"], order.day), remind_at
+                        )
+                    )
+
+    @callback
+    def _deadline_reached(self, _now: datetime) -> None:
+        self.async_update_listeners()  # entities work out "open" or "missed" from the clock
+
+    @callback
+    def _reminder_due(self, child_id: int, day: date, _now: datetime) -> None:
+        self.hass.async_create_task(self._async_remind(child_id, day))
+
+    async def _async_remind(self, child_id: int, day: date) -> None:
+        """Ask KitaPlus for current data, then remind only if the day is still open."""
+        if (child_id, day) in self._reminded:
+            return
+        await self.async_refresh()
+        now = dt_util.now()
+        orders = open_orders(self.data.meals.get(child_id, []), self.deadline_rule, now)
+        order = next((o for o in orders if o.day == day), None)
+        if order is None or order.deadline is None:
+            return  # ordered in the meantime, or the deadline has passed
+        self._reminded.add((child_id, day))
+        name = next((c.get("vorname") for c in self.data.children if c["id"] == child_id), None)
+        self.hass.bus.async_fire(
+            EVENT_ORDER_DEADLINE,
+            {
+                "child": name,
+                "child_id": child_id,
+                "day": day.isoformat(),
+                "days_ahead": (day - now.date()).days,
+                "weekday": day.weekday(),
+                "deadline": order.deadline.isoformat(),
+                "minutes_left": int((order.deadline - now).total_seconds() // 60),
+                "fresh": self.last_update_success,
+            },
+        )
 
     def _fire_events(self, data: KitaPlusData) -> None:
         """Fire events for new items, but never on the first refresh."""

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from dataclasses import dataclass
+from datetime import UTC, date, datetime, time, timedelta, tzinfo
 
 from .api.models import Day, Event, MealEntry, Message, PendingReply
 
@@ -54,22 +55,73 @@ def meals_on(days: list[Day], day: date) -> list[MealEntry]:
     return out
 
 
+@dataclass(frozen=True)
+class DeadlineRule:
+    """A Kita's order deadline, e.g. "1 day before the meal at 11:00" (days_before=1, at=11:00)."""
+
+    days_before: int
+    at: time
+    workdays_only: bool = False
+
+
+def deadline_for(day: date, rule: DeadlineRule, tz: tzinfo) -> datetime:
+    """The moment ordering for `day` closes. With `workdays_only`, Saturdays and Sundays are not counted."""
+    target = day
+    if rule.workdays_only:
+        remaining = rule.days_before
+        while remaining > 0:
+            target -= timedelta(days=1)
+            if target.weekday() < 5:
+                remaining -= 1
+    else:
+        target = day - timedelta(days=rule.days_before)
+    return datetime.combine(target, rule.at, tzinfo=tz)
+
+
 ORDER_STATES = ["ordered", "open", "missed", "not_offered"]
 
 
-def order_status(meals: list[MealEntry]) -> str:
-    """Where an order stands for one day, judged only by what KitaPlus itself reports.
+def order_status(
+    meals: list[MealEntry], deadline: datetime | None = None, now: datetime | None = None
+) -> str:
+    """Where an order stands for one day.
 
     ordered      something is ordered
-    open         meals are offered, nothing is ordered and KitaPlus still accepts orders
-    missed       meals are offered, nothing is ordered and KitaPlus no longer accepts orders (deadline over)
+    open         meals are offered, nothing is ordered and ordering is still possible
+    missed       meals are offered, nothing is ordered and ordering is no longer possible (deadline over)
     not_offered  there is no meal that day
+
+    "Possible" is what KitaPlus reports per meal. If the Kita's deadline is known, the status also turns to
+    "missed" at that very moment, even when the last update is older.
     """
     if not meals:
         return "not_offered"
     if any(m["bestellt"] for m in meals):
         return "ordered"
+    if deadline is not None and now is not None and now >= deadline:
+        return "missed"
     return "open" if any(m["bestellbar"] for m in meals) else "missed"
+
+
+@dataclass(frozen=True)
+class OpenOrder:
+    """A day that can still be ordered, with the moment ordering closes when the Kita's rule is known."""
+
+    day: date
+    deadline: datetime | None
+
+
+def open_orders(days: list[Day], rule: DeadlineRule | None, now: datetime) -> list[OpenOrder]:
+    """Days from today on with meals offered, nothing ordered and ordering still possible, soonest first."""
+    found: list[OpenOrder] = []
+    for entry in days:
+        day = _d(entry.get("datum"))
+        if day is None or day < now.date():
+            continue
+        deadline = deadline_for(day, rule, now.tzinfo or UTC) if rule else None
+        if order_status(meals_on([entry], day), deadline, now) == "open":
+            found.append(OpenOrder(day, deadline))
+    return sorted(found, key=lambda o: o.day)
 
 
 def pending_replies(messages: list[Message]) -> list[PendingReply]:

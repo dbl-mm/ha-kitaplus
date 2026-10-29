@@ -21,7 +21,7 @@ from . import KitaPlusConfigEntry
 from .api.models import BoardPost, Child, MealEntry, Message
 from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
-from .helpers import ORDER_STATES, meals_on, order_status, pending_replies
+from .helpers import ORDER_STATES, deadline_for, meals_on, order_status, pending_replies
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
@@ -75,6 +75,7 @@ async def async_setup_entry(
                     found[f"status-{child['id']}-{offset}"] = partial(
                         OrderStatusSensor, coordinator, child, offset
                     )
+                found[f"deadline-{child['id']}"] = partial(NextOrderDeadlineSensor, coordinator, child)
         for account in coordinator.data.accounts:
             if "id" in account and account.get("istAktiv", True):
                 found[f"balance-{account['id']}"] = partial(BalanceSensor, coordinator, account["id"])
@@ -239,5 +240,35 @@ class OrderStatusSensor(KitaPlusChildEntity, SensorEntity):
 
     @property
     def native_value(self) -> str:
-        day = dt_util.now().date() + timedelta(days=self._offset)
-        return order_status(meals_on(self.coordinator.data.meals.get(self._child_id, []), day))
+        now = dt_util.now()
+        day = now.date() + timedelta(days=self._offset)
+        rule = self.coordinator.deadline_rule
+        deadline = deadline_for(day, rule, now.tzinfo or UTC) if rule else None
+        return order_status(meals_on(self.coordinator.data.meals.get(self._child_id, []), day), deadline, now)
+
+
+class NextOrderDeadlineSensor(KitaPlusChildEntity, SensorEntity):
+    """When ordering closes for the next day that can still be ordered.
+
+    Needs the Kita's deadline in the options (days before the meal and time); otherwise the state is unknown.
+    """
+
+    _attr_translation_key = "next_order_deadline"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child) -> None:
+        super().__init__(coordinator, child)
+        self._attr_unique_id = f"{self._entry_id}_{self._child_id}_next_order_deadline"
+
+    @property
+    def native_value(self) -> datetime | None:
+        order = self.coordinator.next_open_order(self._child_id)
+        return order.deadline if order else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        order = self.coordinator.next_open_order(self._child_id)
+        return {
+            "day": order.day.isoformat() if order else None,
+            "rule_set": self.coordinator.deadline_rule is not None,
+        }

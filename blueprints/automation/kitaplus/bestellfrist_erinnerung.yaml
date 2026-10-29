@@ -1,0 +1,61 @@
+blueprint:
+  name: "KitaPlus: Erinnerung kurz vor der Bestellfrist"
+  description: |
+    Erinnert dich **eine einstellbare Zeit vor der Bestellfrist deiner Kita**, wenn für einen Tag noch nichts bestellt ist.
+    Das ist der genaueste Weg, wenn deine Kita eine feste Frist hat, zum Beispiel „1 Tag vor Essenausgabe um 11:00 Uhr“.
+    *(English: reminds you shortly before your Kita's order deadline if a day is still not ordered.)*
+
+    **Einmal einrichten:** Trage die Frist deiner Kita bei der KitaPlus-Integration ein (*Einstellungen → Geräte & Dienste →
+    KitaPlus → Konfigurieren*): „Bestellfrist: Tage vor dem Essen“ und „Uhrzeit“. Die Frist steht in der KitaPlus-App unter
+    *Verpflegung → Hilfe → Bestellfristen*. Wie lange vor der Frist erinnert wird, stellst du dort bei „Erinnerung vor der Frist“ ein.
+
+    Die Integration holt vor der Erinnerung **frische Daten** und meldet sich nur, wenn der Tag **noch bestellbar und nicht
+    bestellt** ist. Es braucht keine Uhrzeit in diesem Blueprint: Der Zeitpunkt kommt aus der Frist. Ohne eingetragene Frist
+    passiert nichts; dann nimm den Blueprint „Erinnerung ans Essen-Bestellen“ mit festen Uhrzeiten.
+
+    In der Aktion stehen `message`, `child`, `day` (Datum), `day_label` (`heute`, `morgen` oder `am Montag` …), `time_left`
+    (zum Beispiel `2 Std.`), `deadline_time` (zum Beispiel `11:00`), `minutes_left` und `fresh` zur Verfügung.
+  domain: automation
+  author: dbl-mm
+  source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/bestellfrist_erinnerung.yaml
+  homeassistant:
+    min_version: 2025.8.0
+  input:
+    notify_action:
+      name: Was soll passieren?
+      description: |
+        Standard ist eine Mitteilung über `notify.notify`. Du kannst jede andere Aktion wählen
+        (Push an ein bestimmtes Handy, Sprachausgabe, Licht blinken lassen …). Die Variablen
+        `{{ message }}` und `{{ child }}` kannst du darin verwenden.
+      default:
+        - action: notify.notify
+          data:
+            title: Kita
+            message: "{{ message }}"
+      selector:
+        action:
+
+mode: queued
+max: 10
+
+variables:
+  child: "{{ trigger.event.data.child or 'dein Kind' }}"
+  day: "{{ trigger.event.data.day }}"
+  minutes_left: "{{ trigger.event.data.minutes_left | int(0) }}"
+  fresh: "{{ trigger.event.data.fresh }}"
+  deadline_time: "{{ trigger.event.data.deadline[11:16] }}"
+  weekday_name: "{{ ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'][trigger.event.data.weekday | int(0)] }}"
+  day_label: >-
+    {% set ahead = trigger.event.data.days_ahead | int(0) %}
+    {{ 'heute' if ahead == 0 else 'morgen' if ahead == 1 else 'am ' ~ weekday_name }}
+  time_left: >-
+    {% if minutes_left >= 60 %}{{ minutes_left // 60 }} Std.{% if minutes_left % 60 %} {{ minutes_left % 60 }} Min.{% endif %}{% else %}{{ minutes_left }} Min.{% endif %}
+  message: "Bestellfrist in {{ time_left }} (bis {{ deadline_time }} Uhr): Für {{ child }} ist für {{ day_label }} noch kein Essen bestellt."
+
+triggers:
+  - trigger: event
+    event_type: kitaplus_order_deadline
+
+actions:
+  - alias: Deine Aktion
+    sequence: !input notify_action

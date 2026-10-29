@@ -80,8 +80,9 @@ def test_blueprint_is_valid_and_complete(path: Path) -> None:
     assert "wait_template" not in text
 
 
-def test_all_seven_blueprints_exist() -> None:
+def test_all_eight_blueprints_exist() -> None:
     assert [p.stem for p in blueprint_files()] == [
+        "bestellfrist_erinnerung",
         "essen_erinnerung",
         "guthaben_niedrig",
         "neue_mitteilung",
@@ -622,3 +623,95 @@ async def test_daily_briefing_tells_open_and_missed_orders_apart(hass, stack, fr
         "vorname-1 heute: noch nichts bestellt, Bestellen ist noch möglich",
         "vorname-1 morgen: nichts bestellt, die Bestellfrist ist vorbei",
     ]
+
+
+# ---------------------------------------------------------------------------- bestellfrist_erinnerung
+
+
+def deadline_event(**override) -> dict:
+    """What the integration fires 2 hours before a deadline of "1 day before at 11:00"."""
+    data = {
+        "child": "Anna",
+        "child_id": 1,
+        "day": "2026-10-29",
+        "days_ahead": 1,
+        "weekday": 3,
+        "deadline": "2026-10-28T11:00:00+01:00",
+        "minutes_left": 120,
+        "fresh": True,
+    }
+    return data | override
+
+
+def deadline_action() -> list[dict]:
+    return user_action(
+        child="{{ child }}",
+        label="{{ day_label }}",
+        left="{{ time_left }}",
+        at="{{ deadline_time }}",
+        fresh="{{ fresh }}",
+    )
+
+
+async def test_deadline_reminder_says_how_long_is_left_and_for_which_day(hass) -> None:
+    fired = results(hass)
+    await start(hass, "bestellfrist_erinnerung.yaml", {"notify_action": deadline_action()})
+    hass.bus.async_fire("kitaplus_order_deadline", deadline_event())
+    await hass.async_block_till_done()
+    assert len(fired) == 1
+    data = fired[0].data
+    assert (
+        data["message"]
+        == "Bestellfrist in 2 Std. (bis 11:00 Uhr): Für Anna ist für morgen noch kein Essen bestellt."
+    )
+    assert (data["child"], data["label"], data["left"], data["at"], data["fresh"]) == (
+        "Anna",
+        "morgen",
+        "2 Std.",
+        "11:00",
+        True,
+    )
+
+
+async def test_deadline_reminder_wording_for_today_a_weekday_and_short_times(hass) -> None:
+    fired = results(hass)
+    await start(hass, "bestellfrist_erinnerung.yaml", {"notify_action": deadline_action()})
+    for override in (
+        {"days_ahead": 0, "minutes_left": 45},
+        {"days_ahead": 4, "weekday": 0, "minutes_left": 150},
+        {"child": None, "minutes_left": 60},
+    ):
+        hass.bus.async_fire("kitaplus_order_deadline", deadline_event(**override))
+    await hass.async_block_till_done()
+    labels = [(e.data["label"], e.data["left"], e.data["child"]) for e in fired]
+    assert labels == [
+        ("heute", "45 Min.", "Anna"),
+        ("am Montag", "2 Std. 30 Min.", "Anna"),
+        ("morgen", "1 Std.", "dein Kind"),
+    ]
+
+
+async def test_deadline_reminder_reaches_every_child_in_order(hass) -> None:
+    fired = results(hass)
+    await start(hass, "bestellfrist_erinnerung.yaml", {"notify_action": deadline_action()})
+    for name in ("Anna", "Ben", "Cleo"):
+        hass.bus.async_fire("kitaplus_order_deadline", deadline_event(child=name))
+    await hass.async_block_till_done()
+    assert [e.data["child"] for e in fired] == ["Anna", "Ben", "Cleo"], "mode queued: none is lost"
+
+
+async def test_deadline_reminder_blueprint_works_with_the_real_integration_event(
+    hass, stack, freezer
+) -> None:
+    """End to end with the rule of the user's Kita: the integration fires, the blueprint writes."""
+    await at(hass, freezer, "2026-10-27T20:00:00")
+    options = {"order_deadline_days": 1, "order_deadline_time": "11:00:00", "reminder_lead_minutes": 120}
+    meals = [meal_day("2026-10-29", ordered=False, orderable=True)]
+    await setup_integration(hass, stack, entry=make_entry(options), async_get_meals=meals)
+    fired = results(hass)
+    await start(hass, "bestellfrist_erinnerung.yaml", {"notify_action": deadline_action()})
+    await at(hass, freezer, "2026-10-28T09:00:00")
+    assert len(fired) == 1
+    assert fired[0].data["message"] == (
+        "Bestellfrist in 2 Std. (bis 11:00 Uhr): Für vorname-1 ist für morgen noch kein Essen bestellt."
+    )

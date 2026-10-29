@@ -16,9 +16,9 @@ Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern
 | Postfach | **Postfach**: Anzahl der Nachrichten, die letzten 5 als Attribut `messages`; **Offene Rückmeldungen**: Nachrichten, die bestätigt werden müssen, mit Frist |
 | Kalender | **Termine**, **Schließtage** (inkl. Feiertage) und pro Kind **Bestelltes Essen** |
 | Kita | **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“) |
-| Verpflegung | pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR) |
+| Verpflegung | pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Nächste Bestellfrist**, **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR) |
 | Diagnose | **Sitzung gültig bis** (standardmäßig deaktiviert): bis wann die gespeicherte Anmeldung gilt |
-| Ereignisse | `kitaplus_new_board_post`, `kitaplus_new_message` (mit `id` und `title`; nicht beim ersten Abruf) |
+| Ereignisse | `kitaplus_new_board_post`, `kitaplus_new_message` (mit `id` und `title`; nicht beim ersten Abruf), `kitaplus_order_deadline` (vor der Bestellfrist, siehe unten) |
 
 Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das Konto. Neue Kinder erscheinen ohne Neustart (spätestens nach 24 Stunden), Kinder, die KitaPlus nicht mehr nennt, werden als Gerät entfernt.
 
@@ -77,19 +77,43 @@ Die Integration fragt KitaPlus im eingestellten Intervall ab (Standard alle 30 M
 
 ## Bestellfristen
 
-Jede Kita legt selbst fest, **bis wann** Essen bestellt oder abbestellt werden kann (zum Beispiel „bis 9:00 Uhr am selben Tag“ oder „bis zum Vortag“). Diese Uhrzeit kennt die Integration **nicht**. Sie übernimmt nur, was KitaPlus für jede Mahlzeit meldet: ob sie **noch bestellbar** ist. Daraus entsteht der **Bestellstatus**:
+Jede Kita legt selbst fest, **bis wann** Essen bestellt oder abbestellt werden kann. Bei manchen gilt „1 Tag vor Essenausgabe um 11:00 Uhr“, bei anderen „bis 9:00 Uhr am selben Tag“. KitaPlus verrät die Uhrzeit nur im Hilfetext der App, nicht als Zahl. Die Integration arbeitet deshalb mit **zwei Angaben**:
 
-| Status | Bedeutung |
+1. **Was KitaPlus meldet:** Pro Mahlzeit sagt der Server, ob sie **noch bestellbar** ist.
+2. **Was du einträgst (empfohlen):** die Frist deiner Kita, einmal. Dann wird alles auf die Minute genau.
+
+| Bestellstatus | Bedeutung |
 |---|---|
 | **Bestellt** | Es ist etwas bestellt. |
-| **Offen** | Es gibt Essen, nichts ist bestellt, und KitaPlus nimmt **noch** Bestellungen an. Jetzt ist der Moment zum Bestellen. |
-| **Frist verpasst** | Es gibt Essen, nichts ist bestellt, und die Bestellfrist ist **vorbei**. Daran lässt sich nichts mehr ändern. |
+| **Offen** | Es gibt Essen, nichts ist bestellt, und es kann **noch** bestellt werden. |
+| **Frist verpasst** | Es gibt Essen, nichts ist bestellt, und die Frist ist **vorbei**. Daran lässt sich nichts mehr ändern. |
 | **Kein Essen** | An diesem Tag wird kein Essen angeboten. |
 
-- **Die Fristen deiner Kita** findest du in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*. Stelle Erinnerungen **deutlich vor** dieser Frist ein.
-- **Wie aktuell ist der Status?** So aktuell wie der letzte Abruf (Standard alle 30 Minuten). Kurz vor der Frist kann er daher noch „Offen“ zeigen, obwohl KitaPlus schon nichts mehr annimmt. Der Blueprint „Essen-Erinnerung“ holt deshalb **vor jeder Erinnerung frische Daten**.
-- **Nach verpasster Frist** fordern Blueprint und Dashboard **nicht** zum Bestellen auf; auf Wunsch meldet der Blueprint, dass die Frist verpasst wurde.
-- Die Integration **bestellt oder storniert nie selbst**. Auch künftige Bestell-Funktionen dürfen nur handeln, solange KitaPlus die Mahlzeit als bestellbar meldet, und müssen Erfolg oder Fehler eindeutig zurückmelden.
+### Die Frist deiner Kita eintragen
+Die Frist steht in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*, zum Beispiel:
+
+> Bestellfrist (Einzelbestellungen): **1 Tage vor Essenausgabe um 11:00 Uhr**. Einzelbestellungen für den heutigen Tag (Donnerstag) müssen bis spätestens Mittwoch, 28.10.2026 um 11:00 Uhr vorgenommen worden sein.
+
+Trage sie unter *Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren* ein:
+
+| Feld | Beispiel (obige Kita) | Bedeutung |
+|---|---|---|
+| Bestellfrist: Tage vor dem Essen | `1` | `0` heißt am Tag selbst. Leer lassen, wenn du sie nicht kennst. |
+| Bestellfrist: Uhrzeit | `11:00` | Zeitpunkt, zu dem die Bestellung schließt. |
+| Nur Werktage zählen | aus | Einschalten, wenn die Kita Samstag und Sonntag nicht mitzählt (Montag schließt dann am Freitag). Ob das bei dir so ist, siehst du im Beispielsatz der App an einem Montag. |
+| Erinnerung vor der Frist (Minuten) | `120` | Wie lange vor der Frist erinnert wird. `0` schaltet die Erinnerung aus. |
+
+Mit der Frist passiert Folgendes:
+- Der **Bestellstatus** springt **genau zur Frist** auf „Frist verpasst“, auch wenn der letzte Abruf älter ist.
+- Der Sensor **Nächste Bestellfrist** zeigt, wann die nächste Bestellung schließt.
+- Die Integration löst **vor der Frist** das Ereignis `kitaplus_order_deadline` aus, aber nur, wenn der Tag noch nicht bestellt ist. Sie holt dafür **vorher frische Daten**. Der Blueprint „Erinnerung kurz vor der Bestellfrist“ macht daraus eine Mitteilung.
+- Öffentliche Feiertage kennt die Integration nicht. Zählt deine Kita sie bei der Frist mit, verlässt sich der Status dann auf die Angabe von KitaPlus.
+
+**Ohne eingetragene Frist** gilt nur die Angabe von KitaPlus. Sie ist so aktuell wie der letzte Abruf (Standard alle 30 Minuten). Der Blueprint „Erinnerung ans Essen-Bestellen“ holt deshalb vor jeder Erinnerung frische Daten, und du stellst seine Uhrzeit **deutlich vor** deiner Frist ein.
+
+Nach verpasster Frist fordern Blueprint und Dashboard **nicht** zum Bestellen auf. Die Integration **bestellt oder storniert nie selbst**. Auch künftige Bestell-Funktionen dürfen nur handeln, solange KitaPlus die Mahlzeit als bestellbar meldet, und müssen Erfolg oder Fehler eindeutig zurückmelden.
+
+**Ereignis `kitaplus_order_deadline`:** `child`, `child_id`, `day`, `days_ahead`, `weekday` (0 = Montag), `deadline`, `minutes_left` und `fresh` (`false`, wenn KitaPlus gerade nicht erreichbar war und der letzte Stand verwendet wurde).
 
 ## Anwendungsfälle
 
@@ -141,7 +165,8 @@ bestimmst du selbst. Alle Einzelheiten, Variablen und ein Beispiel stehen in [do
 
 | Blueprint | Was er tut | Importieren |
 |---|---|---|
-| **Essen-Erinnerung** | Erinnert abends (und auf Wunsch morgens als „letzte Chance“ für heute), solange KitaPlus noch Bestellungen annimmt. Holt vorher frische Daten und fordert nach der Frist nicht mehr zum Bestellen auf. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fessen_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
+| **Erinnerung kurz vor der Bestellfrist** | Erinnert eine einstellbare Zeit **vor der Frist deiner Kita**, wenn noch nichts bestellt ist (Frist vorher eintragen). Der genaueste Weg. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fbestellfrist_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
+| **Essen-Erinnerung** | Mit festen Uhrzeiten, falls du keine Frist eingetragen hast: abends für morgen (und auf Wunsch morgens als „letzte Chance“ für heute), solange KitaPlus noch Bestellungen annimmt. Holt vorher frische Daten und fordert nach der Frist nicht mehr zum Bestellen auf. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fessen_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
 | **Schließtag** | Hinweis am Vorabend, am Morgen auf Wunsch eine Aktion, zum Beispiel Wecker aus. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fschliesstag.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
 | **Neue Mitteilung** | Meldet neue Beiträge am Schwarzen Brett und neue Nachrichten, optional nur mit Stichwörtern. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fneue_mitteilung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
 | **Rückmeldung** | Erinnert an Nachrichten, die du bestätigen musst, mit Titel und Frist. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Frueckmeldung_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |

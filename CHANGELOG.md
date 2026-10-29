@@ -2,6 +2,15 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [0.3.0]
+### Neu
+- **Bestellfrist deiner Kita** in den Optionen (Tage vor dem Essen, Uhrzeit, optional nur Werktage, Vorlaufzeit der Erinnerung). Beispiel: „1 Tag vor Essenausgabe um 11:00 Uhr“.
+  - Der **Bestellstatus** springt **genau zur Frist** auf „Frist verpasst“, auch wenn der letzte Abruf älter ist.
+  - Neuer Sensor **Nächste Bestellfrist** (Zeitstempel) pro Kind.
+  - Das Ereignis `kitaplus_order_deadline` wird zur eingestellten Zeit vor der Frist ausgelöst, nur wenn der Tag noch nicht bestellt ist und nachdem frische Daten geholt wurden.
+- Neuer Blueprint **„Erinnerung kurz vor der Bestellfrist“** (braucht keine Uhrzeit, der Zeitpunkt ergibt sich aus der Frist).
+- Dashboard-Vorlagen zeigen je Kind **Bestellung morgen** und **Nächste Bestellfrist**.
+
 ## [0.2.0]
 ### Neu
 - Konten werden an der stabilen KitaPlus-Konto-ID erkannt statt an der E-Mail; bestehende Einträge werden beim ersten Start einmal umgestellt.
@@ -10,7 +19,7 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 - Diagnose-Sensor „Sitzung gültig bis“ (standardmäßig aus), Geräte mit Modell und Link.
 - Übersetzte Fehlermeldungen, Icons über `icons.json`, Beschreibungen zu allen Eingabefeldern.
 - Dokumentation: Entfernen, Datenaktualisierung, Anwendungsfälle, Fehlerbehebung.
-- **Bestellstatus** pro Kind für heute und morgen (Bestellt, Offen, Frist verpasst, Kein Essen). Er übernimmt nur die Angabe von KitaPlus, ob noch bestellt werden kann, denn jede Kita setzt ihre eigene Bestellfrist. Blueprint und Dashboard fordern nach verpasster Frist nicht mehr zum Bestellen auf.
+- **Bestellstatus** pro Kind für heute und morgen (Bestellt, Offen, Frist verpasst, Kein Essen). Er übernimmt die Angabe von KitaPlus, ob noch bestellt werden kann. Blueprint und Dashboard fordern nach verpasster Frist nicht mehr zum Bestellen auf.
 - **7 Blueprints** (Essen-Erinnerung, Schließtag, Neue Mitteilung, Rückmeldung, Guthaben, Sitzung läuft ab, Tagesbriefing), per Knopf im README importierbar.
 - **Dashboard-Vorlagen** (Heute, Kalender, Mitteilungen, Diagnose) auf Deutsch und Englisch, nur eingebaute Karten, plus Einzelkarten.
 - Die Sensoren „Heute/Morgen geschlossen“ nennen den Grund im Attribut `reason`; Kacheln zeigen „Geschlossen/Geöffnet“ und „Nicht bestellt“ statt Ein/Aus.
