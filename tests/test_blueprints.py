@@ -590,8 +590,8 @@ def test_every_blueprint_has_a_working_import_button_in_the_readme() -> None:
     readme = (BLUEPRINT_DIR.parent.parent.parent / "README.md").read_text()
     import re
 
-    links = re.findall(r"\(https://my\.home-assistant\.io/redirect/blueprint_import/\?[^)]+\)", readme)
-    targets = {parse_qs(urlparse(link.strip("()")).query)["blueprint_url"][0] for link in links}
+    links = re.findall(r'href="(https://my\.home-assistant\.io/redirect/blueprint_import/\?[^"]+)"', readme)
+    targets = {parse_qs(urlparse(link).query)["blueprint_url"][0] for link in links}
     assert targets == {SOURCE + path.name for path in blueprint_files()}, (
         "one button per blueprint, none stale"
     )
