@@ -7,6 +7,10 @@ on:
     - cron: "0 5 * * 1"
 permissions:
   contents: read
+concurrency:
+  # A newer push replaces a run that is still going for the same branch, so nothing is computed twice.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   hassfest:
     runs-on: ubuntu-latest

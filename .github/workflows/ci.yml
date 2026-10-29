@@ -5,6 +5,10 @@ on:
   pull_request:
 permissions:
   contents: read
+concurrency:
+  # A newer push replaces a run that is still going for the same branch, so nothing is computed twice.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
