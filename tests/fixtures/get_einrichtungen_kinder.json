@@ -1,0 +1,274 @@
+{
+ "success": true,
+ "kinder": [
+  {
+   "einrichtungId": 9000,
+   "id": 9072,
+   "vorname": "vorname-1",
+   "nachname": "nachname-1",
+   "geburtsdatum": "geburtsdatum-1",
+   "entlassdatum": "entlassdatum-1",
+   "aufnahmedatum": "aufnahmedatum-1",
+   "idExtern": 9089,
+   "betreuungszeit": "betreuungszeit-1",
+   "freischaltungDatum": "freischaltungDatum-1",
+   "status": 3,
+   "geburtsdatumCheckCounter": 0,
+   "biGueltigBis": "biGueltigBis-1",
+   "istEappAktiv": true,
+   "istVppAktiv": true,
+   "istIgnoriert": false,
+   "vppFreischaltungDatum": "vppFreischaltungDatum-1",
+   "kindToGruppes": [
+    {
+     "id": 9105,
+     "gruppe": {
+      "id": 9106,
+      "name": "name-45",
+      "idExtern": 52,
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+     }
+    }
+   ],
+   "kindToProjektgruppen": [
+    {
+     "id": 9107,
+     "projektgruppe": {
+      "id": 9033,
+      "name": "name-46",
+      "idExtern": 9108,
+      "createdBy": "createdBy-8",
+      "updatedBy": "updatedBy-8",
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+     }
+    },
+    {
+     "id": 9109,
+     "projektgruppe": {
+      "id": 9039,
+      "name": "name-47",
+      "idExtern": 9110,
+      "createdBy": "createdBy-9",
+      "updatedBy": "updatedBy-9",
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+     }
+    },
+    {
+     "id": 9111,
+     "projektgruppe": {
+      "id": 9112,
+      "name": "name-48",
+      "idExtern": 9113,
+      "createdBy": "createdBy-10",
+      "updatedBy": "updatedBy-10",
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00"
+     }
+    }
+   ],
+   "elternkonto": {
+    "einrichtungId": 9000,
+    "id": 9072,
+    "verpflegungskontoId": 9087,
+    "einrichtung": {
+     "id": 9000,
+     "idExtern": 437,
+     "istPosteingangAktiv": true,
+     "istKalenderAktiv": true,
+     "istAbwesenheitenAktiv": true,
+     "kalenderFreigabeDatum": "kalenderFreigabeDatum-1",
+     "istUuntersuchungAktiv": false,
+     "orgaNachrichtSchliesstageTage": 7,
+     "orgaNachrichtFeiertageTage": 7,
+     "orgaNachrichtHalbeSchliesstageTage": 7,
+     "orgaNachrichtSchliesstageText": "orgaNachrichtSchliesstageText-1",
+     "orgaNachrichtFeiertageText": "orgaNachrichtFeiertageText-1",
+     "orgaNachrichtHalbeSchliesstageText": "orgaNachrichtHalbeSchliesstageText-1",
+     "istVppAktiv": true,
+     "istEappAktiv": true,
+     "istDirektnachrichtenAktiv": true,
+     "istUebersetzungenAktiv": true,
+     "zeigeEinverstaendnisse": false,
+     "istCloudAktiv": false,
+     "einrichtungAnsprechpartners": [
+      {
+       "id": 9114,
+       "anrede": "anrede-1",
+       "vorname": "vorname-2",
+       "nachname": "nachname-2",
+       "telefon": "telefon-1",
+       "funktion": "funktion-1",
+       "sortRank": 0
+      },
+      {
+       "id": 9115,
+       "anrede": "anrede-2",
+       "vorname": "vorname-3",
+       "nachname": "nachname-3",
+       "telefon": "telefon-2",
+       "funktion": "funktion-2",
+       "sortRank": 0
+      }
+     ],
+     "einrichtungDateien": [
+      {
+       "id": 9116,
+       "name": "name-49",
+       "endung": "pdf",
+       "pfad": "pfad-8",
+       "groesse": 9117,
+       "idExtern": 9118,
+       "typ": 1
+      },
+      {
+       "id": 9119,
+       "name": "name-50",
+       "endung": "pdf",
+       "pfad": "pfad-9",
+       "groesse": 9120,
+       "idExtern": 9121,
+       "typ": 1
+      },
+      {
+       "id": 9122,
+       "name": "name-51",
+       "endung": "pdf",
+       "pfad": "pfad-10",
+       "groesse": 9123,
+       "idExtern": 9124,
+       "typ": 1
+      },
+      {
+       "id": 9125,
+       "name": "name-52",
+       "endung": "pdf",
+       "pfad": "pfad-11",
+       "groesse": 9126,
+       "idExtern": 437,
+       "typ": 2
+      },
+      {
+       "id": 9127,
+       "name": "name-53",
+       "endung": "pdf",
+       "pfad": "pfad-12",
+       "groesse": 9128,
+       "idExtern": 437,
+       "typ": 3
+      }
+     ],
+     "currentStammdaten": {
+      "id": 9129,
+      "name": "name-54",
+      "strasse": "strasse-1",
+      "plz": "plz-1",
+      "ort": "ort-1",
+      "telefon": "telefon-3",
+      "fax": "",
+      "url": "url-1",
+      "azTraeger": "azTraeger-1",
+      "azVwtr": "azVwtr-1",
+      "azBistum": "azBistum-1",
+      "azJugendamt": "azJugendamt-1",
+      "azLandesjugendamt": "azLandesjugendamt-1",
+      "startdatum": "2026-03-17T00:00:00",
+      "ablaufdatum": "ablaufdatum-1",
+      "einrichtungOeffnungszeiten": {
+       "montagOeffnungszeitenStr": "montagOeffnungszeitenStr-1",
+       "dienstagOeffnungszeitenStr": "dienstagOeffnungszeitenStr-1",
+       "mittwochOeffnungszeitenStr": "mittwochOeffnungszeitenStr-1",
+       "donnerstagOeffnungszeitenStr": "donnerstagOeffnungszeitenStr-1",
+       "freitagOeffnungszeitenStr": "freitagOeffnungszeitenStr-1",
+       "id": 9130,
+       "montagVon": "montagVon-1",
+       "montagBis": "montagBis-1",
+       "dienstagVon": "dienstagVon-1",
+       "dienstagBis": "dienstagBis-1",
+       "mittwochVon": "mittwochVon-1",
+       "mittwochBis": "mittwochBis-1",
+       "donnerstagVon": "donnerstagVon-1",
+       "donnerstagBis": "donnerstagBis-1",
+       "freitagVon": "freitagVon-1",
+       "freitagBis": "freitagBis-1"
+      }
+     },
+     "traeger": {
+      "id": 518,
+      "name": "name-55",
+      "idExtern": 4,
+      "strasse": "strasse-2",
+      "plz": "plz-2",
+      "ort": "ort-2",
+      "telefon": "telefon-4",
+      "rechtsform": "rechtsform-1",
+      "kontaktInfoVorname": "",
+      "kontaktInfoNachname": "",
+      "datenschutzbeauftragter": "",
+      "datenschutzKontaktdaten": "",
+      "datenschutzRechtsform": "datenschutzRechtsform-1",
+      "datenschutzAufsichtsbehoerde": "datenschutzAufsichtsbehoerde-1"
+     }
+    },
+    "createdAt": "2026-01-01T00:00:00",
+    "updatedAt": "2026-01-01T00:00:00"
+   }
+  }
+ ],
+ "gruppen": [
+  {
+   "id": 9106,
+   "name": "name-56",
+   "idExtern": 52,
+   "createdAt": "2026-01-01T00:00:00",
+   "updatedAt": "2026-01-01T00:00:00"
+  }
+ ],
+ "projektgruppen": [
+  {
+   "id": 9033,
+   "name": "name-57",
+   "idExtern": 9108,
+   "createdBy": "createdBy-11",
+   "updatedBy": "updatedBy-11",
+   "createdAt": "2026-01-01T00:00:00",
+   "updatedAt": "2026-01-01T00:00:00"
+  },
+  {
+   "id": 9039,
+   "name": "name-58",
+   "idExtern": 9110,
+   "createdBy": "createdBy-12",
+   "updatedBy": "updatedBy-12",
+   "createdAt": "2026-01-01T00:00:00",
+   "updatedAt": "2026-01-01T00:00:00"
+  },
+  {
+   "id": 9112,
+   "name": "name-59",
+   "idExtern": 9113,
+   "createdBy": "createdBy-13",
+   "updatedBy": "updatedBy-13",
+   "createdAt": "2026-01-01T00:00:00",
+   "updatedAt": "2026-01-01T00:00:00"
+  }
+ ],
+ "verpflegungskonten": [
+  {
+   "id": 9087,
+   "istAktiv": true,
+   "bezeichnung": "bezeichnung-7",
+   "verwendungszweck": "verwendungszweck-3",
+   "ueberweisungEmpfaengerName": "ueberweisungEmpfaengerName-3",
+   "kontostand": "25.00",
+   "bankkontoStatus": 0,
+   "istSpendeRestguthaben": false,
+   "einrichtungId": 9000,
+   "eappKontoId": 9072,
+   "istGast": false
+  }
+ ],
+ "hasArchivKinder": false
+}

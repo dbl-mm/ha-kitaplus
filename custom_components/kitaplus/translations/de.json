@@ -1,0 +1,114 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "KitaPlus verbinden",
+        "description": "Melde dich mit deinem KitaPlus-Eltern-Zugang an (eltern.kitaplus.de). Passkeys funktionieren hier nicht, es wird das Passwort deines Kontos benötigt. Jeder Klick auf „Absenden“ ist genau ein Anmeldeversuch bei KitaPlus. Nach {max} Fehlversuchen bricht die Einrichtung ab, damit dein Konto nicht gesperrt wird.",
+        "data": {
+          "email": "E-Mail-Adresse",
+          "password": "Passwort"
+        }
+      },
+      "two_factor": {
+        "title": "Zwei-Faktor-Code",
+        "description": "Gib den Code ein, den KitaPlus verlangt: aus deiner Authenticator-App oder per E-Mail, je nach Einstellung deines Kontos.",
+        "data": {
+          "auth_code": "Code"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Die Anmeldung für {email} ist abgelaufen oder wurde abgelehnt. Bitte gib dein aktuelles Passwort ein. Es wird genau ein Anmeldeversuch gemacht. Zu viele Fehlversuche sperren das Konto, nur die Kita-Leitung kann es entsperren.",
+        "data": {
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "KitaPlus hat die Anmeldung abgelehnt. Meldung von KitaPlus: „{server_message}“. Das war Fehlversuch {attempt} von {max}. Bitte prüfe E-Mail und Passwort zuerst in der KitaPlus-App (eltern.kitaplus.de). Zu viele Fehlversuche sperren das Konto, und nur die Kita-Leitung kann es wieder freischalten.",
+      "account_locked": "Das Konto ist gesperrt.",
+      "invalid_code": "Der Code wurde nicht akzeptiert. Das war Fehlversuch {attempt} von {max}.",
+      "maintenance": "KitaPlus meldet gerade Wartungsarbeiten. Das ist kein Passwortfehler, und es wurde nichts gezählt. Bitte versuche es später noch einmal.",
+      "cannot_connect": "KitaPlus ist nicht erreichbar. Das ist kein Passwortfehler. Bitte prüfe die Internetverbindung und versuche es später noch einmal.",
+      "unknown": "Unerwarteter Fehler. Die Anmeldung wurde nicht abgeschlossen."
+    },
+    "abort": {
+      "already_configured": "Dieses Konto ist bereits eingerichtet.",
+      "reauth_successful": "Anmeldung erneuert.",
+      "account_locked": "Dein KitaPlus-Zugang ist gesperrt. Meldung von KitaPlus: „{server_message}“. Home Assistant versucht nichts mehr. Bitte wende dich an die Kita-Leitung, nur sie kann den Zugang entsperren.",
+      "too_many_attempts": "Die Einrichtung wurde nach {max} Fehlversuchen beendet, damit dein Konto nicht gesperrt wird. Letzte Meldung von KitaPlus: „{server_message}“. Prüfe deine Zugangsdaten in der KitaPlus-App und starte die Einrichtung danach neu.",
+      "cooling_down": "Zu viele Fehlversuche für dieses Konto. Damit KitaPlus es nicht sperrt, sind neue Versuche für {minutes} Minuten pausiert. Prüfe in der Zwischenzeit deine Zugangsdaten in der KitaPlus-App."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "board": {
+        "name": "Schwarzes Brett"
+      },
+      "messages": {
+        "name": "Postfach"
+      },
+      "balance": {
+        "name": "Kontostand Verpflegung"
+      },
+      "pending_replies": {
+        "name": "Offene Rückmeldungen"
+      },
+      "meal_today": {
+        "name": "Essen heute",
+        "state": {
+          "none": "Nichts bestellt"
+        }
+      },
+      "meal_tomorrow": {
+        "name": "Essen morgen",
+        "state": {
+          "none": "Nichts bestellt"
+        }
+      }
+    },
+    "calendar": {
+      "appointments": {
+        "name": "Termine"
+      },
+      "closures": {
+        "name": "Schließtage"
+      },
+      "meals": {
+        "name": "Bestelltes Essen"
+      }
+    },
+    "binary_sensor": {
+      "closed_today": {
+        "name": "Heute geschlossen"
+      },
+      "closed_tomorrow": {
+        "name": "Morgen geschlossen"
+      },
+      "no_order_tomorrow": {
+        "name": "Morgen nicht bestellt"
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "KitaPlus: Anmeldung abgelehnt",
+      "description": "KitaPlus hat die Anmeldung für {email} abgelehnt. Meldung von KitaPlus: „{server_message}“. Home Assistant hat die Abfragen gestoppt und versucht NICHT automatisch, sich erneut anzumelden, damit dein Konto nicht gesperrt wird. Öffne Einstellungen → Geräte & Dienste → KitaPlus und melde dich einmal neu an."
+    },
+    "account_locked": {
+      "title": "KitaPlus: Zugang gesperrt",
+      "description": "Der KitaPlus-Zugang für {email} ist gesperrt. Meldung von KitaPlus: „{server_message}“. Home Assistant fragt nichts mehr ab. Bitte wende dich an die Kita-Leitung, nur sie kann den Zugang entsperren. Danach melde dich unter Einstellungen → Geräte & Dienste → KitaPlus neu an."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Abfrageintervall",
+        "description": "Wie oft Home Assistant bei KitaPlus nachfragt, in Minuten (15 bis 240). Ein höherer Wert schont die KitaPlus-Server.",
+        "data": {
+          "scan_interval": "Intervall (Minuten)"
+        }
+      }
+    }
+  }
+}

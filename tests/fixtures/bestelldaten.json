@@ -1,0 +1,292 @@
+{
+ "success": true,
+ "data": [
+  {
+   "verpflegungskonto": {
+    "id": 9087,
+    "istAktiv": true,
+    "bezeichnung": "bezeichnung-1",
+    "verwendungszweck": "verwendungszweck-1",
+    "ueberweisungEmpfaengerName": "ueberweisungEmpfaengerName-1",
+    "kontostand": "25.00",
+    "bankkontoStatus": 0,
+    "istSpendeRestguthaben": false,
+    "einrichtungId": 9000,
+    "eappKontoId": 9088,
+    "istGast": false
+   },
+   "kindKitaPlusId": 9089,
+   "kindId": 9090,
+   "standardwoche": {
+    "id": 9091,
+    "verpflegungskonto": {
+     "id": 9087,
+     "istAktiv": true,
+     "bezeichnung": "bezeichnung-2",
+     "verwendungszweck": "verwendungszweck-2",
+     "ueberweisungEmpfaengerName": "ueberweisungEmpfaengerName-2",
+     "kontostand": "25.00",
+     "bankkontoStatus": 0,
+     "istSpendeRestguthaben": false,
+     "einrichtungId": 9000,
+     "eappKontoId": 9088,
+     "istGast": false
+    },
+    "kindKitaPlusId": 9089,
+    "kindId": 9090,
+    "standardwocheBestellvorlagen": [
+     {
+      "id": 9092,
+      "wochentag": 1,
+      "variante": {
+       "id": 9093,
+       "name": "name-25",
+       "preis": "3.85"
+      },
+      "mahlzeitArt": {
+       "id": 9094,
+       "name": "name-26",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-1"
+      }
+     },
+     {
+      "id": 9095,
+      "wochentag": 2,
+      "variante": {
+       "id": 9093,
+       "name": "name-27",
+       "preis": "3.85"
+      },
+      "mahlzeitArt": {
+       "id": 9094,
+       "name": "name-28",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-2"
+      }
+     },
+     {
+      "id": 9096,
+      "wochentag": 3,
+      "variante": {
+       "id": 9093,
+       "name": "name-29",
+       "preis": "3.85"
+      },
+      "mahlzeitArt": {
+       "id": 9094,
+       "name": "name-30",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-3"
+      }
+     },
+     {
+      "id": 9097,
+      "wochentag": 4,
+      "variante": {
+       "id": 9093,
+       "name": "name-31",
+       "preis": "3.85"
+      },
+      "mahlzeitArt": {
+       "id": 9094,
+       "name": "name-32",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-4"
+      }
+     },
+     {
+      "id": 9098,
+      "wochentag": 5,
+      "variante": {
+       "id": 9093,
+       "name": "name-33",
+       "preis": "3.85"
+      },
+      "mahlzeitArt": {
+       "id": 9094,
+       "name": "name-34",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-5"
+      }
+     }
+    ]
+   },
+   "pauschalen": [
+    {
+     "datum": "2026-05-17T00:00:00"
+    },
+    {
+     "datum": "2026-06-17T00:00:00"
+    }
+   ],
+   "tage": [
+    {
+     "datum": "2026-06-11T00:00:00",
+     "mahlzeitArten": [
+      {
+       "id": 9094,
+       "name": "name-35",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-6",
+       "istBestellbar": false,
+       "istAbbestellbar": false,
+       "varianten": [
+        {
+         "id": 9093,
+         "name": "name-36",
+         "preis": "3.85",
+         "bestellung": {
+          "id": 9099,
+          "datum": "2026-06-11",
+          "istAbbestellt": false,
+          "bestellDatum": "2026-06-06T19:08:55",
+          "kindId": 9090,
+          "kindKitaPlusId": 9089,
+          "kindVppId": 9100,
+          "bezeichnung": "bezeichnung-3",
+          "betrag": "25.00",
+          "varianteId": 9093,
+          "benutzerId": 9101
+         },
+         "istBestellbar": false,
+         "istAbbestellbar": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "datum": "2026-06-12T00:00:00",
+     "mahlzeitArten": [
+      {
+       "id": 9094,
+       "name": "name-37",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-7",
+       "istBestellbar": false,
+       "istAbbestellbar": false,
+       "varianten": [
+        {
+         "id": 9093,
+         "name": "name-38",
+         "preis": "3.85",
+         "bestellung": {
+          "id": 9102,
+          "datum": "2026-06-12",
+          "istAbbestellt": false,
+          "bestellDatum": "2026-06-06T19:08:55",
+          "kindId": 9090,
+          "kindKitaPlusId": 9089,
+          "kindVppId": 9100,
+          "bezeichnung": "bezeichnung-4",
+          "betrag": "25.00",
+          "varianteId": 9093,
+          "benutzerId": 9101
+         },
+         "istBestellbar": false,
+         "istAbbestellbar": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "datum": "2026-06-13T00:00:00",
+     "mahlzeitArten": [
+      {
+       "id": 9094,
+       "name": "name-39",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-8",
+       "istBestellbar": false,
+       "istAbbestellbar": false,
+       "varianten": [
+        {
+         "id": 9093,
+         "name": "name-40",
+         "preis": "3.85",
+         "bestellung": {
+          "id": 9103,
+          "datum": "2026-06-13",
+          "istAbbestellt": false,
+          "bestellDatum": "2026-06-06T19:08:55",
+          "kindId": 9090,
+          "kindKitaPlusId": 9089,
+          "kindVppId": 9100,
+          "bezeichnung": "bezeichnung-5",
+          "betrag": "25.00",
+          "varianteId": 9093,
+          "benutzerId": 9101
+         },
+         "istBestellbar": false,
+         "istAbbestellbar": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "datum": "2026-06-14T00:00:00",
+     "mahlzeitArten": [
+      {
+       "id": 9094,
+       "name": "name-41",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-9",
+       "istBestellbar": false,
+       "istAbbestellbar": false,
+       "varianten": [
+        {
+         "id": 9093,
+         "name": "name-42",
+         "preis": "3.85",
+         "bestellung": {
+          "id": 9104,
+          "datum": "2026-06-14",
+          "istAbbestellt": false,
+          "bestellDatum": "2026-06-06T19:08:55",
+          "kindId": 9090,
+          "kindKitaPlusId": 9089,
+          "kindVppId": 9100,
+          "bezeichnung": "bezeichnung-6",
+          "betrag": "25.00",
+          "varianteId": 9093,
+          "benutzerId": 9101
+         },
+         "istBestellbar": false,
+         "istAbbestellbar": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "datum": "2026-06-15T00:00:00",
+     "mahlzeitArten": [
+      {
+       "id": 9094,
+       "name": "name-43",
+       "abrechnungsart": 0,
+       "mahlzeitArtKategorieName": "mahlzeitArtKategorieName-10",
+       "istBestellbar": false,
+       "istAbbestellbar": false,
+       "varianten": [
+        {
+         "id": 9093,
+         "name": "name-44",
+         "preis": "3.85",
+         "istBestellbar": false,
+         "istAbbestellbar": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "datum": "2026-06-16T00:00:00"
+    }
+   ]
+  }
+ ]
+}

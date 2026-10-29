@@ -1,0 +1,17 @@
+{
+  "domain": "kitaplus",
+  "name": "KitaPlus",
+  "categories": [
+    "local_services"
+  ],
+  "codeowners": [
+    "@dbl-mm"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/dbl-mm/ha-kitaplus",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/dbl-mm/ha-kitaplus/issues",
+  "requirements": [],
+  "version": "0.1.1"
+}

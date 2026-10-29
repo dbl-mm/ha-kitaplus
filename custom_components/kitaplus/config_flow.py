@@ -1,0 +1,224 @@
+"""Config flow for KitaPlus.
+
+Transparency rules:
+* every submit is exactly ONE login attempt, never an automatic retry;
+* the user is told which attempt this is and that KitaPlus can lock the account;
+* KitaPlus' own message is shown unchanged;
+* after MAX_ATTEMPTS failed attempts the flow stops, so nobody locks themselves out by trial and error.
+"""
+
+from __future__ import annotations
+
+import time
+import uuid
+from collections.abc import Mapping
+from typing import Any
+
+import voluptuous as vol
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlowWithReload
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .api.client import KitaPlusClient
+from .api.exceptions import (
+    KitaPlusAuthError,
+    KitaPlusConnectionError,
+    KitaPlusError,
+    KitaPlusMaintenanceError,
+    KitaPlusTwoFactorRequired,
+)
+from .const import (
+    CONF_AUTH_CODE,
+    CONF_CLIENT_ID,
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    CONF_REFRESH_EXPIRES,
+    CONF_REFRESH_TOKEN,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    LOGIN_COOLDOWN_MINUTES,
+    MAX_LOGIN_ATTEMPTS,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+)
+
+
+def _failed(hass: HomeAssistant, account: str) -> tuple[int, float]:
+    """Failed sign-ins (count, time of the last one) for an account, in memory only."""
+    count, last = hass.data.get(DOMAIN, {}).get("failed", {}).get(account, (0, 0.0))
+    if time.time() - last > LOGIN_COOLDOWN_MINUTES * 60:
+        return 0, 0.0
+    return count, last
+
+
+def _record_failure(hass: HomeAssistant, account: str) -> int:
+    count, _ = _failed(hass, account)
+    hass.data.setdefault(DOMAIN, {}).setdefault("failed", {})[account] = (count + 1, time.time())
+    return count + 1
+
+
+def _clear_failures(hass: HomeAssistant, account: str) -> None:
+    hass.data.get(DOMAIN, {}).get("failed", {}).pop(account, None)
+
+
+class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Config flow."""
+
+    VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlowWithReload:
+        return KitaPlusOptionsFlow()
+
+    def __init__(self) -> None:
+        self._email = ""  # exactly as typed: KitaPlus may be case sensitive
+        self._account = ""  # lower case, only used to recognise the same account
+        self._password = ""
+        self._client_id = uuid.uuid4().hex
+        self._failed_attempts = 0
+        self._server_message = ""
+
+    def _placeholders(self) -> dict[str, str]:
+        return {
+            "email": self._email,
+            "server_message": self._server_message or "-",
+            "attempt": str(self._failed_attempts),
+            "max": str(MAX_LOGIN_ATTEMPTS),
+            "minutes": str(LOGIN_COOLDOWN_MINUTES),
+        }
+
+    async def _async_try_login(self, auth_code: str | None) -> tuple[dict[str, Any] | None, str | None]:
+        """One single login attempt. Returns (entry data, error key)."""
+        client = KitaPlusClient(async_get_clientsession(self.hass), self._client_id)
+        try:
+            await client.async_login(self._email, self._password, auth_code)
+        except KitaPlusTwoFactorRequired:
+            return None, "two_factor"
+        except KitaPlusAuthError as err:
+            self._failed_attempts = _record_failure(self.hass, self._account)
+            self._server_message = err.server_message or ""
+            return None, "account_locked" if err.locked else "invalid_auth"
+        except KitaPlusMaintenanceError:
+            return None, "maintenance"
+        except KitaPlusConnectionError:
+            return None, "cannot_connect"
+        except KitaPlusError:
+            return None, "unknown"
+        tokens = client.tokens
+        if tokens is None:
+            return None, "unknown"
+        _clear_failures(self.hass, self._account)
+        return {
+            CONF_EMAIL: self._email,
+            CONF_CLIENT_ID: self._client_id,
+            CONF_REFRESH_TOKEN: tokens.refresh_token,
+            CONF_REFRESH_EXPIRES: tokens.refresh_expires,
+        }, None
+
+    def _cooling_down(self) -> ConfigFlowResult | None:
+        """Refuse to touch KitaPlus again right after too many failures, even in a new flow."""
+        self._failed_attempts, _ = _failed(self.hass, self._account)
+        if self._failed_attempts >= MAX_LOGIN_ATTEMPTS:
+            return self.async_abort(reason="cooling_down", description_placeholders=self._placeholders())
+        return None
+
+    def _stop_or_none(self, error: str | None) -> ConfigFlowResult | None:
+        """Abort instead of offering another attempt when that would be risky."""
+        if error == "account_locked":
+            return self.async_abort(reason="account_locked", description_placeholders=self._placeholders())
+        if error == "invalid_auth" and self._failed_attempts >= MAX_LOGIN_ATTEMPTS:
+            return self.async_abort(reason="too_many_attempts", description_placeholders=self._placeholders())
+        return None
+
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._email = user_input[CONF_EMAIL].strip()
+            self._account = self._email.lower()
+            self._password = user_input[CONF_PASSWORD]
+            await self.async_set_unique_id(self._account)
+            self._abort_if_unique_id_configured()
+            if stop := self._cooling_down():
+                return stop
+            data, error = await self._async_try_login(None)
+            if error == "two_factor":
+                return await self.async_step_two_factor()
+            if data:
+                return self.async_create_entry(title=self._email, data=data)
+            if stop := self._stop_or_none(error):
+                return stop
+            errors["base"] = error or "unknown"
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema({vol.Required(CONF_EMAIL): str, vol.Required(CONF_PASSWORD): str}),
+            errors=errors,
+            description_placeholders=self._placeholders(),
+        )
+
+    async def async_step_two_factor(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            data, error = await self._async_try_login(user_input[CONF_AUTH_CODE].strip())
+            if data:
+                if self.source == "reauth":
+                    return self.async_update_reload_and_abort(self._get_reauth_entry(), data_updates=data)
+                return self.async_create_entry(title=self._email, data=data)
+            if stop := self._stop_or_none(error):
+                return stop
+            errors["base"] = (
+                "invalid_code" if error in ("two_factor", "invalid_auth") else (error or "unknown")
+            )
+        return self.async_show_form(
+            step_id="two_factor",
+            data_schema=vol.Schema({vol.Required(CONF_AUTH_CODE): str}),
+            errors=errors,
+            description_placeholders=self._placeholders(),
+        )
+
+    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
+        self._email = entry_data[CONF_EMAIL]
+        self._account = self._email.lower()
+        self._client_id = entry_data[CONF_CLIENT_ID]
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._password = user_input[CONF_PASSWORD]
+            if stop := self._cooling_down():
+                return stop
+            data, error = await self._async_try_login(None)
+            if error == "two_factor":
+                return await self.async_step_two_factor()
+            if data:
+                return self.async_update_reload_and_abort(self._get_reauth_entry(), data_updates=data)
+            if stop := self._stop_or_none(error):
+                return stop
+            errors["base"] = error or "unknown"
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            description_placeholders=self._placeholders(),
+            errors=errors,
+        )
+
+
+class KitaPlusOptionsFlow(OptionsFlowWithReload):
+    """Polling interval. Not below 15 minutes, to be gentle with the service."""
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+        current = self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_SCAN_INTERVAL, default=current): vol.All(
+                        vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)
+                    )
+                }
+            ),
+        )

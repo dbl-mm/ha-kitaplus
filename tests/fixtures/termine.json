@@ -1,0 +1,178 @@
+{
+ "data": [
+  {
+   "einrichtungId": 9000,
+   "id": 9001,
+   "name": "name-1",
+   "startdatum": "2026-06-14T14:00:00",
+   "enddatum": "2026-06-14T16:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "idExternKalender": 9002
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9003,
+   "name": "name-2",
+   "startdatum": "2026-06-18T09:00:00",
+   "enddatum": "2026-06-18T11:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "idExternKalender": 9004
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9005,
+   "name": "name-3",
+   "startdatum": "2026-06-19T07:00:00",
+   "enddatum": "2026-06-19T10:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "idExternKalender": 9006
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9007,
+   "name": "name-4",
+   "startdatum": "2026-06-19T09:45:00",
+   "enddatum": "2026-06-19T10:45:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-1",
+   "idExternKalender": 9008
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9009,
+   "name": "name-5",
+   "startdatum": "2026-06-20T09:00:00",
+   "enddatum": "2026-06-20T10:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-2",
+   "idExternKalender": 9010
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9011,
+   "name": "name-6",
+   "startdatum": "2026-06-21T17:00:00",
+   "enddatum": "2026-06-21T19:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "idExternKalender": 9012
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9013,
+   "name": "name-7",
+   "startdatum": "2026-06-22T08:30:00",
+   "enddatum": "2026-06-22T11:45:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-3",
+   "idExternKalender": 9014
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9015,
+   "name": "name-8",
+   "startdatum": "2026-06-26T09:45:00",
+   "enddatum": "2026-06-26T10:45:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-4",
+   "idExternKalender": 9016
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9017,
+   "name": "name-9",
+   "startdatum": "2026-06-27T09:00:00",
+   "enddatum": "2026-06-27T10:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-5",
+   "idExternKalender": 9018
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9019,
+   "name": "name-10",
+   "startdatum": "2026-06-28T09:45:00",
+   "enddatum": "2026-06-28T11:45:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-6",
+   "idExternKalender": 9020
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9021,
+   "name": "name-11",
+   "startdatum": "2026-06-29T17:30:00",
+   "enddatum": "2026-06-29T19:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-7",
+   "idExtern": 9022,
+   "orgaNachricht": {
+    "einrichtungId": 9000,
+    "id": 9023,
+    "datum": "2026-05-30T16:00:00",
+    "titel": "titel-1",
+    "text": "text-1",
+    "ende": "2026-06-29T19:00:00",
+    "idExtern": 9024,
+    "nurElternbeirat": false,
+    "istBenachrichtigt": true,
+    "createdAt": "2026-01-01T00:00:00",
+    "updatedAt": "2026-01-01T00:00:00"
+   }
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9025,
+   "name": "name-12",
+   "startdatum": "2026-07-03T09:45:00",
+   "enddatum": "2026-07-03T10:45:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "idExternKalender": 9026
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9027,
+   "name": "name-13",
+   "startdatum": "2026-07-03T13:55:00",
+   "enddatum": "2026-07-03T15:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-8",
+   "idExternKalender": 9028
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9029,
+   "name": "name-14",
+   "startdatum": "2026-07-04T09:00:00",
+   "enddatum": "2026-07-04T10:00:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-9",
+   "idExternKalender": 9030
+  },
+  {
+   "einrichtungId": 9000,
+   "id": 9031,
+   "name": "name-15",
+   "startdatum": "2026-07-05T09:45:00",
+   "enddatum": "2026-07-05T11:45:00",
+   "istFeiertag": false,
+   "istSchliesstag": false,
+   "beschreibung": "beschreibung-10",
+   "idExternKalender": 9032
+  }
+ ],
+ "total": 84
+}

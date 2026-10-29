@@ -1,0 +1,236 @@
+{
+ "success": true,
+ "verpflegungskonto": {
+  "id": 9087,
+  "istAktiv": true,
+  "bezeichnung": "bezeichnung-32",
+  "verwendungszweck": "verwendungszweck-30",
+  "ueberweisungEmpfaengerName": "ueberweisungEmpfaengerName-5",
+  "kontostand": "25.00",
+  "bankkontoStatus": 0,
+  "istSpendeRestguthaben": false,
+  "einrichtungId": 9000,
+  "eappKontoId": 9088,
+  "istGast": false
+ },
+ "data": [
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-13",
+   "monat": "2025-08-17T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-14",
+   "monat": "2025-09-17T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-15",
+   "monat": "2025-10-15T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-16",
+   "monat": "2025-11-15T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-17",
+   "monat": "2025-12-15T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-18",
+   "monat": "2026-01-15T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-19",
+   "monat": "2026-02-14T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 1,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-20",
+   "monat": "2026-03-17T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-21",
+   "monat": "2026-04-17T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 2,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-22",
+   "monat": "2026-05-17T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-23",
+   "monat": "2026-06-17T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-24",
+   "monat": "2026-07-17T00:00:00",
+   "kindId": 0,
+   "kindKitaPlusId": 0,
+   "varianteId": 0
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-25",
+   "monat": "2025-08-17T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-26",
+   "monat": "2025-09-17T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-27",
+   "monat": "2025-10-15T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-28",
+   "monat": "2025-11-15T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-29",
+   "monat": "2025-12-15T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-30",
+   "monat": "2026-01-15T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-31",
+   "monat": "2026-02-14T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-32",
+   "monat": "2026-03-17T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 17,
+   "summe": "-3.50",
+   "beschreibung": "beschreibung-33",
+   "monat": "2026-04-17T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 20,
+   "summe": "-3.50",
+   "beschreibung": "beschreibung-34",
+   "monat": "2026-05-17T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-35",
+   "monat": "2026-06-17T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  },
+  {
+   "anzahlBuchungen": 0,
+   "summe": "25.00",
+   "beschreibung": "beschreibung-36",
+   "monat": "2026-07-17T00:00:00",
+   "kindId": 9090,
+   "kindKitaPlusId": 9089,
+   "varianteId": 9093
+  }
+ ],
+ "minDate": "2026-04-06T00:00:00",
+ "maxDate": "2026-06-14T00:00:00"
+}

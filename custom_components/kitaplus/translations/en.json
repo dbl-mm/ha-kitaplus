@@ -1,0 +1,114 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect KitaPlus",
+        "description": "Sign in with your KitaPlus parent account (eltern.kitaplus.de). Passkeys do not work here, your account password is required. Each submit is exactly one sign-in attempt at KitaPlus. Setup stops after {max} failed attempts so your account does not get locked.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "two_factor": {
+        "title": "Two-factor code",
+        "description": "Enter the code KitaPlus asks for: from your authenticator app or by email, depending on your account settings.",
+        "data": {
+          "auth_code": "Code"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in again",
+        "description": "The sign-in for {email} has expired or was rejected. Enter your current password. Exactly one sign-in attempt is made. Too many failed attempts lock the account, only the Kita management can unlock it.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "KitaPlus rejected the sign-in. Message from KitaPlus: “{server_message}”. This was failed attempt {attempt} of {max}. Please check email and password in the KitaPlus app (eltern.kitaplus.de) first. Too many failed attempts lock the account, and only the Kita management can unlock it.",
+      "account_locked": "The account is locked.",
+      "invalid_code": "The code was not accepted. This was failed attempt {attempt} of {max}.",
+      "maintenance": "KitaPlus reports maintenance. This is not a password problem and nothing was counted. Please try again later.",
+      "cannot_connect": "KitaPlus is not reachable. This is not a password problem. Please check your internet connection and try again later.",
+      "unknown": "Unexpected error. The sign-in was not completed."
+    },
+    "abort": {
+      "already_configured": "This account is already set up.",
+      "reauth_successful": "Sign-in renewed.",
+      "account_locked": "Your KitaPlus account is locked. Message from KitaPlus: “{server_message}”. Home Assistant will not try again. Please contact the Kita management, only they can unlock the account.",
+      "too_many_attempts": "Setup was stopped after {max} failed attempts so your account does not get locked. Last message from KitaPlus: “{server_message}”. Check your credentials in the KitaPlus app, then start the setup again.",
+      "cooling_down": "Too many failed sign-ins for this account. To keep KitaPlus from locking it, new attempts are paused for {minutes} minutes. Please check your credentials in the KitaPlus app in the meantime."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "board": {
+        "name": "Bulletin board"
+      },
+      "messages": {
+        "name": "Mailbox"
+      },
+      "balance": {
+        "name": "Meal account balance"
+      },
+      "pending_replies": {
+        "name": "Pending replies"
+      },
+      "meal_today": {
+        "name": "Meal today",
+        "state": {
+          "none": "Nothing ordered"
+        }
+      },
+      "meal_tomorrow": {
+        "name": "Meal tomorrow",
+        "state": {
+          "none": "Nothing ordered"
+        }
+      }
+    },
+    "calendar": {
+      "appointments": {
+        "name": "Appointments"
+      },
+      "closures": {
+        "name": "Closures"
+      },
+      "meals": {
+        "name": "Ordered meals"
+      }
+    },
+    "binary_sensor": {
+      "closed_today": {
+        "name": "Closed today"
+      },
+      "closed_tomorrow": {
+        "name": "Closed tomorrow"
+      },
+      "no_order_tomorrow": {
+        "name": "Nothing ordered tomorrow"
+      }
+    }
+  },
+  "issues": {
+    "auth_failed": {
+      "title": "KitaPlus: sign-in rejected",
+      "description": "KitaPlus rejected the sign-in for {email}. Message from KitaPlus: “{server_message}”. Home Assistant stopped polling and does NOT retry on its own so your account does not get locked. Open Settings → Devices & services → KitaPlus and sign in again once."
+    },
+    "account_locked": {
+      "title": "KitaPlus: account locked",
+      "description": "The KitaPlus account for {email} is locked. Message from KitaPlus: “{server_message}”. Home Assistant stopped polling. Please contact the Kita management, only they can unlock it. Afterwards sign in again under Settings → Devices & services → KitaPlus."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling interval",
+        "description": "How often Home Assistant asks KitaPlus, in minutes (15 to 240). A higher value is gentler on the KitaPlus servers.",
+        "data": {
+          "scan_interval": "Interval (minutes)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "KitaPlus",
+  "homeassistant": "2025.8.0",
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "kitaplus.zip"
+}

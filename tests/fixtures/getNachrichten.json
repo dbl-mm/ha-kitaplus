@@ -1,0 +1,99 @@
+{
+ "success": true,
+ "data": [
+  {
+   "kindId": 9072,
+   "initialId": 9073,
+   "nextId": 9074,
+   "id": 9073,
+   "abrufDatum": "2026-04-03T22:07:25",
+   "istGeloescht": false,
+   "istVerweigert": false,
+   "status": 3,
+   "istBeantwortet": true,
+   "idExtern": 9075,
+   "createdAt": "2026-01-01T00:00:00",
+   "updatedAt": "2026-01-01T00:00:00",
+   "unterNachrichtToEmpfaengerList": [
+    {
+     "kindId": 9072,
+     "initialId": 9073,
+     "previousId": 9073,
+     "id": 9074,
+     "istGeloescht": false,
+     "status": 2,
+     "istBeantwortet": false,
+     "createdAt": "2026-01-01T00:00:00",
+     "updatedAt": "2026-01-01T00:00:00",
+     "unterNachrichtToEmpfaengerList": [],
+     "nachricht": {
+      "einrichtungId": 9000,
+      "elternVerfasserId": 9076,
+      "initialId": 9077,
+      "previousId": 9077,
+      "id": 9078,
+      "datum": "2026-04-09T20:11:32",
+      "istBestaetigungspflichtig": false,
+      "typ": 5,
+      "erlaubeAntwortEltern": false,
+      "anhaenge": [],
+      "umfrageAntwort": {
+       "id": 9079,
+       "antworten": [
+        "antworten-1"
+       ],
+       "antwortenFragebogen": [],
+       "freitext": "freitext-1"
+      },
+      "createdAt": "2026-01-01T00:00:00",
+      "updatedAt": "2026-01-01T00:00:00",
+      "elternVerfasserName": "elternVerfasserName-1"
+     },
+     "istEntwurf": false
+    }
+   ],
+   "nachricht": {
+    "einrichtungId": 9000,
+    "initialId": 9077,
+    "id": 9077,
+    "datum": "2026-04-03T10:34:16",
+    "titel": "titel-17",
+    "text": "text-17",
+    "istBestaetigungspflichtig": false,
+    "idExtern": 9080,
+    "typ": 5,
+    "erlaubeAntwortEltern": false,
+    "rueckmeldefrist": "2026-04-13T00:00:00",
+    "anhaenge": [],
+    "umfrage": {
+     "einrichtungId": 9000,
+     "alleMaxAntwortenErreicht": false,
+     "id": 9081,
+     "datum": "2026-04-03T00:00:00",
+     "titel": "titel-18",
+     "art": 2,
+     "typ": 1,
+     "hatFreitext": true,
+     "idExtern": 9082,
+     "istAllePflicht": false,
+     "umfrageAntwortoptionen": [
+      {
+       "id": 9083,
+       "text": "text-18",
+       "idExtern": 9084
+      },
+      {
+       "id": 9085,
+       "text": "text-19",
+       "idExtern": 9086
+      }
+     ]
+    },
+    "createdAt": "2026-01-01T00:00:00",
+    "updatedAt": "2026-01-01T00:00:00"
+   },
+   "istEntwurf": false
+  }
+ ],
+ "total": 1
+}
