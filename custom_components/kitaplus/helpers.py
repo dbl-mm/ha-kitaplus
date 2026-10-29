@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta, tzinfo
 
-from .api.models import Day, Event, MealEntry, Message, PendingReply
+from .api.models import Day, Event, MealEntry, Message, PendingReply, UpcomingEntry
 
 
 def _d(value: str | None) -> date | None:
@@ -134,3 +134,42 @@ def pending_replies(messages: list[Message]) -> list[PendingReply]:
                 PendingReply(id=msg.get("id"), titel=note.get("titel"), frist=note.get("rueckmeldefrist"))
             )
     return out
+
+
+def _dt(value: str | None) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
+def upcoming_entries(events: list[Event], today: date, limit: int = 5) -> list[UpcomingEntry]:
+    """The next appointments and closure days from today on, soonest first.
+
+    A multi-day entry that is already running is listed with today's date. Entries without a usable start
+    are skipped.
+    """
+    found: list[tuple[date, time, UpcomingEntry]] = []
+    for event in events:
+        start = _dt(event.get("startdatum"))
+        if start is None:
+            continue
+        end = _dt(event.get("enddatum")) or start
+        if end.date() < today:
+            continue
+        all_day = start.time() == time.min and end.time() in (time.min, time(23, 59))
+        shown = max(start.date(), today)
+        found.append(
+            (
+                shown,
+                time.min if all_day else start.time(),
+                UpcomingEntry(
+                    datum=shown.isoformat(),
+                    zeit=None if all_day else start.strftime("%H:%M"),
+                    titel=event.get("name") or "",
+                    schliesstag=bool(event.get("istSchliesstag") or event.get("istFeiertag")),
+                ),
+            )
+        )
+    found.sort(key=lambda item: (item[0], item[1]))
+    return [entry for _, _, entry in found[:limit]]

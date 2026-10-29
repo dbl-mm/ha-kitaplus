@@ -27,7 +27,6 @@ BUILT_IN_CARDS = {
     "vertical-stack",
     "markdown",
     "calendar",
-    "history-graph",
     "entities",
     "grid",
 }
@@ -153,41 +152,310 @@ def test_names_are_turned_into_entity_ids_exactly_like_home_assistant() -> None:
 
 # --------------------------------------------------------------------- the templates render properly
 
+NOW = "2026-10-29T08:00:00+00:00"  # a Thursday, 08:00 UTC
 
-def markdown_cards(language: str):
-    for card in walk(gen.build(language, [CHILD])):
-        if card.get("type") == "markdown" and "{%" in card["content"]:
-            yield card["content"]
+
+def card_content(card_type: str, name: str, language: str = "de", *, wall: bool = False) -> str:
+    """The markdown of one card, found by what it shows."""
+    marker = {
+        "hero": "ha-alert",
+        "kid": "mdi:silverware-fork-knife",
+        "board": "mdi:bulletin-board",
+        "mail": "mdi:email-outline",
+        "next": 'mdi:calendar"',
+    }
+    view = gen.build(language, [name])["views"][1 if wall else 0]
+    for card in walk(view):
+        if (
+            card.get("type") == "markdown"
+            and marker[card_type] in card["content"]
+            and "{%" in card["content"]
+        ):
+            if card_type != "hero" or "namespace(missed" in card["content"]:
+                return card["content"]
+    raise AssertionError(card_type)
+
+
+def set_states(hass: HomeAssistant, language: str = "de", **values) -> None:
+    """Each value is `state` or `(state, attributes)`; keys name the entity."""
+    ids = gen.Ids(language, "kind")
+    names = {
+        "today": ids.of_child("sensor", "status_today"),
+        "tomorrow": ids.of_child("sensor", "status_tomorrow"),
+        "deadline": ids.of_child("sensor", "next_deadline"),
+        "pending": ids.account("sensor", "pending"),
+        "closed": ids.account("binary_sensor", "closed_today"),
+        "closed_tomorrow": ids.account("binary_sensor", "closed_tomorrow"),
+        "board": ids.account("sensor", "board"),
+        "mailbox": ids.account("sensor", "messages"),
+        "upcoming": ids.account("sensor", "upcoming"),
+    }
+    for key, value in values.items():
+        state, attributes = value if isinstance(value, tuple) else (value, {})
+        hass.states.async_set(names[key], state, attributes)
+
+
+def calm(**extra):
+    base = {
+        "today": "ordered",
+        "tomorrow": "ordered",
+        "pending": ("0", {"messages": []}),
+        "closed": "off",
+        "closed_tomorrow": "off",
+        "deadline": "unknown",
+    }
+    base.update(extra)
+    return base
+
+
+def hero(hass: HomeAssistant, language: str = "de", name: str = "Mia", **values) -> str:
+    set_states(hass, language, **values)
+    content = card_content("hero", gen.PLACEHOLDER_NAME, language).replace("KIND", name)
+    return " ".join(Template(content, hass).async_render(parse_result=False).split())
+
+
+@pytest.fixture(autouse=True)
+def fixed_time(freezer):
+    freezer.move_to(NOW)
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-async def test_markdown_cards_render_with_real_states(hass: HomeAssistant, stack, language) -> None:
-    from .test_blueprints import needs_reply
-
-    hass.config.language = language
-    await setup_integration(hass, stack, async_get_messages=[needs_reply()])
-    rendered = [
-        Template(content, hass).async_render(parse_result=False) for content in markdown_cards(language)
-    ]
-    text = "\n".join(rendered)
-    assert len(rendered) == 3, "open replies, bulletin board and mailbox"
-    assert "titel-" in text, "the bulletin board shows post titles from the attribute"
-    assert "Einwilligung Ausflug" in text, "the open reply is listed with its title"
-    if language == "de":
-        assert "bis 20.06." in text and re.search(r"\b\d{2}\.\d{2}\.\d{4}\b", text)
-    else:
-        assert "due 06-20" in text and re.search(r"\b\d{4}-\d{2}-\d{2}\b", text)
-    for forbidden in ("None", "Undefined", "Error"):
-        assert forbidden not in text, forbidden
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-async def test_empty_lists_say_so_instead_of_showing_nothing(hass: HomeAssistant, stack, language) -> None:
-    hass.config.language = language
-    await setup_integration(hass, stack, async_get_board=[], async_get_messages=[])
+async def test_hero_a_missed_deadline_beats_everything(hass: HomeAssistant, language) -> None:
     t = gen.TEXT[language]
-    text = "\n".join(Template(c, hass).async_render(parse_result=False) for c in markdown_cards(language))
-    assert t["no_posts"] in text and t["no_messages"] in text
+    out = hero(
+        hass,
+        language,
+        **calm(
+            today="missed",
+            tomorrow="open",
+            closed="on",
+            pending=("1", {"messages": [{"titel": "X", "frist": None}]}),
+        ),
+    )
+    assert 'alert-type="error"' in out and t["missed_title"] in out and t["ask_kita"] in out
+    assert "Mia" in out
+
+
+async def test_hero_b_one_open_thing_names_it_and_counts_down_to_the_deadline(hass: HomeAssistant) -> None:
+    out = hero(hass, **calm(tomorrow="open", deadline="2026-10-29T10:00:00+00:00"))
+    assert 'alert-type="warning"' in out and "Eine Sache ist offen" in out
+    assert "Essen für Mia morgen bestellen." in out
+    assert "Frist heute" in out and "noch 2 Std." in out
+
+
+async def test_hero_b_counts_several_things_and_mentions_the_rest(hass: HomeAssistant) -> None:
+    reply = {"messages": [{"id": 1, "titel": "Einwilligung Ausflug", "frist": "2026-11-06"}]}
+    out = hero(hass, **calm(tomorrow="open", pending=("1", reply), deadline="2026-10-29T08:20:00+00:00"))
+    assert "2 Sachen sind offen" in out and "Dazu 1 weitere." in out and "noch 20 Min." in out
+
+
+async def test_hero_b_a_reply_alone_shows_its_deadline(hass: HomeAssistant) -> None:
+    reply = {"messages": [{"id": 1, "titel": "Einwilligung Ausflug", "frist": "2026-11-06"}]}
+    out = hero(hass, **calm(pending=("1", reply)))
+    assert (
+        "Eine Sache ist offen" in out
+        and "Rückmeldung: Einwilligung Ausflug" in out
+        and "Antwort bis Fr 06.11." in out
+    )
+
+
+async def test_hero_b_two_children_only_one_open(hass: HomeAssistant) -> None:
+    content = card_content("hero", gen.PLACEHOLDER_NAME)
+    two = gen.dump(gen.build("de", ["Anna", "Ben"]))
+    assert "sensor.anna_bestellstatus_heute" in two and "sensor.ben_bestellstatus_heute" in two
+    for kid in ("anna", "ben"):
+        hass.states.async_set(f"sensor.{kid}_bestellstatus_heute", "ordered")
+        hass.states.async_set(f"sensor.{kid}_bestellstatus_morgen", "open" if kid == "ben" else "ordered")
+        hass.states.async_set(f"sensor.{kid}_nachste_bestellfrist", "2026-10-29T10:00:00+00:00")
+    set_states(hass, **calm())
+    view = gen.build("de", ["Anna", "Ben"])["views"][0]
+    hero_content = next(c["content"] for c in walk(view) if "namespace(missed" in c.get("content", ""))
+    out = " ".join(Template(hero_content, hass).async_render(parse_result=False).split())
+    assert "Eine Sache ist offen" in out and "Essen für Ben morgen bestellen." in out and "Anna" not in out
+    assert content  # placeholder variant stays buildable
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_hero_c_a_closed_kita_says_why_and_whether_tomorrow_is_open(
+    hass: HomeAssistant, language
+) -> None:
+    t = gen.TEXT[language]
+    out = hero(hass, language, closed=("on", {"reason": "Brückentag"}))
+    assert t["closed_title"] in out and "Brückentag" in out and t["tomorrow_open"] in out
+    out = hero(hass, language, closed_tomorrow="on")
+    assert t["tomorrow_closed"] in out
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_hero_d_nothing_to_do(hass: HomeAssistant, language) -> None:
+    t = gen.TEXT[language]
+    out = hero(hass, language, **calm())
+    assert 'alert-type="info"' in out and t["calm_title"] in out and t["calm_ordered"] in out
+    out = hero(hass, language, **calm(today="not_offered", tomorrow="not_offered"))
+    assert t["calm_nothing"] in out
+
+
+async def test_hero_says_so_when_there_is_no_data(hass: HomeAssistant) -> None:
+    out = hero(hass, **calm(today="unavailable"))
+    assert "Keine aktuellen Daten" in out
+
+
+async def test_hero_open_without_a_known_deadline_still_works(hass: HomeAssistant) -> None:
+    out = hero(hass, **calm(tomorrow="open", deadline="unknown"))
+    assert "Essen für Mia morgen bestellen." in out and "Frist" not in out and "Error" not in out
+
+
+async def test_hero_a_past_deadline_shows_no_countdown(hass: HomeAssistant) -> None:
+    out = hero(hass, **calm(tomorrow="open", deadline="2026-10-29T07:00:00+00:00"))
+    assert "noch" not in out
+
+
+async def test_hero_long_names_and_titles_are_cut(hass: HomeAssistant) -> None:
+    long_title = "Sehr langer Titel " * 20 + "https://example.com/" + "a" * 200
+    reply = {"messages": [{"id": 1, "titel": long_title, "frist": "2026-11-06"}]}
+    out = hero(hass, name="Maximilian-Alexander Friedrich-Wilhelm", **calm(pending=("1", reply)))
+    assert len(out) < 400 and "a" * 40 not in out and "…" in out
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_kid_card_shows_state_words_icons_meals_and_deadline(hass: HomeAssistant, language) -> None:
+    t = gen.TEXT[language]
+    set_states(
+        hass,
+        language,
+        today=("ordered", {"meal": "Nudeln"}),
+        tomorrow=("not_offered", {"meal": "ignored"}),
+        deadline="2026-10-29T10:00:00+00:00",
+    )
+    out = Template(card_content("kid", gen.PLACEHOLDER_NAME, language), hass).async_render(parse_result=False)
+    assert t["state_words"]["ordered"] in out and t["state_words"]["not_offered"] in out
+    assert "mdi:cart-check" in out and "mdi:minus-circle-outline" in out
+    assert "Nudeln" in out and "ignored" not in out
+    assert t["next_deadline"] in out and t["today"] in out
+    set_states(hass, language, today=("open", {"meal": ""}), tomorrow="missed", deadline="unavailable")
+    out = Template(card_content("kid", gen.PLACEHOLDER_NAME, language), hass).async_render(parse_result=False)
+    assert (
+        t["state_words"]["open"] in out
+        and t["state_words"]["missed"] in out
+        and t["next_deadline"] not in out
+    )
+
+
+async def test_board_card_shows_only_the_newest_post_cleaned_up(hass: HomeAssistant) -> None:
+    post = {
+        "titel": "**Sommerfest** <b>2026</b>",
+        "datum": "2026-10-28",
+        "text": "Liebe Eltern,\n\n\tbitte  beachten: " + "wort " * 60,
+    }
+    set_states(
+        hass, board=("Sommerfest", {"posts": [post, {"titel": "Alt", "datum": "2026-10-01", "text": "x"}]})
+    )
+    out = Template(card_content("board", "Mia"), hass).async_render(parse_result=False)
+    assert "<b>" not in out and out.count("**") == 2 and "Alt" not in out
+    assert "Mi 28.10." in out and "Liebe Eltern, bitte beachten:" in out and "…" in out
+
+
+async def test_board_card_edge_cases(hass: HomeAssistant) -> None:
+    set_states(hass, board=("unknown", {"posts": []}))
+    out = Template(card_content("board", "Mia"), hass).async_render(parse_result=False)
+    assert gen.TEXT["de"]["no_post"] in out
+    set_states(hass, board=("", {"posts": [{"titel": "", "datum": "2026-10-28", "text": ""}]}))
+    out = Template(card_content("board", "Mia"), hass).async_render(parse_result=False)
+    assert gen.TEXT["de"]["untitled"] in out
+    url = "https://example.com/" + "a" * 300
+    set_states(hass, board=("x", {"posts": [{"titel": url, "datum": "2026-10-28", "text": url}]}))
+    out = Template(card_content("board", "Mia"), hass).async_render(parse_result=False)
+    assert "a" * 40 not in out
+    wall = Template(card_content("board", "Mia", wall=True), hass).async_render(parse_result=False)
+    assert "a" * 40 not in wall
+
+
+async def test_mail_card_lists_two_messages_and_marks_the_one_that_needs_a_reply(hass: HomeAssistant) -> None:
+    items = [
+        {"id": 7, "titel": "Elternabend", "datum": "2026-10-28T09:00:00+01:00"},
+        {"id": 8, "titel": "Ausflug", "datum": "2026-10-27"},
+        {"id": 9, "titel": "Dritte", "datum": "2026-10-26"},
+    ]
+    set_states(
+        hass,
+        mailbox=("3", {"messages": items}),
+        pending=("1", {"messages": [{"id": 8, "titel": "Ausflug", "frist": "2026-11-06"}]}),
+    )
+    out = Template(card_content("mail", "Mia"), hass).async_render(parse_result=False)
+    assert "3 Nachrichten" in out and "Elternabend" in out and "Ausflug" in out and "Dritte" not in out
+    assert out.count("Rückmeldung bis") == 1 and "Fr 06.11." in out
+    wall = Template(card_content("mail", "Mia", wall=True), hass).async_render(parse_result=False)
+    assert "Elternabend" in wall and "Ausflug" not in wall
+    set_states(
+        hass,
+        mailbox=("1", {"messages": [{"id": 1, "titel": None, "datum": None}]}),
+        pending=("0", {"messages": []}),
+    )
+    out = Template(card_content("mail", "Mia"), hass).async_render(parse_result=False)
+    assert gen.TEXT["de"]["untitled"] in out and "None" not in out
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_next_card_lists_entries_and_marks_closures(hass: HomeAssistant, language) -> None:
+    t = gen.TEXT[language]
+    entries = [
+        {"datum": "2026-10-30", "zeit": None, "titel": "Brückentag", "schliesstag": True},
+        {"datum": "2026-11-02", "zeit": "17:00", "titel": "Elternabend", "schliesstag": False},
+        {"datum": "2026-11-05", "zeit": None, "titel": "", "schliesstag": False},
+        {"datum": "2026-11-06", "zeit": None, "titel": "Vierter", "schliesstag": False},
+    ]
+    set_states(hass, language, upcoming=("Brückentag", {"entries": entries}))
+    out = Template(card_content("next", "Mia", language), hass).async_render(parse_result=False)
+    assert "Brückentag" in out and t["closure"] in out and "17:00" in out and t["untitled"] in out
+    assert "Vierter" not in out
+    wall = Template(card_content("next", "Mia", language, wall=True), hass).async_render(parse_result=False)
+    assert "Elternabend" in wall and t["untitled"] not in wall
+    set_states(hass, language, upcoming=("unknown", {"entries": []}))
+    out = Template(card_content("next", "Mia", language), hass).async_render(parse_result=False)
+    assert t["no_dates"] in out
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_the_header_shows_the_date(hass: HomeAssistant, language) -> None:
+    view = gen.build(language, ["Mia"])["views"][0]
+    header = next(c["content"] for c in walk(view) if c.get("text_only"))
+    out = Template(header, hass).async_render(parse_result=False)
+    assert gen.TEXT[language]["app"] in out and (
+        "Donnerstag" in out or "Thursday" in out or "Mittwoch" in out or "Wednesday" in out
+    )
+    wall_header = next(
+        c["content"] for c in walk(gen.build(language, ["Mia"])["views"][1]) if c.get("text_only")
+    )
+    assert "{{ now().day }}" in wall_header
+
+
+# --------------------------------------------------------------------------------- layout of the design
+
+
+def test_phone_is_one_column_and_the_wall_has_three(hass=None) -> None:
+    for language in LANGUAGES:
+        views = {v["path"]: v for v in gen.build(language)["views"]}
+        assert views["heute"]["max_columns"] == 1 and len(views["heute"]["sections"]) == 3
+        assert views["wand"]["max_columns"] == 3 and len(views["wand"]["sections"]) == 3
+        assert "kalender" in views
+
+
+def test_the_phone_order_is_status_kids_then_lists() -> None:
+    first = gen.build("de")["views"][0]["sections"]
+    assert "ha-alert" in first[0]["cards"][1]["content"]
+    assert [c["type"] for c in first[0]["cards"]] == ["markdown", "markdown", "tile", "tile"]
+    assert first[2]["cards"][-1]["type"] == "tile", "the balance comes last"
+
+
+def test_several_children_each_get_a_card_and_a_calendar() -> None:
+    dash = gen.build("de", ["Anna", "Ben"])
+    kids = dash["views"][0]["sections"][1]["cards"]
+    assert len(kids) == 2 and "Anna" in kids[0]["content"] and "Ben" in kids[1]["content"]
+    calendar = next(c for c in walk(dash["views"][2]) if c.get("type") == "calendar")
+    assert (
+        "calendar.anna_bestelltes_essen" in calendar["entities"]
+        and "calendar.ben_bestelltes_essen" in calendar["entities"]
+    )
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
@@ -200,132 +468,3 @@ def test_templates_only_use_the_two_placeholders_the_readme_explains(language) -
 
 
 # ------------------------------------------------------------------------------------- the layout
-
-
-def first_view(language: str) -> dict:
-    return yaml.safe_load(gen.dump(gen.build(language)))["views"][0]
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-def test_the_dashboard_is_small_and_has_no_diagnostics_or_charts(language) -> None:
-    """Less is more: three views, one calendar, no chart with a single dot, no technical view."""
-    t = gen.TEXT[language]
-    views = yaml.safe_load(gen.dump(gen.build(language)))["views"]
-    assert [v["title"] for v in views] == [t["view_today"], t["view_messages"], t["view_calendar"]]
-    text = gen.dump(gen.build(language))
-    assert "history-graph" not in text and "type: entities" not in text
-    assert text.count("type: calendar") == 1, "the calendar card brings its own list/week/month switch"
-    assert text.count(t["balance"] + "\n") <= 2, (
-        "the balance is mentioned once as a tile (plus the section title)"
-    )
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-def test_the_action_area_has_no_heading_so_it_disappears_when_there_is_nothing_to_do(language) -> None:
-    sections = first_view(language)["sections"]
-    todo = sections[0]["cards"]
-    assert all(card["type"] == "conditional" for card in todo), (
-        "only conditional cards, nothing always visible"
-    )
-    assert len(todo) == 3, "today open, tomorrow open, replies needed"
-    t = gen.TEXT[language]
-    headings = [c["heading"] for s in sections[1:] for c in s["cards"] if c.get("type") == "heading"]
-    assert headings == [t["kita"], gen.PLACEHOLDER_NAME, t["account"]], (
-        "Kita, then each child, then the account"
-    )
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-def test_each_fact_is_shown_once_and_each_child_needs_just_two_tiles(language) -> None:
-    sections = first_view(language)["sections"]
-    child = next(s for s in sections if any(c.get("heading") == gen.PLACEHOLDER_NAME for c in s["cards"]))
-    tiles = [c for c in child["cards"] if c["type"] == "tile"]
-    slugs = gen.SLUGS[language]
-    assert [c["entity"] for c in tiles] == [
-        f"sensor.kind_{slugs['status_today']}",
-        f"sensor.kind_{slugs['status_tomorrow']}",
-    ]
-    assert all(c["state_content"] == ["state", "meal"] for c in tiles), "e.g. 'Bestellt · Mittagessen'"
-    entities = [c["entity"] for s in sections for c in iter_cards(s) if c.get("type") == "tile"]
-    visible = [e for e in entities if e.endswith(slugs["balance"])]
-    assert len(visible) == 1
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-def test_several_children_each_get_their_own_section_and_calendar(language) -> None:
-    data = gen.build(language, ["Anna", "Jörg"])
-    text = gen.dump(data)
-    slugs = gen.SLUGS[language]
-    for slug, shown in (("anna", "Anna"), ("jorg", "Jörg")):
-        assert f"sensor.{slug}_{slugs['status_today']}" in text
-        assert f"sensor.{slug}_{slugs['status_tomorrow']}" in text
-        assert f"calendar.{slug}_{slugs['meals']}" in text
-        assert any(c.get("heading") == shown for s in data["views"][0]["sections"] for c in s["cards"])
-    names = [
-        c["name"]
-        for c in iter_cards(data["views"][0]["sections"][0])
-        if c.get("type") == "tile" and "Anna" in c["name"]
-    ]
-    assert len(names) == 2, "with several children the reminders say whose meal it is"
-    assert "kind_" not in text and "KIND" not in text, "no placeholder is left"
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-def test_the_order_reminder_only_shows_while_ordering_is_still_possible(language) -> None:
-    """A missed deadline must never produce a "please order" card: there is nothing left to do about it."""
-    slugs = gen.SLUGS[language]
-    for name, text in design_subjects(language).items():
-        for card in iter_cards(yaml.safe_load(text)):
-            for condition in card.get("conditions", []):
-                if str(condition.get("entity", "")).endswith(
-                    (slugs["status_today"], slugs["status_tomorrow"])
-                ):
-                    assert condition == {
-                        "condition": "state",
-                        "entity": condition["entity"],
-                        "state": "open",
-                    }, f"{name}: only 'open' may show a reminder, never 'missed'"
-    reminders = [
-        c for c in first_view(language)["sections"][0]["cards"] if c["conditions"][0].get("state") == "open"
-    ]
-    assert len(reminders) == 2, "one for today and one for tomorrow"
-    for reminder in reminders:
-        deadline, meal = reminder["card"]["cards"][1], reminder["card"]["cards"][0]
-        assert deadline["entity"].endswith(slugs["next_deadline"]), (
-            "the deadline sits right under the reminder"
-        )
-        assert meal["state_content"] == ["meal"], "the reminder names the meal instead of repeating the state"
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-async def test_markup_a_kita_puts_into_titles_and_texts_never_shows_up_as_stray_signs(
-    hass, stack, language
-) -> None:
-    """A Kita wrote `**Gartenfest **` as a title. The card shows a clean bold title, not raw asterisks."""
-    hass.config.language = language
-    post = {
-        "id": 1,
-        "datum": "2026-10-28T09:00:00",
-        "titel": "**Gartenfest **",
-        "text": "Erste Zeile\n**fett** und _kursiv_ " + "wort " * 80,
-    }
-    await setup_integration(hass, stack, async_get_board=[post])
-    board = next(c for c in markdown_cards(language) if "'posts'" in c)
-    rendered = Template(board, hass).async_render(parse_result=False)
-    assert "**Gartenfest**" in rendered, "title cleaned and bolded once"
-    assert "****" not in rendered and "** " not in rendered.replace("**Gartenfest**", "")
-    excerpt = next(line for line in rendered.splitlines() if line.startswith("Erste Zeile"))
-    assert "Erste Zeile fett und kursiv" in excerpt, "line breaks and markup signs are gone"
-    assert len(excerpt) <= gen.EXCERPT + 3 and excerpt.endswith("..."), "the text is shortened"
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-async def test_the_message_lists_are_limited_to_what_fits_on_a_dashboard(hass, stack, language) -> None:
-    hass.config.language = language
-    posts = [
-        {"id": n, "datum": "2026-10-28T09:00:00", "titel": f"Beitrag {n}", "text": "x"} for n in range(1, 6)
-    ]
-    await setup_integration(hass, stack, async_get_board=posts)
-    board = next(c for c in markdown_cards(language) if "'posts'" in c)
-    rendered = Template(board, hass).async_render(parse_result=False)
-    assert rendered.count("Beitrag") == gen.BOARD_ITEMS

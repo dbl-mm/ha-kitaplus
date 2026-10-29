@@ -1,13 +1,7 @@
 # KitaPlus-Dashboard (Vorlage)
-type: vertical-stack
-cards:
-- type: heading
-  heading: Konto
-  heading_style: title
-  icon: mdi:wallet-outline
-- type: tile
-  entity: sensor.kitaplus_kontostand_verpflegung
-  name: Guthaben
-  icon: mdi:cash
-  state_content:
-  - state
+type: tile
+entity: sensor.kitaplus_kontostand_verpflegung
+name: Guthaben Verpflegung
+icon: mdi:wallet-outline
+state_content:
+- state

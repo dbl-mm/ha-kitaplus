@@ -67,3 +67,6 @@ Nutzung vor allem **mobil und kurz** (Blick aufs Handy), dazu ein Wand-Tablet. H
 - Ein Entwurf (Skizze, Figma o. Ä.) mit **allen Zuständen**: nichts zu tun, Essen offen, Frist verpasst, Kita geschlossen, mehrere Kinder, kein Beitrag, sehr langer Titel, Hell/Dunkel, Handy/Tablet.
 - Die Umsetzung übernehmen wir als Vorlage. Der Generator `scripts/build_dashboards.py` und die Tests in `tests/test_dashboards.py` sichern ab, dass jede Entity existiert, nur eingebaute Karten genutzt werden und die Texte sauber rendern.
 - Entscheidungen, die uns helfen: Was ist die **eine** wichtigste Information? Was darf wegfallen? Wie wird „Handlungsbedarf“ sichtbar, ohne zu erschrecken?
+
+## Nachtrag: Sensor „Nächste Termine“
+`sensor.kitaplus_nachste_termine` (englisch `upcoming_dates`): Zustand = Titel des nächsten Eintrags, Attribut `entries` = Liste mit `datum`, `zeit`, `titel`, `schliesstag` (Termine und Schließtage gemischt, nach Datum sortiert).

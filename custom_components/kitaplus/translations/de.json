@@ -113,6 +113,9 @@
       },
       "next_order_deadline": {
         "name": "Nächste Bestellfrist"
+      },
+      "upcoming": {
+        "name": "Nächste Termine"
       }
     },
     "calendar": {

@@ -5,8 +5,8 @@ nach denen sie gebaut sind, damit Änderungen im selben Sinn bleiben.
 
 1. **So wenig wie möglich.** Jede Information steht einmal da. Was fehlt, fehlt mit Absicht: kein Diagramm mit einem einzigen
    Punkt, keine Diagnose-Ansicht, kein zweiter Kalender, keine Wiederholung von Überschrift, Kachel und Titel.
-2. **Handlung zuerst, und nur wenn nötig.** Ein Bereich ohne Überschrift ganz oben enthält nur bedingte Karten. Gibt es nichts zu
-   tun, sind alle ausgeblendet und der Bereich verschwindet. Es steht dort nie „alles in Ordnung“ als Füllmaterial.
+2. **Eine Aussage zuerst.** Die Statuskarte sagt genau eine Sache, nach fester Rangfolge: Frist verpasst, offene Sachen, Kita
+   geschlossen, nichts zu tun. Ist alles in Ordnung, sagt sie das ruhig.
 3. **Niemand wird zu etwas Unmöglichem aufgefordert.** Eine Aufforderung zum Bestellen erscheint nur beim Status „Offen“, nie bei
    „Frist verpasst“.
 4. **Farbe trägt nie allein eine Aussage.** Jede Kachel schreibt den Zustand in Worten und hat ein Symbol. Nur Theme-Farben

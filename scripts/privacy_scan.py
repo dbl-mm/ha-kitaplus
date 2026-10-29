@@ -1,7 +1,7 @@
 """Check that no real data from docs/_raw ended up in a file Git tracks.
 
 Usage: python3 -I scripts/privacy_scan.py     (run before every commit)
-Compares every tracked text file with the values in docs/_raw (never committed):
+Compares every tracked or new (not ignored) text file with the values in docs/_raw (never committed):
 numbers >= 1000, names, addresses, bank data, e-mail addresses and tokens.
 Exit code 1 if anything is found. Prints counts and file names, never the values.
 """
@@ -53,7 +53,15 @@ def main() -> int:
         print("docs/_raw not found: nothing to compare against (skipped)")
         return 0
     numbers, texts = collect()
-    tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True, check=True).stdout.split()
+    # Tracked files plus new ones that are not ignored (so a file is checked before it is first added);
+    # files deleted in the working tree are skipped.
+    listed = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    tracked = [name for name in listed if Path(name).is_file()]
     findings: list[str] = []
     for name in tracked:
         if name.endswith((".png", ".zip")):

@@ -18,10 +18,10 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
-from .api.models import BoardPost, Child, MealEntry, Message
+from .api.models import BoardPost, Child, MealEntry, Message, UpcomingEntry
 from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
-from .helpers import ORDER_STATES, deadline_for, meals_on, order_status, pending_replies
+from .helpers import ORDER_STATES, deadline_for, meals_on, order_status, pending_replies, upcoming_entries
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
@@ -67,6 +67,7 @@ async def async_setup_entry(
             "messages": lambda: MessagesSensor(coordinator),
             "pending": lambda: PendingRepliesSensor(coordinator),
             "session": lambda: SessionSensor(coordinator),
+            "upcoming": lambda: UpcomingSensor(coordinator),
         }
         for child in coordinator.data.children:
             if child["id"] in coordinator.data.meals:
@@ -284,3 +285,27 @@ class NextOrderDeadlineSensor(KitaPlusChildEntity, SensorEntity):
             "day": order.day.isoformat() if order else None,
             "rule_set": self.coordinator.deadline_rule is not None,
         }
+
+
+class UpcomingSensor(KitaPlusEntity, SensorEntity):
+    """The next appointments and closure days in one list (a calendar entity only knows its next entry)."""
+
+    _attr_translation_key = "upcoming"
+    _follows_the_day = True
+    _unrecorded_attributes = frozenset({"entries"})
+
+    def __init__(self, coordinator: KitaPlusCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._entry_id}_upcoming"
+
+    def _entries(self) -> list[UpcomingEntry]:
+        return upcoming_entries(self.coordinator.data.events, dt_util.now().date())
+
+    @property
+    def native_value(self) -> str | None:
+        entries = self._entries()
+        return (entries[0]["titel"] or None) if entries else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"entries": self._entries()}

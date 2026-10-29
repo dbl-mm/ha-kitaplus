@@ -1,23 +1,31 @@
 # KitaPlus-Dashboard (Vorlage)
-type: vertical-stack
-cards:
-- type: heading
-  heading: Schwarzes Brett
-  heading_style: title
-  icon: mdi:bulletin-board
-- type: markdown
-  content: |-
-    {% set items = state_attr('sensor.kitaplus_schwarzes_brett', 'posts') or [] %}
-    {% if items | length == 0 %}
-    _Keine Beiträge._
-    {% else %}
-    {% for p in items[:4] %}
-    **{{ (p.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**{% if p.datum %} · {{ p.datum[8:10] }}.{{ p.datum[5:7] }}.{{ p.datum[0:4] }}{% endif %}
+type: markdown
+content: |
+  {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+  {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+  {%- macro clean(t) -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+  {%- endmacro -%}
+  {%- macro dlabel(iso) -%}
+  {%- set d = as_datetime(iso) -%}
+  {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+  {%- endmacro -%}
 
-    {% set text = (p.text or '') | regex_replace('[*_`#>]', '') | regex_replace('[\n\r\t ]+', ' ') | trim %}
-    {% if text %}
-    {{ text | truncate(110) }}
+  ### <ha-icon icon="mdi:bulletin-board"></ha-icon> Schwarzes Brett
+  {% set posts = state_attr('sensor.kitaplus_schwarzes_brett', 'posts') or [] -%}
+  {% if posts | count == 0 -%}
+  Kein Beitrag am Schwarzen Brett.
+  {%- else -%}
+  {%- set p = posts[0] -%}
+  {%- set head = clean(p.titel) | trim -%}
 
-    {% endif %}
-    {% endfor %}
-    {% endif %}
+  **{{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}**
+  {% if p.datum %}
+  {{ dlabel(p.datum) }}
+  {% endif -%}
+  {%- set body = clean(p.text) | trim -%}
+  {% if body %}
+  {{ body | truncate(100, True, '…') }}
+  {% endif -%}
+  {%- endif -%}

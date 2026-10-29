@@ -1,27 +1,19 @@
 # KitaPlus dashboard (template)
-type: vertical-stack
+type: grid
+columns: 2
+square: false
 cards:
-- type: heading
-  heading: Kita
-  heading_style: title
+- type: tile
+  entity: binary_sensor.kitaplus_closed_today
+  name: Kita today
   icon: mdi:school-outline
-- type: grid
-  columns: 2
-  square: false
-  cards:
-  - type: tile
-    entity: binary_sensor.kitaplus_closed_today
-    name: Kita today
-    icon: mdi:school-outline
-    color: orange
-    state_content:
-    - state
-    - reason
-  - type: tile
-    entity: binary_sensor.kitaplus_closed_tomorrow
-    name: Kita tomorrow
-    icon: mdi:school-outline
-    color: orange
-    state_content:
-    - state
-    - reason
+  state_content:
+  - state
+  - reason
+- type: tile
+  entity: binary_sensor.kitaplus_closed_tomorrow
+  name: Kita tomorrow
+  icon: mdi:school-outline
+  state_content:
+  - state
+  - reason

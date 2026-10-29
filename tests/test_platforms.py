@@ -284,3 +284,42 @@ async def test_order_status_names_the_meal_for_compact_tiles(hass, stack, freeze
     await entry.runtime_data.async_refresh()
     await hass.async_block_till_done()
     assert hass.states.get(STATUS_TODAY).attributes["meal"] is None, "no meal, no name"
+
+
+async def test_upcoming_sensor_lists_the_next_entries_and_names_the_first(hass, stack, freezer) -> None:
+    at(freezer, "2026-10-29T10:00:00")
+    events = [
+        {
+            "id": 1,
+            "name": "Elternabend",
+            "startdatum": "2026-11-02T19:30:00",
+            "enddatum": "2026-11-02T21:00:00",
+        },
+        {
+            "id": 2,
+            "name": "Teamtag",
+            "istSchliesstag": True,
+            "startdatum": "2026-11-16T00:00:00",
+            "enddatum": "2026-11-16T23:59:00",
+        },
+    ]
+    await setup_integration(hass, stack, async_get_events=events)
+    state = hass.states.get("sensor.kitaplus_upcoming_dates")
+    assert state.state == "Elternabend"
+    assert [(e["datum"], e["zeit"], e["schliesstag"]) for e in state.attributes["entries"]] == [
+        ("2026-11-02", "19:30", False),
+        ("2026-11-16", None, True),
+    ]
+
+    from unittest.mock import patch
+
+    from .common import CLIENT
+
+    entry = hass.config_entries.async_entries("kitaplus")[0]
+    stack.enter_context(patch(f"{CLIENT}.async_get_events", return_value=[]))
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    state = hass.states.get("sensor.kitaplus_upcoming_dates")
+    assert state.state == "unknown" and state.attributes["entries"] == [], (
+        "nothing coming up: no state, empty list"
+    )

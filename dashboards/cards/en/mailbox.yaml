@@ -1,23 +1,26 @@
 # KitaPlus dashboard (template)
-type: vertical-stack
-cards:
-- type: heading
-  heading: Mailbox
-  heading_style: title
-  icon: mdi:email-outline
-- type: markdown
-  content: |-
-    {% set items = state_attr('sensor.kitaplus_mailbox', 'messages') or [] %}
-    {% if items | length == 0 %}
-    _No messages._
-    {% else %}
-    {% for p in items[:3] %}
-    **{{ (p.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**{% if p.datum %} · {{ p.datum[0:10] }}{% endif %}
+type: markdown
+content: |
+  {%- set wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] -%}
+  {%- set mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] -%}
+  {%- macro clean(t) -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+  {%- endmacro -%}
+  {%- macro dlabel(iso) -%}
+  {%- set d = as_datetime(iso) -%}
+  {%- if d -%}{{ wd[d.weekday()] }} {{ d.day ~ ' ' ~ mon[d.month - 1] }}{%- endif -%}
+  {%- endmacro -%}
 
-    {% set text = (p.text or '') | regex_replace('[*_`#>]', '') | regex_replace('[\n\r\t ]+', ' ') | trim %}
-    {% if text %}
-    {{ text | truncate(110) }}
+  {%- set count = states('sensor.kitaplus_mailbox') | int(0) -%}
+  {%- set items = state_attr('sensor.kitaplus_mailbox', 'messages') or [] -%}
+  {%- set replies = state_attr('sensor.kitaplus_pending_replies', 'messages') or [] -%}
+  ### <ha-icon icon="mdi:email-outline"></ha-icon> Mailbox · {{ count }} messages
+  {% for m in items[:2] %}
+  {%- set head = clean(m.titel) | trim -%}
+  {%- set due = namespace(value='') -%}
+  {%- for r in replies if r.id == m.id and r.frist -%}{%- set due.value = r.frist -%}{%- endfor %}
 
-    {% endif %}
-    {% endfor %}
-    {% endif %}
+  **{{ (head if head else 'Untitled') | truncate(80, True, '…') }}**
+  {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · <ha-icon icon="mdi:clock-outline"></ha-icon> **Reply by {{ dlabel(due.value) }}**{% elif false %} · no reply needed{% endif %}
+  {% endfor -%}

@@ -1,21 +1,33 @@
 # KitaPlus dashboard (template)
-type: vertical-stack
-cards:
-- type: heading
-  heading: KIND
-  heading_style: title
-  icon: mdi:account-child-outline
-- type: tile
-  entity: sensor.kind_order_status_today
-  name: Today
-  icon: mdi:cart-outline
-  state_content:
-  - state
-  - meal
-- type: tile
-  entity: sensor.kind_order_status_tomorrow
-  name: Tomorrow
-  icon: mdi:cart-outline
-  state_content:
-  - state
-  - meal
+type: markdown
+content: |
+  {%- set wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] -%}
+  {%- set mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] -%}
+  {%- macro clean(t) -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+  {%- endmacro -%}
+  {%- macro dlabel(iso) -%}
+  {%- set d = as_datetime(iso) -%}
+  {%- if d -%}{{ wd[d.weekday()] }} {{ d.day ~ ' ' ~ mon[d.month - 1] }}{%- endif -%}
+  {%- endmacro -%}
+
+  {%- set words = {'ordered': 'Ordered', 'open': 'Open', 'missed': 'Deadline missed', 'not_offered': 'No meal', 'unavailable': 'Unavailable', 'unknown': 'Unknown'} -%}
+  {%- set icons = {'ordered': 'mdi:cart-check', 'open': 'mdi:cart-arrow-down', 'missed': 'mdi:cart-off', 'not_offered': 'mdi:minus-circle-outline'} -%}
+  ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Meals for KIND
+  {% for ent, label in [('sensor.kind_order_status_today', 'Today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow')] %}
+  {%- set st = states(ent) -%}
+  {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
+
+  **{{ label }}** · <ha-icon icon="{{ icons[st] if st in icons else 'mdi:help-circle-outline' }}"></ha-icon> **{{ words[st] if st in words else st }}**
+  {% if st != 'not_offered' and meal -%}
+  {{ meal | truncate(80, True, '…') }}
+  {% endif -%}
+  {% endfor %}
+  {%- set dlstate = states('sensor.kind_next_order_deadline') -%}
+  {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
+  {%- set dl = as_datetime(dlstate) | as_local -%}
+  {%- set dayl = 'today' if dl.date() == now().date() else ('tomorrow' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
+
+  <small>Next order deadline: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+  {%- endif -%}

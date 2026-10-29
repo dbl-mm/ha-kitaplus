@@ -9,80 +9,77 @@ views:
   path: heute
   icon: mdi:home-heart
   type: sections
+  max_columns: 1
   sections:
   - type: grid
     cards:
-    - type: conditional
-      conditions:
-      - condition: state
-        entity: sensor.kind_bestellstatus_heute
-        state: open
-      card:
-        type: vertical-stack
-        cards:
-        - type: tile
-          entity: sensor.kind_bestellstatus_heute
-          name: Essen für heute noch bestellen
-          icon: mdi:cart-arrow-down
-          color: red
-          state_content:
-          - meal
-        - type: tile
-          entity: sensor.kind_nachste_bestellfrist
-          name: Bestellfrist
-          icon: mdi:timer-sand
-          state_content:
-          - state
-    - type: conditional
-      conditions:
-      - condition: state
-        entity: sensor.kind_bestellstatus_morgen
-        state: open
-      card:
-        type: vertical-stack
-        cards:
-        - type: tile
-          entity: sensor.kind_bestellstatus_morgen
-          name: Essen für morgen bestellen
-          icon: mdi:cart-arrow-down
-          color: red
-          state_content:
-          - meal
-        - type: tile
-          entity: sensor.kind_nachste_bestellfrist
-          name: Bestellfrist
-          icon: mdi:timer-sand
-          state_content:
-          - state
-    - type: conditional
-      conditions:
-      - condition: numeric_state
-        entity: sensor.kitaplus_offene_ruckmeldungen
-        above: 0
-      card:
-        type: vertical-stack
-        cards:
-        - type: tile
-          entity: sensor.kitaplus_offene_ruckmeldungen
-          name: Rückmeldungen offen
-          icon: mdi:email-alert-outline
-          color: orange
-        - type: markdown
-          content: |-
-            {% for m in state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] %}
-            - **{{ (m.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**{% if m.frist %} · bis {{ m.frist[8:10] }}.{{ m.frist[5:7] }}.{% endif %}
-            {% endfor %}
-  - type: grid
-    cards:
-    - type: heading
-      heading: Kita
-      heading_style: title
-      icon: mdi:school-outline
+    - type: markdown
+      content: |
+        {%- set wd = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'] -%}
+        {%- set mo = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'] -%}
+        <small>{{ wd[now().weekday()] ~ ', ' ~ now().day ~ '. ' ~ mo[now().month - 1] }}</small>
+
+        # KitaPlus
+      text_only: true
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+        {%- set kids = [{'n': 'KIND', 't': 'sensor.kind_bestellstatus_heute', 'm': 'sensor.kind_bestellstatus_morgen', 'd': 'sensor.kind_nachste_bestellfrist'}] -%}
+        {%- set ns = namespace(missed=[], opens=[], ordered=0, nodata=0) -%}
+        {%- for k in kids -%}
+        {%- for key, label in [('t', 'heute'), ('m', 'morgen')] -%}
+        {%- set st = states(k[key]) -%}
+        {%- if st == 'missed' -%}{%- set ns.missed = ns.missed + [k.n ~ ' ' ~ label] -%}{%- endif -%}
+        {%- if st == 'open' -%}{%- set ns.opens = ns.opens + [{'n': k.n, 'label': label, 'dl': k.d}] -%}{%- endif -%}
+        {%- if st == 'ordered' -%}{%- set ns.ordered = ns.ordered + 1 -%}{%- endif -%}
+        {%- if st in ['unavailable', 'unknown'] -%}{%- set ns.nodata = ns.nodata + 1 -%}{%- endif -%}
+        {%- endfor -%}
+        {%- endfor -%}
+        {%- set pending = 'sensor.kitaplus_offene_ruckmeldungen' -%}
+        {%- set pend = states(pending) | int(0) -%}
+        {%- set msgs = state_attr(pending, 'messages') or [] -%}
+        {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
+        {%- set total = ns.opens | count + pend -%}
+        {%- if ns.missed | count > 0 -%}
+        <ha-alert alert-type="error" title="Frist verpasst">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Bitte bei der Kita nachfragen.</ha-alert>
+        {%- elif total > 0 -%}
+        {%- set first = ns.opens[0] if ns.opens else none -%}
+        {%- set dlstate = states(first.dl) if first else 'unknown' -%}
+        {%- set dl = (as_datetime(dlstate) | as_local) if dlstate not in ['unknown', 'unavailable', 'none', ''] else none -%}
+        {%- set text = ('Essen für ' ~ first.n ~ ' ' ~ first.label ~ ' bestellen.' if first else 'Rückmeldung: ' ~ title) -%}
+        {%- set pill = '' -%}
+        {%- if dl and dl > now() -%}
+        {%- set mins = ((dl - now()).total_seconds() // 60) | int -%}
+        {%- set left = ((mins // 60) ~ ' Std.' ~ (' ' ~ (mins % 60) ~ ' Min.' if mins % 60 else '')) if mins >= 60 else (mins ~ ' Min.') -%}
+        {%- set dayl = 'heute' if dl.date() == now().date() else ('morgen' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()]) -%}
+        {%- set pill = 'Frist ' ~ dayl ~ ', ' ~ dl.strftime('%H:%M') ~ ' · noch ' ~ left -%}
+        {%- elif not first and msgs and msgs[0].frist -%}
+        {%- set pill = 'Antwort bis ' ~ dlabel(msgs[0].frist) -%}
+        {%- endif -%}
+        <ha-alert alert-type="warning" title="{{ 'Eine Sache ist offen' if total == 1 else total ~ ' Sachen sind offen' }}">{{ text | truncate(110, True, '…') }}{{ ' Dazu ' ~ (total - 1) ~ ' weitere.' if total > 1 else '' }}{% if pill %}<br><b>{{ pill }}</b>{% endif %}</ha-alert>
+        {%- elif is_state('binary_sensor.kitaplus_heute_geschlossen', 'on') -%}
+        {%- set reason = clean(state_attr('binary_sensor.kitaplus_heute_geschlossen', 'reason')) | trim -%}
+        ### <ha-icon icon="mdi:calendar-remove"></ha-icon> Kita heute geschlossen
+
+        {{ reason ~ '. ' if reason else '' }}{{ 'Morgen ist ebenfalls geschlossen.' if is_state('binary_sensor.kitaplus_morgen_geschlossen', 'on') else 'Morgen ist wieder geöffnet.' }}
+        {%- elif ns.nodata > 0 or states(pending) in ['unavailable', 'unknown'] -%}
+        <ha-alert alert-type="warning" title="Keine aktuellen Daten">KitaPlus ist gerade nicht erreichbar.</ha-alert>
+        {%- else -%}
+        <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
+        {%- endif -%}
     - type: tile
       entity: binary_sensor.kitaplus_heute_geschlossen
       name: Kita heute
       icon: mdi:school-outline
-      color: orange
       state_content:
       - state
       - reason
@@ -90,91 +87,331 @@ views:
       entity: binary_sensor.kitaplus_morgen_geschlossen
       name: Kita morgen
       icon: mdi:school-outline
-      color: orange
       state_content:
       - state
       - reason
   - type: grid
     cards:
-    - type: heading
-      heading: KIND
-      heading_style: title
-      icon: mdi:account-child-outline
-    - type: tile
-      entity: sensor.kind_bestellstatus_heute
-      name: Heute
-      icon: mdi:cart-outline
-      state_content:
-      - state
-      - meal
-    - type: tile
-      entity: sensor.kind_bestellstatus_morgen
-      name: Morgen
-      icon: mdi:cart-outline
-      state_content:
-      - state
-      - meal
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+
+        {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
+        {%- set icons = {'ordered': 'mdi:cart-check', 'open': 'mdi:cart-arrow-down', 'missed': 'mdi:cart-off', 'not_offered': 'mdi:minus-circle-outline'} -%}
+        ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
+        {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
+        {%- set st = states(ent) -%}
+        {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
+
+        **{{ label }}** · <ha-icon icon="{{ icons[st] if st in icons else 'mdi:help-circle-outline' }}"></ha-icon> **{{ words[st] if st in words else st }}**
+        {% if st != 'not_offered' and meal -%}
+        {{ meal | truncate(80, True, '…') }}
+        {% endif -%}
+        {% endfor %}
+        {%- set dlstate = states('sensor.kind_nachste_bestellfrist') -%}
+        {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
+        {%- set dl = as_datetime(dlstate) | as_local -%}
+        {%- set dayl = 'heute' if dl.date() == now().date() else ('morgen' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
+
+        <small>Nächste Bestellfrist: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+        {%- endif -%}
   - type: grid
     cards:
-    - type: heading
-      heading: Konto
-      heading_style: title
-      icon: mdi:wallet-outline
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+
+        ### <ha-icon icon="mdi:bulletin-board"></ha-icon> Schwarzes Brett
+        {% set posts = state_attr('sensor.kitaplus_schwarzes_brett', 'posts') or [] -%}
+        {% if posts | count == 0 -%}
+        Kein Beitrag am Schwarzen Brett.
+        {%- else -%}
+        {%- set p = posts[0] -%}
+        {%- set head = clean(p.titel) | trim -%}
+
+        **{{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}**
+        {% if p.datum %}
+        {{ dlabel(p.datum) }}
+        {% endif -%}
+        {%- set body = clean(p.text) | trim -%}
+        {% if body %}
+        {{ body | truncate(100, True, '…') }}
+        {% endif -%}
+        {%- endif -%}
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+
+        {%- set count = states('sensor.kitaplus_postfach') | int(0) -%}
+        {%- set items = state_attr('sensor.kitaplus_postfach', 'messages') or [] -%}
+        {%- set replies = state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] -%}
+        ### <ha-icon icon="mdi:email-outline"></ha-icon> Postfach · {{ count }} Nachrichten
+        {% for m in items[:2] %}
+        {%- set head = clean(m.titel) | trim -%}
+        {%- set due = namespace(value='') -%}
+        {%- for r in replies if r.id == m.id and r.frist -%}{%- set due.value = r.frist -%}{%- endfor %}
+
+        **{{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}**
+        {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · <ha-icon icon="mdi:clock-outline"></ha-icon> **Rückmeldung bis {{ dlabel(due.value) }}**{% elif false %} · keine Rückmeldung offen{% endif %}
+        {% endfor -%}
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+
+        ### <ha-icon icon="mdi:calendar"></ha-icon> Als Nächstes
+        {% set entries = state_attr('sensor.kitaplus_nachste_termine', 'entries') or [] -%}
+        {% if entries | count == 0 -%}
+        Keine anstehenden Termine.
+        {%- endif %}
+        {% for e in entries[:3] %}
+        {%- set head = clean(e.titel) | trim %}
+        **{{ dlabel(e.datum) }}** · {{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}{% if e.zeit %} · {{ e.zeit }} Uhr{% endif %}{% if e.schliesstag %} · <ha-icon icon="mdi:calendar-remove"></ha-icon> **Schließtag**{% endif %}
+
+        {% endfor -%}
     - type: tile
       entity: sensor.kitaplus_kontostand_verpflegung
-      name: Guthaben
-      icon: mdi:cash
+      name: Guthaben Verpflegung
+      icon: mdi:wallet-outline
       state_content:
       - state
-- title: Mitteilungen
-  path: mitteilungen
-  icon: mdi:message-text-outline
+- title: Wand
+  path: wand
+  icon: mdi:television
   type: sections
+  max_columns: 3
   sections:
   - type: grid
     cards:
-    - type: heading
-      heading: Schwarzes Brett
-      heading_style: title
-      icon: mdi:bulletin-board
     - type: markdown
-      content: |-
-        {% set items = state_attr('sensor.kitaplus_schwarzes_brett', 'posts') or [] %}
-        {% if items | length == 0 %}
-        _Keine Beiträge._
-        {% else %}
-        {% for p in items[:4] %}
-        **{{ (p.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**{% if p.datum %} · {{ p.datum[8:10] }}.{{ p.datum[5:7] }}.{{ p.datum[0:4] }}{% endif %}
+      content: |
+        {%- set wd = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'] -%}
+        {%- set mo = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'] -%}
+        ## {{ wd[now().weekday()] }}
 
-        {% set text = (p.text or '') | regex_replace('[*_`#>]', '') | regex_replace('[\n\r\t ]+', ' ') | trim %}
-        {% if text %}
-        {{ text | truncate(110) }}
+        # {{ now().day }}. {{ mo[now().month - 1] }}
+      text_only: true
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+        {%- set kids = [{'n': 'KIND', 't': 'sensor.kind_bestellstatus_heute', 'm': 'sensor.kind_bestellstatus_morgen', 'd': 'sensor.kind_nachste_bestellfrist'}] -%}
+        {%- set ns = namespace(missed=[], opens=[], ordered=0, nodata=0) -%}
+        {%- for k in kids -%}
+        {%- for key, label in [('t', 'heute'), ('m', 'morgen')] -%}
+        {%- set st = states(k[key]) -%}
+        {%- if st == 'missed' -%}{%- set ns.missed = ns.missed + [k.n ~ ' ' ~ label] -%}{%- endif -%}
+        {%- if st == 'open' -%}{%- set ns.opens = ns.opens + [{'n': k.n, 'label': label, 'dl': k.d}] -%}{%- endif -%}
+        {%- if st == 'ordered' -%}{%- set ns.ordered = ns.ordered + 1 -%}{%- endif -%}
+        {%- if st in ['unavailable', 'unknown'] -%}{%- set ns.nodata = ns.nodata + 1 -%}{%- endif -%}
+        {%- endfor -%}
+        {%- endfor -%}
+        {%- set pending = 'sensor.kitaplus_offene_ruckmeldungen' -%}
+        {%- set pend = states(pending) | int(0) -%}
+        {%- set msgs = state_attr(pending, 'messages') or [] -%}
+        {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
+        {%- set total = ns.opens | count + pend -%}
+        {%- if ns.missed | count > 0 -%}
+        <ha-alert alert-type="error" title="Frist verpasst">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Bitte bei der Kita nachfragen.</ha-alert>
+        {%- elif total > 0 -%}
+        {%- set first = ns.opens[0] if ns.opens else none -%}
+        {%- set dlstate = states(first.dl) if first else 'unknown' -%}
+        {%- set dl = (as_datetime(dlstate) | as_local) if dlstate not in ['unknown', 'unavailable', 'none', ''] else none -%}
+        {%- set text = ('Essen für ' ~ first.n ~ ' ' ~ first.label ~ ' bestellen.' if first else 'Rückmeldung: ' ~ title) -%}
+        {%- set pill = '' -%}
+        {%- if dl and dl > now() -%}
+        {%- set mins = ((dl - now()).total_seconds() // 60) | int -%}
+        {%- set left = ((mins // 60) ~ ' Std.' ~ (' ' ~ (mins % 60) ~ ' Min.' if mins % 60 else '')) if mins >= 60 else (mins ~ ' Min.') -%}
+        {%- set dayl = 'heute' if dl.date() == now().date() else ('morgen' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()]) -%}
+        {%- set pill = 'Frist ' ~ dayl ~ ', ' ~ dl.strftime('%H:%M') ~ ' · noch ' ~ left -%}
+        {%- elif not first and msgs and msgs[0].frist -%}
+        {%- set pill = 'Antwort bis ' ~ dlabel(msgs[0].frist) -%}
+        {%- endif -%}
+        <ha-alert alert-type="warning" title="{{ 'Eine Sache ist offen' if total == 1 else total ~ ' Sachen sind offen' }}">{{ text | truncate(110, True, '…') }}{{ ' Dazu ' ~ (total - 1) ~ ' weitere.' if total > 1 else '' }}{% if pill %}<br><b>{{ pill }}</b>{% endif %}</ha-alert>
+        {%- elif is_state('binary_sensor.kitaplus_heute_geschlossen', 'on') -%}
+        {%- set reason = clean(state_attr('binary_sensor.kitaplus_heute_geschlossen', 'reason')) | trim -%}
+        ### <ha-icon icon="mdi:calendar-remove"></ha-icon> Kita heute geschlossen
 
-        {% endif %}
-        {% endfor %}
-        {% endif %}
+        {{ reason ~ '. ' if reason else '' }}{{ 'Morgen ist ebenfalls geschlossen.' if is_state('binary_sensor.kitaplus_morgen_geschlossen', 'on') else 'Morgen ist wieder geöffnet.' }}
+        {%- elif ns.nodata > 0 or states(pending) in ['unavailable', 'unknown'] -%}
+        <ha-alert alert-type="warning" title="Keine aktuellen Daten">KitaPlus ist gerade nicht erreichbar.</ha-alert>
+        {%- else -%}
+        <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
+        {%- endif -%}
+    - type: tile
+      entity: binary_sensor.kitaplus_heute_geschlossen
+      name: Kita heute
+      icon: mdi:school-outline
+      state_content:
+      - state
+      - reason
+    - type: tile
+      entity: binary_sensor.kitaplus_morgen_geschlossen
+      name: Kita morgen
+      icon: mdi:school-outline
+      state_content:
+      - state
+      - reason
   - type: grid
     cards:
-    - type: heading
-      heading: Postfach
-      heading_style: title
-      icon: mdi:email-outline
     - type: markdown
-      content: |-
-        {% set items = state_attr('sensor.kitaplus_postfach', 'messages') or [] %}
-        {% if items | length == 0 %}
-        _Keine Nachrichten._
-        {% else %}
-        {% for p in items[:3] %}
-        **{{ (p.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**{% if p.datum %} · {{ p.datum[8:10] }}.{{ p.datum[5:7] }}.{{ p.datum[0:4] }}{% endif %}
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
 
-        {% set text = (p.text or '') | regex_replace('[*_`#>]', '') | regex_replace('[\n\r\t ]+', ' ') | trim %}
-        {% if text %}
-        {{ text | truncate(110) }}
+        {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
+        {%- set icons = {'ordered': 'mdi:cart-check', 'open': 'mdi:cart-arrow-down', 'missed': 'mdi:cart-off', 'not_offered': 'mdi:minus-circle-outline'} -%}
+        ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
+        {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
+        {%- set st = states(ent) -%}
+        {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
 
-        {% endif %}
+        **{{ label }}** · <ha-icon icon="{{ icons[st] if st in icons else 'mdi:help-circle-outline' }}"></ha-icon> **{{ words[st] if st in words else st }}**
+        {% if st != 'not_offered' and meal -%}
+        {{ meal | truncate(80, True, '…') }}
+        {% endif -%}
         {% endfor %}
-        {% endif %}
+        {%- set dlstate = states('sensor.kind_nachste_bestellfrist') -%}
+        {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
+        {%- set dl = as_datetime(dlstate) | as_local -%}
+        {%- set dayl = 'heute' if dl.date() == now().date() else ('morgen' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
+
+        <small>Nächste Bestellfrist: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+        {%- endif -%}
+  - type: grid
+    cards:
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+
+        ### <ha-icon icon="mdi:bulletin-board"></ha-icon> Schwarzes Brett
+        {% set posts = state_attr('sensor.kitaplus_schwarzes_brett', 'posts') or [] -%}
+        {% if posts | count == 0 -%}
+        Kein Beitrag am Schwarzen Brett.
+        {%- else -%}
+        {%- set p = posts[0] -%}
+        {%- set head = clean(p.titel) | trim -%}
+
+        **{{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}**
+        {% if p.datum %}
+        {{ dlabel(p.datum) }}
+        {% endif -%}
+
+        {%- endif -%}
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+
+        {%- set count = states('sensor.kitaplus_postfach') | int(0) -%}
+        {%- set items = state_attr('sensor.kitaplus_postfach', 'messages') or [] -%}
+        {%- set replies = state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] -%}
+        ### <ha-icon icon="mdi:email-outline"></ha-icon> Postfach · {{ count }} Nachrichten
+        {% for m in items[:1] %}
+        {%- set head = clean(m.titel) | trim -%}
+        {%- set due = namespace(value='') -%}
+        {%- for r in replies if r.id == m.id and r.frist -%}{%- set due.value = r.frist -%}{%- endfor %}
+
+        **{{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}**
+        {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · <ha-icon icon="mdi:clock-outline"></ha-icon> **Rückmeldung bis {{ dlabel(due.value) }}**{% elif true %} · keine Rückmeldung offen{% endif %}
+        {% endfor -%}
+    - type: markdown
+      content: |
+        {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
+        {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
+        {%- macro clean(t) -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
+        {%- endmacro -%}
+        {%- macro dlabel(iso) -%}
+        {%- set d = as_datetime(iso) -%}
+        {%- if d -%}{{ wd[d.weekday()] }} {{ '%02d' | format(d.day) ~ '.' ~ '%02d' | format(d.month) ~ '.' }}{%- endif -%}
+        {%- endmacro -%}
+
+        ### <ha-icon icon="mdi:calendar"></ha-icon> Als Nächstes
+        {% set entries = state_attr('sensor.kitaplus_nachste_termine', 'entries') or [] -%}
+        {% if entries | count == 0 -%}
+        Keine anstehenden Termine.
+        {%- endif %}
+        {% for e in entries[:2] %}
+        {%- set head = clean(e.titel) | trim %}
+        **{{ dlabel(e.datum) }}** · {{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}{% if e.zeit %} · {{ e.zeit }} Uhr{% endif %}{% if e.schliesstag %} · <ha-icon icon="mdi:calendar-remove"></ha-icon> **Schließtag**{% endif %}
+
+        {% endfor -%}
+    - type: tile
+      entity: sensor.kitaplus_kontostand_verpflegung
+      name: Guthaben Verpflegung
+      icon: mdi:wallet-outline
+      state_content:
+      - state
 - title: Kalender
   path: kalender
   icon: mdi:calendar

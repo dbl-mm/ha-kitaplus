@@ -87,6 +87,15 @@ class Account(TypedDict, total=False):
     kontostand: str | None
 
 
+class UpcomingEntry(TypedDict):
+    """One of the next appointments or closure days, flattened for dashboards."""
+
+    datum: str  # YYYY-MM-DD; an ongoing multi-day entry shows today
+    zeit: str | None  # HH:MM for timed entries, None for all-day entries
+    titel: str
+    schliesstag: bool  # closure day or public holiday
+
+
 class MealEntry(TypedDict):
     """One meal variant of a day, flattened by helpers.meals_on."""
 

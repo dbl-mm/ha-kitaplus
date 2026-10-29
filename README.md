@@ -195,10 +195,21 @@ Blueprint importieren* und die Adresse der Datei aus [`blueprints/automation/kit
 ## Dashboard-Vorlagen
 
 Ein bewusst ruhiges Dashboard im neuen Sections-Layout, nur mit eingebauten Karten, auf Deutsch und Englisch:
-**Heute** (Hinweise nur, wenn du etwas tun kannst; Kita; dein Kind: „Bestellt · Mittagessen“; Guthaben), **Mitteilungen** und
+**Heute** (eine Statuskarte, die das Wichtigste sagt; Kita; Essen pro Kind; Brett, Postfach, Termine, Guthaben), **Wand** (Tablet, drei Spalten) und
 **Kalender**. Dazu einzelne Karten zum Einfügen in dein eigenes Dashboard. Einbau in zwei Minuten:
 [dashboards/README.md](dashboards/README.md). Die Gestaltungsregeln stehen in [docs/dashboards.md](docs/dashboards.md). Wenn du es
 von einem Designer gestalten lassen möchtest: [Briefing für Designer](docs/designer-briefing.md).
+
+## So sieht es aus
+
+> Entwurf des Designs (Mockups mit erfundenen Daten). In deinem Home Assistant wirkt es etwas schlichter, weil Farben, Schriften und Rundungen von deinem Theme kommen. Echte Bildschirmfotos folgen.
+
+<p>
+<img src="docs/img/heute-nichts-zu-tun.png" alt="Heute: nichts zu tun" width="230">
+<img src="docs/img/heute-essen-offen.png" alt="Heute: Essen für ein Kind noch offen" width="230">
+<img src="docs/img/heute-frist-verpasst-dunkel.png" alt="Heute: Frist verpasst, dunkles Theme" width="230">
+<img src="docs/img/heute-kita-geschlossen.png" alt="Heute: Kita geschlossen" width="230">
+</p>
 
 ## Fehlerbehebung
 

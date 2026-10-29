@@ -16,17 +16,33 @@ Gebaut im Sections-Layout, nur mit **eingebauten Karten** (nichts zusätzlich in
 > **Voraussetzung:** die aktuelle Integration (Bestellstatus und Bestellfrist gibt es ab 0.2.0 bzw. 0.3.0). Zeigt eine Karte
 > „Entität nicht gefunden“, ist meist die Integration noch alt: in HACS aktualisieren und Home Assistant neu starten.
 
-## Was du siehst
-**Heute**
-1. **Hinweise** (nur wenn nötig, sonst verschwindet der Bereich): *Essen für morgen bestellen* bzw. *für heute noch bestellen*,
-   jeweils mit dem Gericht und der **Bestellfrist** darunter, und *Rückmeldungen offen* mit Titel und Frist. Es erscheint nur
-   etwas, solange noch bestellt werden kann; ist die Frist vorbei, wird nicht mehr dazu aufgefordert.
-2. **Kita:** *Kita heute* und *Kita morgen* (Geöffnet oder Geschlossen, bei Schließtagen mit Grund).
-3. **Dein Kind:** *Heute* und *Morgen* in einer Zeile, zum Beispiel „Bestellt · Mittagessen“ oder „Offen · Mittagessen“.
-4. **Konto:** das Guthaben.
+## Vorschau
 
-**Mitteilungen:** Schwarzes Brett (die letzten 4) und Postfach (die letzten 3) mit Titel, Datum und Textanfang.
-**Kalender:** eine Karte mit Termine, Schließtage und bestelltem Essen. Sie hat selbst einen Umschalter zwischen Liste, Woche und Monat.
+> Entwurf des Designs (Mockups mit erfundenen Daten). In deinem Home Assistant wirkt es etwas schlichter, weil Farben, Schriften und Rundungen von deinem Theme kommen. Echte Bildschirmfotos folgen.
+
+<p>
+<img src="../docs/img/heute-nichts-zu-tun.png" alt="Heute: nichts zu tun" width="230">
+<img src="../docs/img/heute-essen-offen.png" alt="Heute: Essen für ein Kind noch offen" width="230">
+<img src="../docs/img/heute-frist-verpasst-dunkel.png" alt="Heute: Frist verpasst, dunkles Theme" width="230">
+<img src="../docs/img/heute-kita-geschlossen.png" alt="Heute: Kita geschlossen" width="230">
+</p>
+
+## Was du siehst
+**Heute** (Handy, eine Spalte), von oben nach unten:
+1. **Datum und Status:** eine Karte sagt das Wichtigste. Rangfolge: *Frist verpasst* (rot) vor *N Sachen sind offen* (mit Frist und
+   Restzeit oder „Antwort bis …“) vor *Kita heute geschlossen* (mit Grund und Hinweis zu morgen) vor *Heute ist nichts zu tun*.
+   Sind keine Daten da, steht das auch dort.
+2. **Kita heute / morgen:** geöffnet oder geschlossen, mit Grund.
+3. **Essen für <Kind>:** Heute und Morgen mit Zustand in Worten („Bestellt“, „Offen“, „Frist verpasst“, „Kein Essen“), Symbol und Gericht, darunter die nächste Bestellfrist.
+4. **Schwarzes Brett:** nur der neueste Beitrag (Titel, Datum, Textanfang).
+5. **Postfach:** Anzahl und die letzten zwei Nachrichten; wartet eine auf Antwort, steht „Rückmeldung bis …“ dabei.
+6. **Als Nächstes:** die nächsten drei Termine, Schließtage sind markiert.
+7. **Guthaben.**
+
+**Wand** (Tablet im Querformat, drei Spalten): links Datum, Status und Kita; Mitte die Kinder; rechts Brett, Postfach, Termine, Guthaben,
+jeweils kürzer. **Kalender:** eine Karte mit Terminen, Schließtagen und bestelltem Essen.
+
+Schriften und Farben kommen von deinem Theme. Dafür braucht die Vorlage den Sensor **Nächste Termine** (ab Integration 0.3.0).
 
 Farben tragen nie allein die Aussage: Jede Kachel schreibt den Zustand in Worten und hat ein Symbol. Es gibt keine festen
 Farbwerte, nur Theme-Farben.

@@ -1,13 +1,7 @@
 # KitaPlus dashboard (template)
-type: vertical-stack
-cards:
-- type: heading
-  heading: Account
-  heading_style: title
-  icon: mdi:wallet-outline
-- type: tile
-  entity: sensor.kitaplus_meal_account_balance
-  name: Balance
-  icon: mdi:cash
-  state_content:
-  - state
+type: tile
+entity: sensor.kitaplus_meal_account_balance
+name: Meal account balance
+icon: mdi:wallet-outline
+state_content:
+- state

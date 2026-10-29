@@ -39,6 +39,9 @@
       },
       "next_order_deadline": {
         "default": "mdi:timer-sand"
+      },
+      "upcoming": {
+        "default": "mdi:calendar-clock"
       }
     },
     "binary_sensor": {

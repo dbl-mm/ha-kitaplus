@@ -91,3 +91,46 @@ def test_open_ended_or_broken_dates_do_not_crash():
     assert is_closed_on(events, date(2026, 12, 24))  # an open end counts for the first day
     assert not is_closed_on(events, date(2026, 12, 25))
     assert meals_on([{"datum": None}, {}], date(2026, 12, 24)) == []
+
+
+def test_upcoming_entries_are_sorted_flattened_and_skip_what_is_over_or_broken() -> None:
+    from custom_components.kitaplus.helpers import upcoming_entries
+
+    today = date(2026, 10, 29)
+    events = [
+        {
+            "id": 1,
+            "name": "Elternabend",
+            "startdatum": "2026-11-02T19:30:00",
+            "enddatum": "2026-11-02T21:00:00",
+        },
+        {
+            "id": 2,
+            "name": "Teamtag",
+            "istSchliesstag": True,
+            "startdatum": "2026-11-16T00:00:00",
+            "enddatum": "2026-11-16T23:59:00",
+        },
+        {
+            "id": 3,
+            "name": "Brückentage",
+            "istSchliesstag": True,
+            "startdatum": "2026-10-28T00:00:00",
+            "enddatum": "2026-10-30T23:59:00",
+        },
+        {"id": 4, "name": "Gestern", "startdatum": "2026-10-27T10:00:00", "enddatum": "2026-10-27T11:00:00"},
+        {"id": 5, "name": "Ohne Start", "startdatum": None},
+        {"id": 6, "name": "Kaputt", "startdatum": "garbage"},
+        {"id": 7, "name": "Open end", "startdatum": "2026-11-01T00:00:00", "enddatum": None},
+        {"id": 8, "name": None, "startdatum": "2026-11-20T08:00:00", "enddatum": "2026-11-20T09:00:00"},
+    ]
+    entries = upcoming_entries(events, today, limit=5)
+    assert [(e["datum"], e["zeit"], e["titel"], e["schliesstag"]) for e in entries] == [
+        ("2026-10-29", None, "Brückentage", True),  # running since yesterday: shown today
+        ("2026-11-01", None, "Open end", False),
+        ("2026-11-02", "19:30", "Elternabend", False),
+        ("2026-11-16", None, "Teamtag", True),
+        ("2026-11-20", "08:00", "", False),
+    ]
+    assert len(upcoming_entries(events, today, limit=2)) == 2
+    assert upcoming_entries([], today) == []

@@ -113,6 +113,9 @@
       },
       "next_order_deadline": {
         "name": "Next order deadline"
+      },
+      "upcoming": {
+        "name": "Upcoming dates"
       }
     },
     "calendar": {
