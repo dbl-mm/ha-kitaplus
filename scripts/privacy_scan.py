@@ -20,6 +20,8 @@ TEXT_KEYS = {
 }  # fmt: skip
 # Made-up addresses used by the tests, the GitHub noreply address, and file names like icon@2x.png.
 ALLOWED_EMAIL_DOMAINS = ("b.de", "example.de", "example.com", "users.noreply.github.com")
+# Everyday words that also occur in the real data and are not personal ("Mittagessen" means lunch).
+GENERIC_WORDS = {"mittagessen"}
 # Fixed strings from public specifications that can look like data (the year inside the YAML tag namespace).
 BENIGN = ("tag:yaml.org,2002:",)
 IMAGE_SUFFIX = re.compile(r"@\dx\.(png|jpg|webp)$")
@@ -61,7 +63,7 @@ def main() -> int:
             content = content.replace(benign, "")
         lowered = content.lower()
         hits = sum(1 for n in numbers if re.search(rf"(?<![\d.]){n}(?![\d.])", content))
-        hits_text = sum(1 for t in texts if t in lowered)
+        hits_text = sum(1 for t in texts - GENERIC_WORDS if t in lowered)
         found = {
             m.group(0).lower() for m in re.finditer(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}", content)
         }

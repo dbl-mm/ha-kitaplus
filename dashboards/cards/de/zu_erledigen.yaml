@@ -15,10 +15,13 @@ cards:
       icon: mdi:cart-arrow-down
       color: red
       state_content:
+      - meal
+    - type: tile
+      entity: sensor.kind_nachste_bestellfrist
+      name: Bestellfrist
+      icon: mdi:timer-sand
+      state_content:
       - state
-    - type: markdown
-      content: Die Bestellfrist legt deine Kita fest. Du findest sie in der KitaPlus-App unter *Verpflegung → Hilfe
-        → Bestellfristen*.
 - type: conditional
   conditions:
   - condition: state
@@ -33,10 +36,13 @@ cards:
       icon: mdi:cart-arrow-down
       color: red
       state_content:
+      - meal
+    - type: tile
+      entity: sensor.kind_nachste_bestellfrist
+      name: Bestellfrist
+      icon: mdi:timer-sand
+      state_content:
       - state
-    - type: markdown
-      content: Die Bestellfrist legt deine Kita fest. Du findest sie in der KitaPlus-App unter *Verpflegung → Hilfe
-        → Bestellfristen*.
 - type: conditional
   conditions:
   - condition: numeric_state
@@ -53,20 +59,5 @@ cards:
     - type: markdown
       content: |-
         {% for m in state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] %}
-        - **{{ m.titel }}**{% if m.frist %} · bis {{ m.frist[8:10] }}.{{ m.frist[5:7] }}.{% endif %}
+        - **{{ (m.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**{% if m.frist %} · bis {{ m.frist[8:10] }}.{{ m.frist[5:7] }}.{% endif %}
         {% endfor %}
-- type: conditional
-  conditions:
-  - condition: state
-    entity: sensor.kind_bestellstatus_heute
-    state_not: open
-  - condition: state
-    entity: sensor.kind_bestellstatus_morgen
-    state_not: open
-  - condition: numeric_state
-    entity: sensor.kitaplus_offene_ruckmeldungen
-    below: 1
-  card:
-    type: markdown
-    title: Nichts zu tun
-    content: ✓ Alles bestellt, keine Rückmeldung offen.

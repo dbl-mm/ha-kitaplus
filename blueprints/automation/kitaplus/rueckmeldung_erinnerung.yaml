@@ -1,5 +1,5 @@
 blueprint:
-  name: "KitaPlus: Erinnerung an offene Rückmeldungen"
+  name: "KitaPlus: Offene Rückmeldungen"
   description: |
     Erinnert an Nachrichten der Kita, die du **bestätigen oder beantworten** musst (zum Beispiel Einwilligungen oder
     Umfragen), mit Titel und Frist. Meldet sofort, wenn eine neue Rückmeldung nötig wird, und auf Wunsch jeden Tag erneut.

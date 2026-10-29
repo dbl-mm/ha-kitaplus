@@ -98,24 +98,6 @@ def test_committed_files_are_exactly_what_the_generator_writes(language, tmp_pat
     assert names == {Path(n).name for n in all_files(language) if n.startswith("cards/")}, "no leftover cards"
 
 
-@pytest.mark.parametrize("language", LANGUAGES)
-def test_templates_only_use_the_two_placeholders_the_readme_explains(language) -> None:
-    """`KIND` (shown name) and `kind` (part of entity ids) are the only things a user has to replace."""
-    for name, text in all_files(language).items():
-        body = "\n".join(line for line in text.splitlines() if not line.startswith("#"))
-        cleaned = body.replace(".kind_", ".x_").replace("KIND", "X")
-        assert not re.search(r"\bkind\b", cleaned, re.IGNORECASE), f"{name}: stray placeholder"
-        assert (
-            ".kind_" in body
-            or name.endswith(("status.yaml", "guthaben.yaml", "balance.yaml"))
-            or "calendar" in name
-            or "bulletin" in name
-            or "schwarzes" in name
-            or "mailbox" in name
-            or "postfach" in name
-        ), name
-
-
 # ------------------------------------------------------------------------------------- design rules
 
 
@@ -140,21 +122,6 @@ def test_status_is_never_shown_by_colour_alone(language) -> None:
                 assert "state" in card.get("state_content", []), f"{name}: {card['entity']}"
             if card.get("type") == "tile":
                 assert card.get("name") and card.get("icon"), f"{name}: tile without name or icon"
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-def test_the_first_view_answers_what_needs_attention_before_the_details(language) -> None:
-    today = yaml.safe_load(all_files(language)[f"kitaplus_{language}.yaml"])["views"][0]
-    headings = [c["heading"] for s in today["sections"] for c in s["cards"] if c.get("type") == "heading"]
-    t = gen.TEXT[language]
-    assert headings[:2] == [t["kita"], t["todo"]], "status first, then what to do, then the children"
-    todo = today["sections"][1]["cards"]
-    assert all(c["type"] in ("heading", "conditional") for c in todo), (
-        "the to-do area only shows what is needed"
-    )
-    assert any(c.get("card", {}).get("title") == t["all_done"] for c in todo), (
-        "and a calm card when it is empty"
-    )
 
 
 # --------------------------------------------------------------------------- the real entities exist
@@ -182,17 +149,6 @@ async def test_every_entity_the_dashboards_use_exists(hass: HomeAssistant, stack
 def test_names_are_turned_into_entity_ids_exactly_like_home_assistant() -> None:
     for name in ("Anna", "Jörg", "Mäx", "Strauß", "Zoë", "Anna-Lena", "Luis Paul", "Çağla", "O'Neil", CHILD):
         assert gen.slugify(name) == ha_slugify(name), name
-
-
-@pytest.mark.parametrize("language", LANGUAGES)
-def test_several_children_each_get_their_own_section_and_calendar(language) -> None:
-    data = gen.build(language, ["Anna", "Jörg"])
-    text = gen.dump(data)
-    for slug, shown in (("anna", "Anna"), ("jorg", "Jörg")):
-        assert f"sensor.{slug}_{gen.SLUGS[language]['meal_today']}" in text
-        assert f"calendar.{slug}_{gen.SLUGS[language]['meals']}" in text
-        assert any(c.get("heading") == shown for s in data["views"][0]["sections"] for c in s["cards"])
-    assert "kind_" not in text and "KIND" not in text, "no placeholder is left"
 
 
 # --------------------------------------------------------------------- the templates render properly
@@ -235,37 +191,141 @@ async def test_empty_lists_say_so_instead_of_showing_nothing(hass: HomeAssistant
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
+def test_templates_only_use_the_two_placeholders_the_readme_explains(language) -> None:
+    """`KIND` (shown name) and `kind` (part of entity ids) are the only things a user has to replace."""
+    for name, text in all_files(language).items():
+        body = "\n".join(line for line in text.splitlines() if not line.startswith("#"))
+        cleaned = body.replace(".kind_", ".x_").replace("KIND", "X")
+        assert not re.search(r"\bkind\b", cleaned, re.IGNORECASE), f"{name}: stray placeholder"
+
+
+# ------------------------------------------------------------------------------------- the layout
+
+
+def first_view(language: str) -> dict:
+    return yaml.safe_load(gen.dump(gen.build(language)))["views"][0]
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_the_dashboard_is_small_and_has_no_diagnostics_or_charts(language) -> None:
+    """Less is more: three views, one calendar, no chart with a single dot, no technical view."""
+    t = gen.TEXT[language]
+    views = yaml.safe_load(gen.dump(gen.build(language)))["views"]
+    assert [v["title"] for v in views] == [t["view_today"], t["view_messages"], t["view_calendar"]]
+    text = gen.dump(gen.build(language))
+    assert "history-graph" not in text and "type: entities" not in text
+    assert text.count("type: calendar") == 1, "the calendar card brings its own list/week/month switch"
+    assert text.count(t["balance"] + "\n") <= 2, (
+        "the balance is mentioned once as a tile (plus the section title)"
+    )
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_the_action_area_has_no_heading_so_it_disappears_when_there_is_nothing_to_do(language) -> None:
+    sections = first_view(language)["sections"]
+    todo = sections[0]["cards"]
+    assert all(card["type"] == "conditional" for card in todo), (
+        "only conditional cards, nothing always visible"
+    )
+    assert len(todo) == 3, "today open, tomorrow open, replies needed"
+    t = gen.TEXT[language]
+    headings = [c["heading"] for s in sections[1:] for c in s["cards"] if c.get("type") == "heading"]
+    assert headings == [t["kita"], gen.PLACEHOLDER_NAME, t["account"]], (
+        "Kita, then each child, then the account"
+    )
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_each_fact_is_shown_once_and_each_child_needs_just_two_tiles(language) -> None:
+    sections = first_view(language)["sections"]
+    child = next(s for s in sections if any(c.get("heading") == gen.PLACEHOLDER_NAME for c in s["cards"]))
+    tiles = [c for c in child["cards"] if c["type"] == "tile"]
+    slugs = gen.SLUGS[language]
+    assert [c["entity"] for c in tiles] == [
+        f"sensor.kind_{slugs['status_today']}",
+        f"sensor.kind_{slugs['status_tomorrow']}",
+    ]
+    assert all(c["state_content"] == ["state", "meal"] for c in tiles), "e.g. 'Bestellt · Mittagessen'"
+    entities = [c["entity"] for s in sections for c in iter_cards(s) if c.get("type") == "tile"]
+    visible = [e for e in entities if e.endswith(slugs["balance"])]
+    assert len(visible) == 1
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_several_children_each_get_their_own_section_and_calendar(language) -> None:
+    data = gen.build(language, ["Anna", "Jörg"])
+    text = gen.dump(data)
+    slugs = gen.SLUGS[language]
+    for slug, shown in (("anna", "Anna"), ("jorg", "Jörg")):
+        assert f"sensor.{slug}_{slugs['status_today']}" in text
+        assert f"sensor.{slug}_{slugs['status_tomorrow']}" in text
+        assert f"calendar.{slug}_{slugs['meals']}" in text
+        assert any(c.get("heading") == shown for s in data["views"][0]["sections"] for c in s["cards"])
+    names = [
+        c["name"]
+        for c in iter_cards(data["views"][0]["sections"][0])
+        if c.get("type") == "tile" and "Anna" in c["name"]
+    ]
+    assert len(names) == 2, "with several children the reminders say whose meal it is"
+    assert "kind_" not in text and "KIND" not in text, "no placeholder is left"
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
 def test_the_order_reminder_only_shows_while_ordering_is_still_possible(language) -> None:
     """A missed deadline must never produce a "please order" card: there is nothing left to do about it."""
+    slugs = gen.SLUGS[language]
     for name, text in design_subjects(language).items():
         for card in iter_cards(yaml.safe_load(text)):
             for condition in card.get("conditions", []):
                 if str(condition.get("entity", "")).endswith(
-                    (gen.SLUGS[language]["status_today"], gen.SLUGS[language]["status_tomorrow"])
+                    (slugs["status_today"], slugs["status_tomorrow"])
                 ):
                     assert condition == {
                         "condition": "state",
                         "entity": condition["entity"],
-                        **({"state": "open"} if "state" in condition else {"state_not": "open"}),
-                    }, f"{name}: only 'open' may trigger (or calm) a card, never 'missed'"
-    todo = yaml.safe_load(design_subjects(language)["generated"])["views"][0]["sections"][1]["cards"]
+                        "state": "open",
+                    }, f"{name}: only 'open' may show a reminder, never 'missed'"
     reminders = [
-        c for c in todo if c.get("type") == "conditional" and c["conditions"][0].get("state") == "open"
+        c for c in first_view(language)["sections"][0]["cards"] if c["conditions"][0].get("state") == "open"
     ]
     assert len(reminders) == 2, "one for today and one for tomorrow"
-    hint = gen.TEXT[language]["deadline_hint"]
-    assert all(any(inner.get("content") == hint for inner in c["card"]["cards"]) for c in reminders)
+    for reminder in reminders:
+        deadline, meal = reminder["card"]["cards"][1], reminder["card"]["cards"][0]
+        assert deadline["entity"].endswith(slugs["next_deadline"]), (
+            "the deadline sits right under the reminder"
+        )
+        assert meal["state_content"] == ["meal"], "the reminder names the meal instead of repeating the state"
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-def test_every_child_section_shows_meals_order_status_and_the_next_deadline(language) -> None:
-    """A rule that exists only in the text-key table but not on the dashboard is no help to anybody."""
-    section = yaml.safe_load(design_subjects(language)["generated"])["views"][0]["sections"][2]["cards"]
-    entities = [c.get("entity") for c in section if c.get("type") == "tile"]
-    slugs = gen.SLUGS[language]
-    assert entities == [
-        f"sensor.kind_{slugs['meal_today']}",
-        f"sensor.kind_{slugs['meal_tomorrow']}",
-        f"sensor.kind_{slugs['status_tomorrow']}",
-        f"sensor.kind_{slugs['next_deadline']}",
+async def test_markup_a_kita_puts_into_titles_and_texts_never_shows_up_as_stray_signs(
+    hass, stack, language
+) -> None:
+    """A Kita wrote `**Gartenfest **` as a title. The card shows a clean bold title, not raw asterisks."""
+    hass.config.language = language
+    post = {
+        "id": 1,
+        "datum": "2026-10-28T09:00:00",
+        "titel": "**Gartenfest **",
+        "text": "Erste Zeile\n**fett** und _kursiv_ " + "wort " * 80,
+    }
+    await setup_integration(hass, stack, async_get_board=[post])
+    board = next(c for c in markdown_cards(language) if "'posts'" in c)
+    rendered = Template(board, hass).async_render(parse_result=False)
+    assert "**Gartenfest**" in rendered, "title cleaned and bolded once"
+    assert "****" not in rendered and "** " not in rendered.replace("**Gartenfest**", "")
+    excerpt = next(line for line in rendered.splitlines() if line.startswith("Erste Zeile"))
+    assert "Erste Zeile fett und kursiv" in excerpt, "line breaks and markup signs are gone"
+    assert len(excerpt) <= gen.EXCERPT + 3 and excerpt.endswith("..."), "the text is shortened"
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_the_message_lists_are_limited_to_what_fits_on_a_dashboard(hass, stack, language) -> None:
+    hass.config.language = language
+    posts = [
+        {"id": n, "datum": "2026-10-28T09:00:00", "titel": f"Beitrag {n}", "text": "x"} for n in range(1, 6)
     ]
+    await setup_integration(hass, stack, async_get_board=posts)
+    board = next(c for c in markdown_cards(language) if "'posts'" in c)
+    rendered = Template(board, hass).async_render(parse_result=False)
+    assert rendered.count("Beitrag") == gen.BOARD_ITEMS

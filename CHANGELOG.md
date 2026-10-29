@@ -9,7 +9,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   - Neuer Sensor **Nächste Bestellfrist** (Zeitstempel) pro Kind.
   - Das Ereignis `kitaplus_order_deadline` wird zur eingestellten Zeit vor der Frist ausgelöst, nur wenn der Tag noch nicht bestellt ist und nachdem frische Daten geholt wurden.
 - Neuer Blueprint **„Erinnerung kurz vor der Bestellfrist“** (braucht keine Uhrzeit, der Zeitpunkt ergibt sich aus der Frist).
-- Dashboard-Vorlagen zeigen je Kind **Bestellung morgen** und **Nächste Bestellfrist**.
+- **Dashboard-Vorlagen deutlich ruhiger:** drei Ansichten (Heute, Mitteilungen, Kalender) statt vier. Hinweise erscheinen nur, wenn du etwas tun kannst, und der Bereich verschwindet sonst ganz. Pro Kind genügen zwei Kacheln („Bestellt · Mittagessen“). Entfallen sind Diagramm, Diagnose-Ansicht, doppelter Kalender und alle Wiederholungen. Formatierungszeichen in Titeln der Kita (zum Beispiel `**Gartenfest**`) erscheinen nicht mehr als Sternchen.
+- Der Bestellstatus nennt das Gericht im Attribut `meal`.
+- [Briefing für Designer](docs/designer-briefing.md): was an Daten verfügbar ist, wie aktuell es ist und was es nicht gibt.
 
 ## [0.2.0]
 ### Neu

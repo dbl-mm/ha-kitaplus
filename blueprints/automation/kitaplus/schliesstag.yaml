@@ -1,5 +1,5 @@
 blueprint:
-  name: "KitaPlus: Schließtag – Hinweis am Vorabend und Aktion am Morgen"
+  name: "KitaPlus: Schließtag"
   description: |
     Meldet **am Vorabend**, dass die Kita morgen geschlossen ist (auch Feiertage), und kann **am Morgen des
     Schließtags** eine Aktion ausführen, zum Beispiel den Wecker abschalten oder die Betreuung anstoßen.

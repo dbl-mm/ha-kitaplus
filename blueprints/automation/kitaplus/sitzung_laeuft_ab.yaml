@@ -1,5 +1,5 @@
 blueprint:
-  name: "KitaPlus: Hinweis, bevor die Anmeldung abläuft"
+  name: "KitaPlus: Anmeldung läuft ab"
   description: |
     Warnt rechtzeitig, bevor die gespeicherte **KitaPlus-Anmeldung** abläuft, damit du dich in Ruhe neu anmelden kannst
     (**Einstellungen → Geräte & Dienste → KitaPlus → ⋮ → Neu konfigurieren**). Danach zeigt Home Assistant

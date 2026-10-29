@@ -10,9 +10,9 @@ was active when the integration was set up, so the German and English ids differ
 (`sensor.kitaplus_postfach` and `sensor.kitaplus_mailbox`). One source keeps both languages in step, and
 tests/test_dashboards.py checks every referenced entity id against the running integration.
 
-Design rules (see docs/dashboards.md): answer "do I have to do something today?" first, show only what needs
-attention, never rely on colour alone (every tile also says the state in words), use theme colours only,
-and use built-in cards only so nothing but Home Assistant itself is needed.
+Design rules (see docs/dashboards.md): show as little as possible and make it obvious. Anything that needs action
+appears only when there is something to do, status is always written in words (never colour alone), every fact
+is shown once, theme colours only, built-in cards only.
 """
 
 from __future__ import annotations
@@ -73,80 +73,54 @@ TEXT: dict[str, dict[str, str]] = {
     "de": {
         "title": "Kita",
         "view_today": "Heute",
-        "view_calendar": "Kalender",
         "view_messages": "Mitteilungen",
-        "view_diagnostics": "Diagnose",
+        "view_calendar": "Kalender",
         "kita": "Kita",
+        "kita_today": "Kita heute",
+        "kita_tomorrow": "Kita morgen",
         "today": "Heute",
         "tomorrow": "Morgen",
-        "todo": "Zu erledigen",
-        "order_meal_tomorrow": "Essen für morgen bestellen",
-        "order_meal_today": "Essen für heute noch bestellen",
-        "order_status": "Bestellung morgen",
-        "next_deadline": "Nächste Bestellfrist",
-        "deadline_hint": "Die Bestellfrist legt deine Kita fest. Du findest sie in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*.",
+        "order_today": "Essen für heute noch bestellen",
+        "order_tomorrow": "Essen für morgen bestellen",
+        "deadline": "Bestellfrist",
         "open_replies": "Rückmeldungen offen",
-        "all_done": "Nichts zu tun",
-        "all_done_text": "✓ Alles bestellt, keine Rückmeldung offen.",
-        "meal_today": "Essen heute",
-        "meal_tomorrow": "Essen morgen",
+        "account": "Konto",
         "balance": "Guthaben",
-        "balance_history": "Guthaben, letzte 10 Tage",
-        "week": "Die nächsten 7 Tage",
-        "month": "Monat",
         "board": "Schwarzes Brett",
         "mailbox": "Postfach",
         "no_posts": "Keine Beiträge.",
         "no_messages": "Keine Nachrichten.",
         "due": "bis",
-        "connection": "Verbindung",
-        "session": "Sitzung gültig bis",
-        "session_hint": (
-            "Der Sensor **Sitzung gültig bis** ist standardmäßig ausgeschaltet. Einschalten unter "
-            "*Einstellungen → Geräte & Dienste → KitaPlus → Entitäten*. Er zeigt, wann du dich neu anmelden musst."
-        ),
-        "all_values": "Alle Werte",
         "date_format": "dmy",
     },
     "en": {
         "title": "Kita",
         "view_today": "Today",
-        "view_calendar": "Calendar",
         "view_messages": "Messages",
-        "view_diagnostics": "Diagnostics",
+        "view_calendar": "Calendar",
         "kita": "Kita",
+        "kita_today": "Kita today",
+        "kita_tomorrow": "Kita tomorrow",
         "today": "Today",
         "tomorrow": "Tomorrow",
-        "todo": "To do",
-        "order_meal_tomorrow": "Order tomorrow's meal",
-        "order_meal_today": "Order today's meal while you still can",
-        "order_status": "Order for tomorrow",
-        "next_deadline": "Next order deadline",
-        "deadline_hint": "Your Kita sets the order deadline. You can find it in the KitaPlus app under *Verpflegung → Hilfe → Bestellfristen*.",
+        "order_today": "Order today's meal while you can",
+        "order_tomorrow": "Order tomorrow's meal",
+        "deadline": "Order deadline",
         "open_replies": "Replies needed",
-        "all_done": "Nothing to do",
-        "all_done_text": "✓ Everything is ordered, no reply is needed.",
-        "meal_today": "Meal today",
-        "meal_tomorrow": "Meal tomorrow",
+        "account": "Account",
         "balance": "Balance",
-        "balance_history": "Balance, last 10 days",
-        "week": "Next 7 days",
-        "month": "Month",
         "board": "Bulletin board",
         "mailbox": "Mailbox",
         "no_posts": "No posts.",
         "no_messages": "No messages.",
         "due": "due",
-        "connection": "Connection",
-        "session": "Session valid until",
-        "session_hint": (
-            "The **Session valid until** sensor is off by default. Turn it on under "
-            "*Settings → Devices & services → KitaPlus → Entities*. It shows when you have to sign in again."
-        ),
-        "all_values": "All values",
         "date_format": "iso",
     },
 }
+
+BOARD_ITEMS = 4  # the sensor keeps the last 5; four are plenty on a dashboard
+MAILBOX_ITEMS = 3
+EXCERPT = 110  # characters of text per item
 
 
 class Ids:
@@ -169,15 +143,17 @@ def slugify(name: str) -> str:
     return "_".join("".join(c if c.isalnum() else " " for c in ascii_name.lower()).split())
 
 
-def date_expr(var: str, style: str) -> str:
+def short_date(var: str, style: str) -> str:
     """A date from KitaPlus' `YYYY-MM-DDTHH:MM:SS`, cut from the text so no time zone can shift the day."""
+    if style == "dmy":
+        return f"{{{{ {var}[8:10] }}}}.{{{{ {var}[5:7] }}}}."
+    return f"{{{{ {var}[5:10] }}}}"
+
+
+def full_date(var: str, style: str) -> str:
     if style == "dmy":
         return f"{{{{ {var}[8:10] }}}}.{{{{ {var}[5:7] }}}}.{{{{ {var}[0:4] }}}}"
     return f"{{{{ {var}[0:10] }}}}"
-
-
-def short_date(var: str, style: str) -> str:
-    return f"{{{{ {var}[8:10] }}}}.{{{{ {var}[5:7] }}}}." if style == "dmy" else f"{{{{ {var}[5:10] }}}}"
 
 
 # ----------------------------------------------------------------------------------------------- cards
@@ -198,19 +174,17 @@ def heading(text: str, icon: str) -> dict:
     return {"type": "heading", "heading": text, "heading_style": "title", "icon": icon}
 
 
-def status_cards(t: dict[str, str], ids: Ids) -> list[dict]:
-    """Is the Kita open today and tomorrow? Two tiles with the state in words."""
+def kita_cards(t: dict[str, str], account: Ids) -> list[dict]:
+    """Is the Kita open today and tomorrow? The state is written out; the reason (e.g. a bridge day) follows."""
+    closed_today = account.account("binary_sensor", "closed_today")
+    closed_tomorrow = account.account("binary_sensor", "closed_tomorrow")
     return [
         tile(
-            ids.account("binary_sensor", "closed_today"),
-            t["today"],
-            "mdi:school-outline",
-            color="orange",
-            content=["state", "reason"],
+            closed_today, t["kita_today"], "mdi:school-outline", color="orange", content=["state", "reason"]
         ),
         tile(
-            ids.account("binary_sensor", "closed_tomorrow"),
-            t["tomorrow"],
+            closed_tomorrow,
+            t["kita_tomorrow"],
             "mdi:school-outline",
             color="orange",
             content=["state", "reason"],
@@ -218,45 +192,39 @@ def status_cards(t: dict[str, str], ids: Ids) -> list[dict]:
     ]
 
 
-def todo_cards(t: dict[str, str], ids_for: list[Ids], account: Ids) -> list[dict]:
-    """Only what needs attention; a calm 'nothing to do' card when everything is fine.
+def child_cards(t: dict[str, str], ids: Ids, display: str) -> list[dict]:
+    """Two tiles per child: "Ordered · Lunch" for today and tomorrow. The icon follows the state."""
+    return [
+        heading(display, "mdi:account-child-outline"),
+        tile(
+            ids.of_child("sensor", "status_today"), t["today"], "mdi:cart-outline", content=["state", "meal"]
+        ),
+        tile(
+            ids.of_child("sensor", "status_tomorrow"),
+            t["tomorrow"],
+            "mdi:cart-outline",
+            content=["state", "meal"],
+        ),
+    ]
 
-    A reminder to order only appears while KitaPlus still accepts the order (status "open"). A missed deadline
-    is not shown here, because there is nothing left to do about it.
-    """
-    cards: list[dict] = []
-    calm: list[dict] = []
-    for ids in ids_for:
-        for key, name_key in (
-            ("status_today", "order_meal_today"),
-            ("status_tomorrow", "order_meal_tomorrow"),
-        ):
-            sensor = ids.of_child("sensor", key)
-            cards.append(
-                {
-                    "type": "conditional",
-                    "conditions": [{"condition": "state", "entity": sensor, "state": "open"}],
-                    "card": {
-                        "type": "vertical-stack",
-                        "cards": [
-                            tile(sensor, t[name_key], "mdi:cart-arrow-down", color="red", content=["state"]),
-                            {"type": "markdown", "content": t["deadline_hint"]},
-                        ],
-                    },
-                }
-            )
-            calm.append({"condition": "state", "entity": sensor, "state_not": "open"})
+
+def balance_cards(t: dict[str, str], account: Ids) -> list[dict]:
+    return [
+        heading(t["account"], "mdi:wallet-outline"),
+        tile(account.account("sensor", "balance"), t["balance"], "mdi:cash", content=["state"]),
+    ]
+
+
+def replies_cards(t: dict[str, str], account: Ids) -> list[dict]:
+    """Only while a message needs an answer: a tile and the titles with their deadline."""
     pending = account.account("sensor", "pending")
-    messages_template = (
+    titles = (
         "{% for m in state_attr('" + pending + "', 'messages') or [] %}\n"
-        "- **{{ m.titel }}**{% if m.frist %} · "
-        + t["due"]
-        + " "
-        + short_date("m.frist", t["date_format"])
-        + "{% endif %}\n"
+        "- **{{ (m.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**"
+        "{% if m.frist %} · " + t["due"] + " " + short_date("m.frist", t["date_format"]) + "{% endif %}\n"
         "{% endfor %}"
     )
-    cards.append(
+    return [
         {
             "type": "conditional",
             "conditions": [{"condition": "numeric_state", "entity": pending, "above": 0}],
@@ -264,79 +232,59 @@ def todo_cards(t: dict[str, str], ids_for: list[Ids], account: Ids) -> list[dict
                 "type": "vertical-stack",
                 "cards": [
                     tile(pending, t["open_replies"], "mdi:email-alert-outline", color="orange"),
-                    {"type": "markdown", "content": messages_template},
+                    {"type": "markdown", "content": titles},
                 ],
             },
         }
-    )
-    calm.append({"condition": "numeric_state", "entity": pending, "below": 1})
-    cards.append(
-        {
-            "type": "conditional",
-            "conditions": calm,
-            "card": {"type": "markdown", "title": t["all_done"], "content": t["all_done_text"]},
-        }
-    )
-    return cards
-
-
-def child_cards(t: dict[str, str], ids: Ids, display: str) -> list[dict]:
-    return [
-        heading(display, "mdi:account-child-outline"),
-        tile(
-            ids.of_child("sensor", "meal_today"),
-            t["meal_today"],
-            "mdi:silverware-fork-knife",
-            content=["state"],
-        ),
-        tile(
-            ids.of_child("sensor", "meal_tomorrow"),
-            t["meal_tomorrow"],
-            "mdi:silverware-fork-knife",
-            content=["state"],
-        ),
-        tile(
-            ids.of_child("sensor", "status_tomorrow"),
-            t["order_status"],
-            "mdi:cart-outline",
-            content=["state"],
-        ),
-        tile(
-            ids.of_child("sensor", "next_deadline"), t["next_deadline"], "mdi:timer-sand", content=["state"]
-        ),
     ]
 
 
-def balance_cards(t: dict[str, str], account: Ids) -> list[dict]:
-    balance = account.account("sensor", "balance")
-    return [
-        heading(t["balance"], "mdi:wallet-outline"),
-        tile(balance, t["balance"], "mdi:cash", content=["state"]),
-        {
-            "type": "history-graph",
-            "title": t["balance_history"],
-            "entities": [balance],
-            "hours_to_show": 240,  # the recorder keeps 10 days by default
-            "show_names": False,
-        },
-    ]
+def todo_cards(t: dict[str, str], ids_for: list[tuple[Ids, str]], account: Ids) -> list[dict]:
+    """Only what needs attention. When there is nothing to do, nothing is shown at all (and the section hides).
+
+    A reminder to order only appears while ordering is still possible (status "open"). A missed deadline is not
+    shown here, because there is nothing left to do about it.
+    """
+    cards: list[dict] = []
+    for ids, display in ids_for:
+        for key, name_key in (("status_today", "order_today"), ("status_tomorrow", "order_tomorrow")):
+            sensor = ids.of_child("sensor", key)
+            name = t[name_key] if len(ids_for) == 1 else f"{display}: {t[name_key]}"
+            deadline = ids.of_child("sensor", "next_deadline")
+            cards.append(
+                {
+                    "type": "conditional",
+                    "conditions": [{"condition": "state", "entity": sensor, "state": "open"}],
+                    "card": {
+                        "type": "vertical-stack",
+                        "cards": [
+                            tile(sensor, name, "mdi:cart-arrow-down", color="red", content=["meal"]),
+                            tile(deadline, t["deadline"], "mdi:timer-sand", content=["state"]),
+                        ],
+                    },
+                }
+            )
+    return [*cards, *replies_cards(t, account)]
 
 
-def list_markdown(entity: str, attribute: str, empty: str, t: dict[str, str]) -> dict:
-    """Latest items from a sensor attribute: bold title, date, shortened text."""
-    when = date_expr("p.datum", t["date_format"])
+def list_markdown(entity: str, attribute: str, empty: str, limit: int, t: dict[str, str]) -> dict:
+    """Latest items from a sensor attribute: bold title, date, a short excerpt. Markdown signs that Kitas put
+    into their titles (for example `**Gartenfest**`) are removed, so they never show up as stray asterisks."""
+    when = full_date("p.datum", t["date_format"])
     content = (
         "{% set items = state_attr('" + entity + "', '" + attribute + "') or [] %}\n"
         "{% if items | length == 0 %}\n"
         "_" + empty + "_\n"
         "{% else %}\n"
-        "{% for p in items %}\n"
-        "**{{ p.titel or '–' }}**{% if p.datum %} · " + when + "{% endif %}\n"
-        "{% if p.text %}\n"
-        "{{ p.text | truncate(220) }}\n"
-        "{% endif %}\n"
-        "{% if not loop.last %}\n"
-        "---\n"
+        "{% for p in items[:" + str(limit) + "] %}\n"
+        "**{{ (p.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**{% if p.datum %} · "
+        + when
+        + "{% endif %}\n"
+        "\n"
+        "{% set text = (p.text or '') | regex_replace('[*_`#>]', '') | regex_replace('[\\n\\r\\t ]+', ' ') | trim %}\n"
+        "{% if text %}\n"
+        "{{ text | truncate(" + str(EXCERPT) + ") }}\n"
+        "\n"
         "{% endif %}\n"
         "{% endfor %}\n"
         "{% endif %}"
@@ -346,53 +294,25 @@ def list_markdown(entity: str, attribute: str, empty: str, t: dict[str, str]) ->
 
 def board_cards(t: dict[str, str], account: Ids) -> list[dict]:
     board = account.account("sensor", "board")
-    return [heading(t["board"], "mdi:bulletin-board"), list_markdown(board, "posts", t["no_posts"], t)]
+    return [
+        heading(t["board"], "mdi:bulletin-board"),
+        list_markdown(board, "posts", t["no_posts"], BOARD_ITEMS, t),
+    ]
 
 
 def mailbox_cards(t: dict[str, str], account: Ids) -> list[dict]:
     messages = account.account("sensor", "messages")
     return [
         heading(t["mailbox"], "mdi:email-outline"),
-        list_markdown(messages, "messages", t["no_messages"], t),
+        list_markdown(messages, "messages", t["no_messages"], MAILBOX_ITEMS, t),
     ]
 
 
-def calendar_cards(t: dict[str, str], account: Ids, ids_for: list[Ids]) -> list[dict]:
+def calendar_cards(account: Ids, ids_for: list[Ids]) -> list[dict]:
+    """One calendar card: it brings its own switch between list, week and month."""
     entities = [account.account("calendar", "appointments"), account.account("calendar", "closures")]
     entities += [ids.of_child("calendar", "meals") for ids in ids_for]
-    return [
-        heading(t["week"], "mdi:calendar-week"),
-        {"type": "calendar", "entities": entities, "initial_view": "listWeek"},
-        heading(t["month"], "mdi:calendar-month"),
-        {"type": "calendar", "entities": entities, "initial_view": "dayGridMonth"},
-    ]
-
-
-def diagnostics_cards(t: dict[str, str], account: Ids, ids_for: list[Ids]) -> list[dict]:
-    values = [
-        account.account(domain, key)
-        for domain, key in (
-            ("binary_sensor", "closed_today"),
-            ("binary_sensor", "closed_tomorrow"),
-            ("sensor", "board"),
-            ("sensor", "messages"),
-            ("sensor", "pending"),
-            ("sensor", "balance"),
-        )
-    ]
-    for ids in ids_for:
-        values += [ids.of_child("sensor", "meal_today"), ids.of_child("sensor", "meal_tomorrow")]
-        values += [ids.of_child("sensor", "status_today"), ids.of_child("sensor", "status_tomorrow")]
-        values.append(ids.of_child("sensor", "next_deadline"))
-        values.append(ids.of_child("binary_sensor", "no_order"))
-    return [
-        heading(t["connection"], "mdi:cloud-check-outline"),
-        {"type": "markdown", "content": t["session_hint"]},
-        tile(
-            account.account("sensor", "session"), t["session"], "mdi:clock-check-outline", content=["state"]
-        ),
-        {"type": "entities", "title": t["all_values"], "entities": values},
-    ]
+    return [{"type": "calendar", "entities": entities, "initial_view": "listWeek"}]
 
 
 # --------------------------------------------------------------------------------------------- dashboard
@@ -409,55 +329,30 @@ def build(language: str, children: list[str] | None = None) -> dict:
     ids_for = [ids for ids, _ in kids]
 
     today_sections: list[dict] = [
-        {"type": "grid", "cards": [heading(t["kita"], "mdi:school-outline"), *status_cards(t, account)]},
-        {
-            "type": "grid",
-            "cards": [
-                heading(t["todo"], "mdi:checkbox-marked-circle-outline"),
-                *todo_cards(t, ids_for, account),
-            ],
-        },
+        # no heading: while nothing needs action every card is hidden and the whole section disappears
+        {"type": "grid", "cards": todo_cards(t, kids, account)},
+        {"type": "grid", "cards": [heading(t["kita"], "mdi:school-outline"), *kita_cards(t, account)]},
     ]
-    for ids, display in kids:
-        today_sections.append({"type": "grid", "cards": child_cards(t, ids, display)})
+    today_sections += [{"type": "grid", "cards": child_cards(t, ids, display)} for ids, display in kids]
     today_sections.append({"type": "grid", "cards": balance_cards(t, account)})
 
+    messages_sections = [
+        {"type": "grid", "cards": board_cards(t, account)},
+        {"type": "grid", "cards": mailbox_cards(t, account)},
+    ]
+    calendar_sections = [{"type": "grid", "cards": calendar_cards(account, ids_for)}]
     return {
         "title": t["title"],
         "views": [
-            {
-                "title": t["view_today"],
-                "path": "heute",
-                "icon": "mdi:home-heart",
-                "type": "sections",
-                "sections": today_sections,
-            },
-            {
-                "title": t["view_calendar"],
-                "path": "kalender",
-                "icon": "mdi:calendar",
-                "type": "sections",
-                "sections": [{"type": "grid", "cards": calendar_cards(t, account, ids_for)}],
-            },
-            {
-                "title": t["view_messages"],
-                "path": "mitteilungen",
-                "icon": "mdi:message-text-outline",
-                "type": "sections",
-                "sections": [
-                    {"type": "grid", "cards": board_cards(t, account)},
-                    {"type": "grid", "cards": mailbox_cards(t, account)},
-                ],
-            },
-            {
-                "title": t["view_diagnostics"],
-                "path": "diagnose",
-                "icon": "mdi:stethoscope",
-                "type": "sections",
-                "sections": [{"type": "grid", "cards": diagnostics_cards(t, account, ids_for)}],
-            },
+            _view(t["view_today"], "heute", "mdi:home-heart", today_sections),
+            _view(t["view_messages"], "mitteilungen", "mdi:message-text-outline", messages_sections),
+            _view(t["view_calendar"], "kalender", "mdi:calendar", calendar_sections),
         ],
     }
+
+
+def _view(title: str, path: str, icon: str, sections: list[dict]) -> dict:
+    return {"title": title, "path": path, "icon": icon, "type": "sections", "sections": sections}
 
 
 def single_cards(language: str) -> dict[str, dict]:
@@ -465,38 +360,27 @@ def single_cards(language: str) -> dict[str, dict]:
     t = TEXT[language]
     account = Ids(language)
     ids = Ids(language)
+    kids = [(ids, PLACEHOLDER_NAME)]
+    de = language == "de"
+    kita = {
+        "type": "vertical-stack",
+        "cards": [
+            heading(t["kita"], "mdi:school-outline"),
+            {"type": "grid", "columns": 2, "square": False, "cards": kita_cards(t, account)},
+        ],
+    }
+
+    def stack(cards: list[dict]) -> dict:
+        return {"type": "vertical-stack", "cards": cards}
+
     return {
-        "status": {
-            "type": "vertical-stack",
-            "cards": [
-                heading(t["kita"], "mdi:school-outline"),
-                {"type": "grid", "columns": 2, "square": False, "cards": status_cards(t, account)},
-            ],
-        },
-        "zu_erledigen" if language == "de" else "todo": {
-            "type": "vertical-stack",
-            "cards": todo_cards(t, [ids], account),
-        },
-        "essen" if language == "de" else "meals": {
-            "type": "vertical-stack",
-            "cards": child_cards(t, ids, PLACEHOLDER_NAME),
-        },
-        "guthaben" if language == "de" else "balance": {
-            "type": "vertical-stack",
-            "cards": balance_cards(t, account),
-        },
-        "schwarzes_brett" if language == "de" else "bulletin_board": {
-            "type": "vertical-stack",
-            "cards": board_cards(t, account),
-        },
-        "postfach" if language == "de" else "mailbox": {
-            "type": "vertical-stack",
-            "cards": mailbox_cards(t, account),
-        },
-        "kalender" if language == "de" else "calendar": {
-            "type": "vertical-stack",
-            "cards": calendar_cards(t, account, [ids]),
-        },
+        "kita": kita,
+        "zu_erledigen" if de else "todo": stack(todo_cards(t, kids, account)),
+        "essen" if de else "meals": stack(child_cards(t, ids, PLACEHOLDER_NAME)),
+        "guthaben" if de else "balance": stack(balance_cards(t, account)),
+        "schwarzes_brett" if de else "bulletin_board": stack(board_cards(t, account)),
+        "postfach" if de else "mailbox": stack(mailbox_cards(t, account)),
+        "kalender" if de else "calendar": calendar_cards(account, [ids])[0],
     }
 
 
@@ -517,25 +401,26 @@ _Dumper.add_representer(str, _str)
 HEADER = {
     "de": (
         "# KitaPlus-Dashboard (Vorlage)\n"
-        "# Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor → alles ersetzen.\n"
+        "# Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor.\n"
         "# Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben\n"
         "# (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.\n"
         "# Diese Datei wird erzeugt (scripts/build_dashboards.py), bitte nicht in der Vorlage selbst ändern.\n"
     ),
     "en": (
         "# KitaPlus dashboard (template)\n"
-        "# Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Raw configuration editor → replace everything.\n"
+        "# Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Raw configuration editor.\n"
         "# Replace KIND with your child's first name (display) and kind with the same name in lower case\n"
-        "# (that is how the entities are named, see Settings → Entities). Several children: see the README in this folder.\n"
+        "# (that is how the entities are named, see Settings → Entities). Several children: see the README here.\n"
         "# This file is generated (scripts/build_dashboards.py), please do not edit the template itself.\n"
     ),
 }
 
 
 def dump(data: Any, header: str = "") -> str:
-    return header + yaml.dump(
+    body = yaml.dump(
         data, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=110, default_flow_style=False
     )
+    return header + body
 
 
 def write_all(root: Path) -> list[Path]:
@@ -547,6 +432,8 @@ def write_all(root: Path) -> list[Path]:
         written.append(target)
         cards_dir = root / "cards" / language
         cards_dir.mkdir(parents=True, exist_ok=True)
+        for stale in cards_dir.glob("*.yaml"):
+            stale.unlink()  # a card that no longer exists must not linger
         for name, card in single_cards(language).items():
             path = cards_dir / f"{name}.yaml"
             path.write_text(dump(card, HEADER[language].split("\n")[0] + "\n"))

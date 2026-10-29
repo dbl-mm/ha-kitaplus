@@ -1,4 +1,4 @@
-# KitaPlus dashboard (template)
+# KitaPlus-Dashboard (Vorlage)
 type: vertical-stack
 cards:
 - type: heading
@@ -10,16 +10,16 @@ cards:
   square: false
   cards:
   - type: tile
-    entity: binary_sensor.kitaplus_closed_today
-    name: Today
+    entity: binary_sensor.kitaplus_heute_geschlossen
+    name: Kita heute
     icon: mdi:school-outline
     color: orange
     state_content:
     - state
     - reason
   - type: tile
-    entity: binary_sensor.kitaplus_closed_tomorrow
-    name: Tomorrow
+    entity: binary_sensor.kitaplus_morgen_geschlossen
+    name: Kita morgen
     icon: mdi:school-outline
     color: orange
     state_content:

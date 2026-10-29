@@ -11,7 +11,7 @@ blueprint:
 
     Die Integration holt vor der Erinnerung **frische Daten** und meldet sich nur, wenn der Tag **noch bestellbar und nicht
     bestellt** ist. Es braucht keine Uhrzeit in diesem Blueprint: Der Zeitpunkt kommt aus der Frist. Ohne eingetragene Frist
-    passiert nichts; dann nimm den Blueprint „Erinnerung ans Essen-Bestellen“ mit festen Uhrzeiten.
+    passiert nichts; dann nimm den Blueprint „KitaPlus: Erinnerung zu festen Uhrzeiten“.
 
     In der Aktion stehen `message`, `child`, `day` (Datum), `day_label` (`heute`, `morgen` oder `am Montag` …), `time_left`
     (zum Beispiel `2 Std.`), `deadline_time` (zum Beispiel `11:00`), `minutes_left` und `fresh` zur Verfügung.

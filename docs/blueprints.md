@@ -1,6 +1,6 @@
 # Blueprints
 
-Acht fertige Automationen für den Alltag. Sie liegen im Ordner [`blueprints/automation/kitaplus/`](../blueprints/automation/kitaplus)
+Acht fertige Automationen für den Alltag. In Home Assistant heißen sie „KitaPlus: …“. Sie liegen im Ordner [`blueprints/automation/kitaplus/`](../blueprints/automation/kitaplus)
 und werden **nicht** automatisch installiert, Home Assistant legt sie erst an, wenn du sie importierst.
 
 **Importieren:** Auf den Knopf im [README](../README.md#blueprints) klicken (öffnet deine Home-Assistant-Instanz), oder
@@ -14,19 +14,26 @@ Alle Blueprints folgen denselben Regeln:
 - Selten Gebrauchtes steht im eingeklappten Abschnitt „Erweitert“.
 - Erinnerungen laufen im Modus `single` und melden sich nicht doppelt.
 
-| Blueprint | Wann | Variablen für deine Aktion |
+## Welcher Blueprint wofür?
+
+Die Kurzfassung mit Importknöpfen steht im [README](../README.md#blueprints). Hier die Dateien und was du in deiner eigenen Aktion verwenden kannst.
+
+| Blueprint | Datei | Variablen in deiner Aktion |
 |---|---|---|
-| [Erinnerung vor der Bestellfrist](../blueprints/automation/kitaplus/bestellfrist_erinnerung.yaml) | **kurz vor der Frist deiner Kita** (zum Beispiel 2 Stunden vorher), wenn noch nichts bestellt ist; die Frist trägst du einmal bei der Integration ein | `message`, `child`, `day`, `day_label`, `time_left`, `deadline_time`, `minutes_left`, `fresh` |
-| [Essen-Erinnerung](../blueprints/automation/kitaplus/essen_erinnerung.yaml) | abends für morgen und auf Wunsch morgens als „letzte Chance“ für heute, **solange KitaPlus noch Bestellungen annimmt**; holt vorher frische Daten, meldet die verpasste Frist nur auf Wunsch | `message`, `child`, `day`, `status`, `entity_id` |
-| [Schließtag](../blueprints/automation/kitaplus/schliesstag.yaml) | am Vorabend ein Hinweis, am Morgen des Schließtags optional eine Aktion (zum Beispiel Wecker aus) | `message`, `reason`, `when` |
-| [Neue Mitteilung](../blueprints/automation/kitaplus/neue_mitteilung.yaml) | bei jedem neuen Beitrag am Schwarzen Brett oder neuer Nachricht, optional nur mit Stichwörtern | `title`, `source`, `source_label`, `message` |
-| [Rückmeldung](../blueprints/automation/kitaplus/rueckmeldung_erinnerung.yaml) | sofort, wenn eine Rückmeldung nötig wird, und auf Wunsch täglich; mit Titel und Frist | `count`, `titles`, `message` |
-| [Guthaben](../blueprints/automation/kitaplus/guthaben_niedrig.yaml) | wenn das Verpflegungs-Guthaben unter einen Betrag fällt, auf Wunsch täglich bis zum Aufladen | `balance`, `threshold`, `message` |
-| [Sitzung läuft ab](../blueprints/automation/kitaplus/sitzung_laeuft_ab.yaml) | 1, 3 oder 7 Tage, bevor die gespeicherte Anmeldung abläuft | `days`, `message` |
-| [Tagesbriefing](../blueprints/automation/kitaplus/tagesbriefing.yaml) | eine Zusammenfassung zur Uhrzeit: Schließtage, Essen, Rückmeldungen, Guthaben | `message`, `lines` |
+| **Erinnerung kurz vor der Bestellfrist** | [`bestellfrist_erinnerung.yaml`](../blueprints/automation/kitaplus/bestellfrist_erinnerung.yaml) | `message`, `child`, `day`, `day_label`, `time_left`, `deadline_time`, `minutes_left`, `fresh` |
+| **Erinnerung zu festen Uhrzeiten** | [`essen_erinnerung.yaml`](../blueprints/automation/kitaplus/essen_erinnerung.yaml) | `message`, `child`, `day`, `status`, `entity_id` |
+| **Neue Mitteilung** | [`neue_mitteilung.yaml`](../blueprints/automation/kitaplus/neue_mitteilung.yaml) | `title`, `source`, `source_label`, `message` |
+| **Offene Rückmeldungen** | [`rueckmeldung_erinnerung.yaml`](../blueprints/automation/kitaplus/rueckmeldung_erinnerung.yaml) | `count`, `titles`, `message` |
+| **Schließtag** | [`schliesstag.yaml`](../blueprints/automation/kitaplus/schliesstag.yaml) | `message`, `reason`, `when` |
+| **Niedriges Guthaben** | [`guthaben_niedrig.yaml`](../blueprints/automation/kitaplus/guthaben_niedrig.yaml) | `balance`, `threshold`, `message` |
+| **Tagesbriefing** | [`tagesbriefing.yaml`](../blueprints/automation/kitaplus/tagesbriefing.yaml) | `message`, `lines` |
+| **Anmeldung läuft ab** | [`sitzung_laeuft_ab.yaml`](../blueprints/automation/kitaplus/sitzung_laeuft_ab.yaml) | `days`, `message` |
+
+**Was bedeutet „Variablen“?** Der Blueprint kennt zum Beispiel den fertigen Text der Nachricht. Wenn du als Aktion etwas anderes wählst,
+kannst du ihn mit `{{ message }}` verwenden (siehe Beispiel unten).
 
 ## Bestellfristen berücksichtigen
-**Am genauesten:** Trage die Frist deiner Kita bei der Integration ein (README, Abschnitt „Bestellfristen“) und nimm den Blueprint „Erinnerung vor der Bestellfrist“. Er braucht keine Uhrzeit, der Zeitpunkt ergibt sich aus der Frist. Mit festen Uhrzeiten (Blueprint „Essen-Erinnerung“) gilt:
+**Am genauesten:** Trage die Frist deiner Kita bei der Integration ein (README, Abschnitt „Bestellfristen“) und nimm den Blueprint „Erinnerung kurz vor der Bestellfrist“. Er braucht keine Uhrzeit, der Zeitpunkt ergibt sich aus der Frist. Mit festen Uhrzeiten (Blueprint „Erinnerung zu festen Uhrzeiten“) gilt:
 
 Jede Kita setzt ihre eigene Frist (zum Beispiel „bis 9:00 Uhr am selben Tag“). Die Blueprints kennen die Uhrzeit nicht, sondern
 verlassen sich auf den **Bestellstatus**, den KitaPlus liefert (*Offen* = noch bestellbar, *Frist verpasst* = zu spät, siehe

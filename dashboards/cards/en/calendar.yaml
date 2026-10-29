@@ -1,20 +1,7 @@
 # KitaPlus dashboard (template)
-type: vertical-stack
-cards:
-- type: heading
-  heading: Next 7 days
-  heading_style: title
-  icon: mdi:calendar-week
-- type: calendar
-  entities: &id001
-  - calendar.kitaplus_appointments
-  - calendar.kitaplus_closures
-  - calendar.kind_ordered_meals
-  initial_view: listWeek
-- type: heading
-  heading: Month
-  heading_style: title
-  icon: mdi:calendar-month
-- type: calendar
-  entities: *id001
-  initial_view: dayGridMonth
+type: calendar
+entities:
+- calendar.kitaplus_appointments
+- calendar.kitaplus_closures
+- calendar.kind_ordered_meals
+initial_view: listWeek

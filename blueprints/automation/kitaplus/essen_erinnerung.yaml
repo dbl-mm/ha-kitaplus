@@ -1,19 +1,19 @@
 blueprint:
-  name: "KitaPlus: Erinnerung ans Essen-Bestellen (mit Bestellfrist)"
+  name: "KitaPlus: Erinnerung zu festen Uhrzeiten"
   description: |
-    Erinnert dich ans Bestellen, **solange KitaPlus noch Bestellungen annimmt**: am Abend für morgen und auf Wunsch am
-    Morgen als „letzte Chance“ für heute. *(English: reminds you to order meals while KitaPlus still accepts orders.)*
+    Erinnert dich ans Essen-Bestellen zu **festen Uhrzeiten**: abends für morgen und auf Wunsch morgens als „letzte Chance“
+    für heute. Es erinnert nur, **solange KitaPlus noch Bestellungen annimmt**.
+    *(English: reminds you to order meals at fixed times, only while KitaPlus still accepts orders.)*
 
-    **Zu den Bestellfristen:** Jede Kita legt ihre Frist selbst fest (zum Beispiel „bis 9:00 Uhr am selben Tag“). Die
-    Integration kennt die Uhrzeit nicht, sondern übernimmt nur die Angabe von KitaPlus, ob eine Mahlzeit **noch bestellbar**
-    ist (Bestellstatus „Offen“) oder die **Frist verpasst** wurde. Die genaue Frist deiner Kita findest du in der
-    KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*. Stelle die Uhrzeiten unten **deutlich vor** dieser Frist ein.
+    **Besser, wenn du die Frist deiner Kita kennst:** Trage sie bei der Integration ein und nimm den Blueprint
+    „KitaPlus: Erinnerung kurz vor der Bestellfrist“. Er braucht keine Uhrzeit und erinnert genau rechtzeitig.
+    Diesen hier brauchst du nur, wenn du keine Frist eintragen möchtest.
 
-    Damit nicht mit veralteten Daten gearbeitet wird, holt der Blueprint vor jeder Erinnerung einmal frische Daten von
-    KitaPlus (abschaltbar unter „Erweitert“). Ist die Frist schon vorbei, wird **nicht** zum Bestellen aufgefordert.
+    **Stelle die Uhrzeiten deutlich vor die Bestellfrist deiner Kita** (zu finden in der KitaPlus-App unter
+    *Verpflegung → Hilfe → Bestellfristen*). Bei „1 Tag vorher um 11:00 Uhr“ ist 18:00 Uhr am Vortag schon zu spät.
 
-    **Tipp:** Hat deine Kita eine feste Frist (zum Beispiel „1 Tag vorher um 11:00 Uhr“), nimm besser den Blueprint
-    „Erinnerung kurz vor der Bestellfrist“. Er kennt die Uhrzeit und erinnert genau rechtzeitig.
+    Vor jeder Erinnerung holt der Blueprint einmal frische Daten von KitaPlus (abschaltbar unter „Erweitert“), damit nicht
+    mit veralteten Angaben gearbeitet wird. Ist die Frist vorbei, wird **nicht** zum Bestellen aufgefordert.
 
     In der Aktion stehen `message`, `child`, `day` (`today` oder `tomorrow`), `status` (`open` oder `missed`) und
     `entity_id` zur Verfügung.

@@ -2,7 +2,7 @@
 type: vertical-stack
 cards:
 - type: heading
-  heading: Guthaben
+  heading: Konto
   heading_style: title
   icon: mdi:wallet-outline
 - type: tile
@@ -11,9 +11,3 @@ cards:
   icon: mdi:cash
   state_content:
   - state
-- type: history-graph
-  title: Guthaben, letzte 10 Tage
-  entities:
-  - sensor.kitaplus_kontostand_verpflegung
-  hours_to_show: 240
-  show_names: false

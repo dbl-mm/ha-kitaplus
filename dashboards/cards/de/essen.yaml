@@ -6,26 +6,16 @@ cards:
   heading_style: title
   icon: mdi:account-child-outline
 - type: tile
-  entity: sensor.kind_essen_heute
-  name: Essen heute
-  icon: mdi:silverware-fork-knife
-  state_content:
-  - state
-- type: tile
-  entity: sensor.kind_essen_morgen
-  name: Essen morgen
-  icon: mdi:silverware-fork-knife
-  state_content:
-  - state
-- type: tile
-  entity: sensor.kind_bestellstatus_morgen
-  name: Bestellung morgen
+  entity: sensor.kind_bestellstatus_heute
+  name: Heute
   icon: mdi:cart-outline
   state_content:
   - state
+  - meal
 - type: tile
-  entity: sensor.kind_nachste_bestellfrist
-  name: Nächste Bestellfrist
-  icon: mdi:timer-sand
+  entity: sensor.kind_bestellstatus_morgen
+  name: Morgen
+  icon: mdi:cart-outline
   state_content:
   - state
+  - meal

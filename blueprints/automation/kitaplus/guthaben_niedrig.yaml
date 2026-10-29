@@ -1,5 +1,5 @@
 blueprint:
-  name: "KitaPlus: Warnung bei niedrigem Verpflegungs-Guthaben"
+  name: "KitaPlus: Niedriges Guthaben"
   description: |
     Meldet, wenn das **Guthaben für die Verpflegung** unter einen Betrag fällt, und erinnert auf Wunsch jeden Tag,
     bis aufgeladen ist. *(English: warns when the meal account balance drops below a threshold.)*

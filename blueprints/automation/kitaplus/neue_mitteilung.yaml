@@ -1,5 +1,5 @@
 blueprint:
-  name: "KitaPlus: Benachrichtigung bei neuem Beitrag oder neuer Nachricht"
+  name: "KitaPlus: Neue Mitteilung"
   description: |
     Meldet jeden **neuen Beitrag am Schwarzen Brett** und jede **neue Nachricht im Postfach**, sobald die
     Integration sie erkennt (je nach Abfrageintervall, Standard 30 Minuten). Optional nur bei bestimmten Stichwörtern.

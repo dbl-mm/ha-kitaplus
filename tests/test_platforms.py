@@ -265,3 +265,22 @@ async def test_order_status_moves_to_the_next_day_at_midnight(hass, stack, freez
     async_fire_time_changed(hass, dt_util.now() + timedelta(seconds=10))
     await hass.async_block_till_done()
     assert hass.states.get(STATUS_TODAY).state == "open"  # the 15th is "today" now, still not ordered
+
+
+async def test_order_status_names_the_meal_for_compact_tiles(hass, stack, freezer) -> None:
+    from unittest.mock import patch
+
+    from .common import CLIENT
+
+    at(freezer, "2026-06-14T10:00:00")
+    ordered = meal_day("2026-06-14", ordered=True, orderable=False)
+    open_day = meal_day("2026-06-15", ordered=False, orderable=True)
+    open_day["mahlzeitArten"][0]["varianten"][0]["name"] = "Pasta"
+    entry = await setup_integration(hass, stack, async_get_meals=[ordered, open_day])
+    assert hass.states.get(STATUS_TODAY).attributes["meal"] == "Menü"
+    assert hass.states.get(STATUS_TOMORROW).attributes["meal"] == "Pasta", "an open day names what is offered"
+
+    stack.enter_context(patch(f"{CLIENT}.async_get_meals", return_value=[]))
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(STATUS_TODAY).attributes["meal"] is None, "no meal, no name"

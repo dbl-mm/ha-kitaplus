@@ -715,3 +715,15 @@ async def test_deadline_reminder_blueprint_works_with_the_real_integration_event
     assert fired[0].data["message"] == (
         "Bestellfrist in 2 Std. (bis 11:00 Uhr): Für vorname-1 ist für morgen noch kein Essen bestellt."
     )
+
+
+def test_blueprint_names_in_home_assistant_match_the_readme_and_the_docs() -> None:
+    """The README tells people what to look for in Home Assistant, so the names must be the same."""
+    readme = (BLUEPRINT_DIR.parent.parent.parent / "README.md").read_text()
+    docs = (BLUEPRINT_DIR.parent.parent.parent / "docs" / "blueprints.md").read_text()
+    for path in blueprint_files():
+        name = load_yaml(str(path))["blueprint"]["name"]
+        assert name.startswith("KitaPlus: "), name
+        short = name.removeprefix("KitaPlus: ")
+        assert f"**{short}**" in readme, f"README does not use the name {short!r}"
+        assert f"**{short}**" in docs, f"docs/blueprints.md does not use the name {short!r}"

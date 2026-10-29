@@ -11,13 +11,13 @@ cards:
     {% if items | length == 0 %}
     _No posts._
     {% else %}
-    {% for p in items %}
-    **{{ p.titel or '–' }}**{% if p.datum %} · {{ p.datum[0:10] }}{% endif %}
-    {% if p.text %}
-    {{ p.text | truncate(220) }}
-    {% endif %}
-    {% if not loop.last %}
-    ---
+    {% for p in items[:4] %}
+    **{{ (p.titel or '–') | regex_replace('[*_`#>]', '') | trim }}**{% if p.datum %} · {{ p.datum[0:10] }}{% endif %}
+
+    {% set text = (p.text or '') | regex_replace('[*_`#>]', '') | regex_replace('[\n\r\t ]+', ' ') | trim %}
+    {% if text %}
+    {{ text | truncate(110) }}
+
     {% endif %}
     {% endfor %}
     {% endif %}

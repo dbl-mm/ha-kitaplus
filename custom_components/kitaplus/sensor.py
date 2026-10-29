@@ -238,13 +238,25 @@ class OrderStatusSensor(KitaPlusChildEntity, SensorEntity):
         self._attr_translation_key = key
         self._attr_unique_id = f"{self._entry_id}_{self._child_id}_{key}"
 
+    def _meals(self) -> list[MealEntry]:
+        day = dt_util.now().date() + timedelta(days=self._offset)
+        return meals_on(self.coordinator.data.meals.get(self._child_id, []), day)
+
     @property
     def native_value(self) -> str:
         now = dt_util.now()
         day = now.date() + timedelta(days=self._offset)
         rule = self.coordinator.deadline_rule
         deadline = deadline_for(day, rule, now.tzinfo or UTC) if rule else None
-        return order_status(meals_on(self.coordinator.data.meals.get(self._child_id, []), day), deadline, now)
+        return order_status(self._meals(), deadline, now)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """The meal the status is about: what is ordered, else what is offered (for compact tiles)."""
+        meals = self._meals()
+        ordered = [m for m in meals if m["bestellt"]]
+        names = [name for m in (ordered or meals) if (name := m["variante"] or m["art"])]
+        return {"meal": ", ".join(dict.fromkeys(names)) or None}
 
 
 class NextOrderDeadlineSensor(KitaPlusChildEntity, SensorEntity):
