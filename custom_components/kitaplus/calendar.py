@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
-from typing import Any
+from functools import partial
 
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.core import HomeAssistant
@@ -11,8 +12,9 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
+from .api.models import Child
 from .coordinator import KitaPlusCoordinator
-from .entity import KitaPlusChildEntity, KitaPlusEntity
+from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
@@ -103,7 +105,7 @@ class MealsCalendar(KitaPlusChildEntity, _EventCalendar):
 
     _attr_translation_key = "meals"
 
-    def __init__(self, coordinator: KitaPlusCoordinator, child: dict[str, Any]) -> None:
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child) -> None:
         super().__init__(coordinator, child)
         self._attr_unique_id = f"{self._entry_id}_{self._child_id}_calendar_meals"
 
@@ -131,12 +133,14 @@ class MealsCalendar(KitaPlusChildEntity, _EventCalendar):
 async def async_setup_entry(
     hass: HomeAssistant, entry: KitaPlusConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    coordinator = entry.runtime_data
-    entities: list[CalendarEntity] = [
-        AppointmentsCalendar(coordinator, closures=False),
-        AppointmentsCalendar(coordinator, closures=True),
-    ]
-    entities += [
-        MealsCalendar(coordinator, c) for c in coordinator.data.children if c["id"] in coordinator.data.meals
-    ]
-    async_add_entities(entities)
+    def discover(coordinator: KitaPlusCoordinator) -> dict[str, Callable[[], KitaPlusEntity]]:
+        found: dict[str, Callable[[], KitaPlusEntity]] = {
+            "appointments": lambda: AppointmentsCalendar(coordinator, closures=False),
+            "closures": lambda: AppointmentsCalendar(coordinator, closures=True),
+        }
+        for child in coordinator.data.children:
+            if child["id"] in coordinator.data.meals:
+                found[f"meals-{child['id']}"] = partial(MealsCalendar, coordinator, child)
+        return found
+
+    async_add_when_new(entry, async_add_entities, discover)

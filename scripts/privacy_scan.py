@@ -18,8 +18,9 @@ TEXT_KEYS = {
     "ueberweisungEmpfaengerIban", "bankkontoIban", "geburtsdatum", "name", "titel", "bezeichnung",
     "verwendungszweck", "text",
 }  # fmt: skip
-ALLOWED_EMAILS = {"a@b.de", "mixed.case@example.de"}
-ALLOWED_EMAIL_DOMAINS = ("users.noreply.github.com",)
+# Made-up addresses used by the tests, the GitHub noreply address, and file names like icon@2x.png.
+ALLOWED_EMAIL_DOMAINS = ("b.de", "example.de", "example.com", "users.noreply.github.com")
+IMAGE_SUFFIX = re.compile(r"@\dx\.(png|jpg|webp)$")
 
 
 def collect() -> tuple[set[int], set[str]]:
@@ -57,10 +58,10 @@ def main() -> int:
         lowered = content.lower()
         hits = sum(1 for n in numbers if re.search(rf"(?<![\d.]){n}(?![\d.])", content))
         hits_text = sum(1 for t in texts if t in lowered)
-        emails = {
+        found = {
             m.group(0).lower() for m in re.finditer(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}", content)
-        } - ALLOWED_EMAILS
-        emails = {e for e in emails if not e.endswith(ALLOWED_EMAIL_DOMAINS)}
+        }
+        emails = {e for e in found if not IMAGE_SUFFIX.search(e) and not e.endswith(ALLOWED_EMAIL_DOMAINS)}
         token = bool(re.search(r"eyJ[A-Za-z0-9_-]{10,}\.|Bearer\s+[A-Za-z0-9._-]{30,}", content))
         if hits or hits_text or emails or token:
             findings.append(f"{name}: numbers={hits} texts={hits_text} emails={len(emails)} token={token}")

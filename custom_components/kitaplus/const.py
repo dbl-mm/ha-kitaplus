@@ -10,6 +10,7 @@ CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
 CONF_AUTH_CODE = "auth_code"
 CONF_CLIENT_ID = "client_id"
+CONF_ACCOUNT_ID = "account_id"
 CONF_REFRESH_TOKEN = "refresh_token"
 CONF_REFRESH_EXPIRES = "refresh_expires"
 
@@ -27,3 +28,6 @@ EVENT_NEW_MESSAGE = f"{DOMAIN}_new_message"
 MAX_LOGIN_ATTEMPTS = 2
 # After that many failed attempts new ones are paused, even across restarted flows.
 LOGIN_COOLDOWN_MINUTES = 15
+
+MANUFACTURER = "kitaplus"
+CONFIGURATION_URL = "https://eltern.kitaplus.de"

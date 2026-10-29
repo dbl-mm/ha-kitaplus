@@ -32,6 +32,18 @@
         "data_description": {
           "password": "Dein aktuelles KitaPlus-Passwort. Es wird genau ein Anmeldeversuch gemacht."
         }
+      },
+      "reconfigure": {
+        "title": "KitaPlus-Anmeldung ändern",
+        "description": "Melde dich erneut an oder ändere die E-Mail-Adresse. Es wird nur dasselbe KitaPlus-Konto akzeptiert. Jedes Absenden ist genau ein Anmeldeversuch, nach {max} Fehlversuchen wird pausiert.",
+        "data": {
+          "email": "E-Mail-Adresse",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "email": "Die E-Mail-Adresse deines KitaPlus-Eltern-Zugangs. Sie wird genau so gesendet, wie du sie eingibst.",
+          "password": "Dein KitaPlus-Passwort. Es wird nur für diese Anmeldung verwendet und nie gespeichert."
+        }
       }
     },
     "error": {
@@ -47,7 +59,9 @@
       "reauth_successful": "Anmeldung erneuert.",
       "account_locked": "Dein KitaPlus-Zugang ist gesperrt. Meldung von KitaPlus: „{server_message}“. Home Assistant versucht nichts mehr. Bitte wende dich an die Kita-Leitung, nur sie kann den Zugang entsperren.",
       "too_many_attempts": "Die Einrichtung wurde nach {max} Fehlversuchen beendet, damit dein Konto nicht gesperrt wird. Letzte Meldung von KitaPlus: „{server_message}“. Prüfe deine Zugangsdaten in der KitaPlus-App und starte die Einrichtung danach neu.",
-      "cooling_down": "Zu viele Fehlversuche für dieses Konto. Damit KitaPlus es nicht sperrt, sind neue Versuche für {minutes} Minuten pausiert. Prüfe in der Zwischenzeit deine Zugangsdaten in der KitaPlus-App."
+      "cooling_down": "Zu viele Fehlversuche für dieses Konto. Damit KitaPlus es nicht sperrt, sind neue Versuche für {minutes} Minuten pausiert. Prüfe in der Zwischenzeit deine Zugangsdaten in der KitaPlus-App.",
+      "wrong_account": "Das ist ein anderes KitaPlus-Konto als das hier eingerichtete. Es wurde nichts geändert.",
+      "reconfigure_successful": "Anmeldung aktualisiert."
     }
   },
   "entity": {
@@ -75,6 +89,9 @@
         "state": {
           "none": "Nichts bestellt"
         }
+      },
+      "session_valid_until": {
+        "name": "Sitzung gültig bis"
       }
     },
     "calendar": {
@@ -122,6 +139,23 @@
           "scan_interval": "Wie oft Home Assistant bei KitaPlus nach neuen Daten fragt. Weniger als 15 Minuten ist nicht erlaubt."
         }
       }
+    }
+  },
+  "exceptions": {
+    "session_expired": {
+      "message": "Keine gespeicherte KitaPlus-Sitzung. Bitte melde dich neu an."
+    },
+    "auth_rejected": {
+      "message": "KitaPlus hat die gespeicherte Sitzung abgelehnt. Meldung von KitaPlus: {server_message}"
+    },
+    "maintenance": {
+      "message": "KitaPlus meldet Wartungsarbeiten. Das ist kein Passwortfehler. Home Assistant versucht es später erneut."
+    },
+    "unexpected_format": {
+      "message": "KitaPlus hat ein unerwartetes Antwortformat geliefert ({error}). Möglicherweise hat sich der Dienst geändert. Bitte teile die Diagnostics-Datei in einem Issue."
+    },
+    "api_error": {
+      "message": "Anfrage an KitaPlus fehlgeschlagen: {error}"
     }
   }
 }

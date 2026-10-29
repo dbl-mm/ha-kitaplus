@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+
+from .api.models import Day, Event, MealEntry, Message, PendingReply
 
 
 def _d(value: str | None) -> date | None:
@@ -14,7 +15,7 @@ def _d(value: str | None) -> date | None:
         return None
 
 
-def is_closed_on(events: list[dict[str, Any]], day: date) -> bool:
+def is_closed_on(events: list[Event], day: date) -> bool:
     """True if a closure day or public holiday covers `day`."""
     for event in events:
         if not (event.get("istSchliesstag") or event.get("istFeiertag")):
@@ -26,9 +27,9 @@ def is_closed_on(events: list[dict[str, Any]], day: date) -> bool:
     return False
 
 
-def meals_on(days: list[dict[str, Any]], day: date) -> list[dict[str, Any]]:
+def meals_on(days: list[Day], day: date) -> list[MealEntry]:
     """Flatten the plan for one day: one entry per meal variant."""
-    out: list[dict[str, Any]] = []
+    out: list[MealEntry] = []
     for entry in days:
         if _d(entry.get("datum")) != day:
             continue
@@ -36,25 +37,25 @@ def meals_on(days: list[dict[str, Any]], day: date) -> list[dict[str, Any]]:
             for var in art.get("varianten", []):
                 order = var.get("bestellung")
                 out.append(
-                    {
-                        "art": art.get("name"),
-                        "variante": var.get("name"),
-                        "preis": var.get("preis"),
-                        "bestellt": bool(order and not order.get("istAbbestellt")),
-                        "bestellbar": bool(var.get("istBestellbar")),
-                        "abbestellbar": bool(var.get("istAbbestellbar")),
-                    }
+                    MealEntry(
+                        art=art.get("name"),
+                        variante=var.get("name"),
+                        preis=var.get("preis"),
+                        bestellt=bool(order and not order.get("istAbbestellt")),
+                        bestellbar=bool(var.get("istBestellbar")),
+                        abbestellbar=bool(var.get("istAbbestellbar")),
+                    )
                 )
     return out
 
 
-def pending_replies(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def pending_replies(messages: list[Message]) -> list[PendingReply]:
     """Messages that need a confirmation and have not been answered yet."""
-    out = []
+    out: list[PendingReply] = []
     for msg in messages:
         note = msg.get("nachricht") or {}
         if note.get("istBestaetigungspflichtig") and not msg.get("istBeantwortet"):
             out.append(
-                {"id": msg.get("id"), "titel": note.get("titel"), "frist": note.get("rueckmeldefrist")}
+                PendingReply(id=msg.get("id"), titel=note.get("titel"), frist=note.get("rueckmeldefrist"))
             )
     return out

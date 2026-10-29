@@ -15,7 +15,14 @@ from collections.abc import Mapping
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlowWithReload
+from homeassistant.config_entries import (
+    SOURCE_REAUTH,
+    SOURCE_USER,
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -28,6 +35,7 @@ from .api.exceptions import (
     KitaPlusTwoFactorRequired,
 )
 from .const import (
+    CONF_ACCOUNT_ID,
     CONF_AUTH_CODE,
     CONF_CLIENT_ID,
     CONF_EMAIL,
@@ -109,13 +117,40 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
         tokens = client.tokens
         if tokens is None:
             return None, "unknown"
+        try:
+            account_id = await client.async_get_account_id()
+        except KitaPlusMaintenanceError:
+            return None, "maintenance"
+        except KitaPlusConnectionError:
+            return None, "cannot_connect"
+        except (KitaPlusError, KeyError, TypeError, ValueError):
+            return None, "unknown"
         _clear_failures(self.hass, self._account)
         return {
             CONF_EMAIL: self._email,
+            CONF_ACCOUNT_ID: account_id,
             CONF_CLIENT_ID: self._client_id,
             CONF_REFRESH_TOKEN: tokens.refresh_token,
             CONF_REFRESH_EXPIRES: tokens.refresh_expires,
         }, None
+
+    async def _async_finish(self, data: dict[str, Any]) -> ConfigFlowResult:
+        """Create, update or reject the entry once the login worked."""
+        account = str(data[CONF_ACCOUNT_ID])
+        if self.source == SOURCE_USER:
+            await self.async_set_unique_id(account)
+            self._abort_if_unique_id_configured()
+            return self.async_create_entry(title=self._email, data=data)
+        entry = self._get_reauth_entry() if self.source == SOURCE_REAUTH else self._get_reconfigure_entry()
+        known = entry.data.get(CONF_ACCOUNT_ID)
+        if known is not None and str(known) != account:
+            return self.async_abort(reason="wrong_account")  # another KitaPlus user, keep the entry as it is
+        return self.async_update_reload_and_abort(
+            entry,
+            unique_id=account,
+            data_updates=data,
+            reason="reauth_successful" if self.source == SOURCE_REAUTH else "reconfigure_successful",
+        )
 
     def _cooling_down(self) -> ConfigFlowResult | None:
         """Refuse to touch KitaPlus again right after too many failures, even in a new flow."""
@@ -138,15 +173,17 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
             self._email = user_input[CONF_EMAIL].strip()
             self._account = self._email.lower()
             self._password = user_input[CONF_PASSWORD]
-            await self.async_set_unique_id(self._account)
-            self._abort_if_unique_id_configured()
+            if any(
+                e.data.get(CONF_EMAIL, "").lower() == self._account for e in self._async_current_entries()
+            ):
+                return self.async_abort(reason="already_configured")  # no request to KitaPlus needed
             if stop := self._cooling_down():
                 return stop
             data, error = await self._async_try_login(None)
             if error == "two_factor":
                 return await self.async_step_two_factor()
             if data:
-                return self.async_create_entry(title=self._email, data=data)
+                return await self._async_finish(data)
             if stop := self._stop_or_none(error):
                 return stop
             errors["base"] = error or "unknown"
@@ -162,9 +199,7 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             data, error = await self._async_try_login(user_input[CONF_AUTH_CODE].strip())
             if data:
-                if self.source == "reauth":
-                    return self.async_update_reload_and_abort(self._get_reauth_entry(), data_updates=data)
-                return self.async_create_entry(title=self._email, data=data)
+                return await self._async_finish(data)
             if stop := self._stop_or_none(error):
                 return stop
             errors["base"] = (
@@ -193,7 +228,7 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
             if error == "two_factor":
                 return await self.async_step_two_factor()
             if data:
-                return self.async_update_reload_and_abort(self._get_reauth_entry(), data_updates=data)
+                return await self._async_finish(data)
             if stop := self._stop_or_none(error):
                 return stop
             errors["base"] = error or "unknown"
@@ -202,6 +237,38 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
             description_placeholders=self._placeholders(),
             errors=errors,
+        )
+
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Change the e-mail address or sign in again. Only the same KitaPlus account is accepted."""
+        entry = self._get_reconfigure_entry()
+        self._client_id = entry.data[CONF_CLIENT_ID]
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._email = user_input[CONF_EMAIL].strip()
+            self._account = self._email.lower()
+            self._password = user_input[CONF_PASSWORD]
+            if stop := self._cooling_down():
+                return stop
+            data, error = await self._async_try_login(None)
+            if error == "two_factor":
+                return await self.async_step_two_factor()
+            if data:
+                return await self._async_finish(data)
+            if stop := self._stop_or_none(error):
+                return stop
+            errors["base"] = error or "unknown"
+        self._email = self._email or entry.data[CONF_EMAIL]
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_EMAIL, default=self._email): str,
+                    vol.Required(CONF_PASSWORD): str,
+                }
+            ),
+            errors=errors,
+            description_placeholders=self._placeholders(),
         )
 
 

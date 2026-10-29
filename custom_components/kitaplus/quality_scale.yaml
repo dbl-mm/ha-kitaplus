@@ -1,0 +1,170 @@
+# Self-assessment against the Home Assistant Integration Quality Scale.
+# Home Assistant only awards tiers to core integrations; this integration is distributed through HACS.
+# Each rule names where it is met. Rules marked "exempt" explain why they do not apply.
+rules:
+  # ---------------------------------------------------------------- Bronze
+  action-setup:
+    status: exempt
+    comment: The integration is read only and registers no actions.
+  appropriate-polling:
+    status: done
+    comment: Default 30 minutes, configurable from 15 to 240 minutes (const.py, config_flow.py options flow).
+  brands:
+    status: done
+    comment: Own images in custom_components/kitaplus/brand/ (supported by Home Assistant 2026.3 and later).
+  common-modules:
+    status: done
+    comment: coordinator.py holds the DataUpdateCoordinator, entity.py the base entities.
+  config-flow:
+    status: done
+    comment: config_flow.py with user, two_factor, reauth_confirm, reconfigure and options; every field has a data_description.
+  config-flow-test-coverage:
+    status: done
+    comment: tests/test_config_flow.py and tests/test_gold.py cover every branch including error recovery.
+  dependency-transparency:
+    status: exempt
+    comment: No external dependencies (requirements is empty). The API client lives in api/ and uses aiohttp from Home Assistant.
+  docs-actions:
+    status: exempt
+    comment: No actions in this version.
+  docs-conditions:
+    status: exempt
+    comment: The integration provides no conditions.
+  docs-high-level-description:
+    status: done
+    comment: README.md, sections introduction and Funktionen.
+  docs-installation-instructions:
+    status: done
+    comment: README.md, section Installation.
+  docs-removal-instructions:
+    status: done
+    comment: README.md, section Entfernen.
+  docs-triggers:
+    status: exempt
+    comment: No device triggers. Two events (kitaplus_new_board_post, kitaplus_new_message) are documented with an example.
+  entity-event-setup:
+    status: exempt
+    comment: Entities are updated by the coordinator and never subscribe to events themselves (the midnight refresh is unregistered with async_on_remove).
+  entity-unique-id:
+    status: done
+    comment: Every entity sets a unique id built from the config entry and, where relevant, the child or account id.
+  has-entity-name:
+    status: done
+    comment: KitaPlusEntity sets _attr_has_entity_name = True.
+  runtime-data:
+    status: done
+    comment: entry.runtime_data holds the coordinator (KitaPlusConfigEntry in __init__.py).
+  test-before-configure:
+    status: done
+    comment: The config flow signs in and reads the account id before it creates the entry.
+  test-before-setup:
+    status: done
+    comment: async_config_entry_first_refresh raises ConfigEntryNotReady or ConfigEntryAuthFailed (coordinator.py).
+  unique-config-entry:
+    status: done
+    comment: The unique id is the stable KitaPlus account id; an existing e-mail address is rejected before any request.
+  # ---------------------------------------------------------------- Silver
+  action-exceptions:
+    status: exempt
+    comment: No actions in this version.
+  config-entry-unloading:
+    status: done
+    comment: async_unload_entry in __init__.py; covered by test_second_poll_reuses_the_session_and_entry_unloads_cleanly.
+  docs-configuration-parameters:
+    status: done
+    comment: README.md, section Optionen.
+  docs-installation-parameters:
+    status: done
+    comment: README.md, section Einrichtung und Anmeldung (table of fields).
+  entity-unavailable:
+    status: done
+    comment: CoordinatorEntity marks entities unavailable after a failed update (test_entities_become_unavailable_when_polling_fails).
+  integration-owner:
+    status: done
+    comment: codeowners in manifest.json.
+  log-when-unavailable:
+    status: done
+    comment: DataUpdateCoordinator logs the first failure and the recovery once; errors carry a translated reason.
+  parallel-updates:
+    status: done
+    comment: PARALLEL_UPDATES = 0 on sensor, binary_sensor and calendar (coordinator based, no own requests).
+  reauthentication-flow:
+    status: done
+    comment: async_step_reauth and reauth_confirm; a Repairs issue explains what happened.
+  test-coverage:
+    status: done
+    comment: 100 percent line coverage; the CI fails below 95 percent for any module (scripts/check_coverage.py).
+  # ---------------------------------------------------------------- Gold
+  devices:
+    status: done
+    comment: One device for the account and one per child with manufacturer, model, configuration_url and via_device.
+  diagnostics:
+    status: done
+    comment: diagnostics.py redacts names, texts, ids, tokens and bank data (test_diagnostics_redacts_names_ids_and_tokens).
+  discovery:
+    status: exempt
+    comment: A cloud account service, there is nothing on the network to discover.
+  discovery-update-info:
+    status: exempt
+    comment: A cloud account service, there is no address that could change.
+  docs-data-update:
+    status: done
+    comment: README.md, section Datenaktualisierung.
+  docs-examples:
+    status: done
+    comment: README.md, section Beispiele.
+  docs-known-limitations:
+    status: done
+    comment: README.md, section Bekannte Einschränkungen.
+  docs-supported-devices:
+    status: done
+    comment: README.md, paragraph Unterstützt (account based service, no devices).
+  docs-supported-functions:
+    status: done
+    comment: README.md, section Funktionen.
+  docs-troubleshooting:
+    status: done
+    comment: README.md, section Fehlerbehebung.
+  docs-use-cases:
+    status: done
+    comment: README.md, section Anwendungsfälle.
+  dynamic-devices:
+    status: done
+    comment: async_add_when_new in entity.py adds entities for new children and accounts without a reload.
+  entity-category:
+    status: done
+    comment: The session sensor is a diagnostic entity; no other entity is a configuration or diagnostic entity.
+  entity-device-class:
+    status: done
+    comment: monetary, timestamp and problem device classes are used where they fit.
+  entity-disabled-by-default:
+    status: done
+    comment: The session sensor is disabled by default.
+  entity-translations:
+    status: done
+    comment: All entities use translation keys (strings.json, translations/de.json, translations/en.json).
+  exception-translations:
+    status: done
+    comment: Errors raised to users use translation_domain and translation_key (coordinator.py, strings.json exceptions).
+  icon-translations:
+    status: done
+    comment: icons.json; no _attr_icon in the code.
+  reconfiguration-flow:
+    status: done
+    comment: async_step_reconfigure accepts only the same KitaPlus account (wrong_account otherwise).
+  repair-issues:
+    status: done
+    comment: auth_failed and account_locked issues with the message KitaPlus sent (coordinator.py).
+  stale-devices:
+    status: done
+    comment: Devices of children KitaPlus no longer lists are removed, and async_remove_config_entry_device allows manual removal.
+  # ---------------------------------------------------------------- Platinum
+  async-dependency:
+    status: done
+    comment: The API client (api/client.py) is fully asynchronous and lives in this repository.
+  inject-websession:
+    status: done
+    comment: KitaPlusClient receives Home Assistant's aiohttp session (async_get_clientsession in __init__.py and config_flow.py).
+  strict-typing:
+    status: done
+    comment: mypy --strict passes with no ignores; typed API shapes in api/models.py; enforced in CI.

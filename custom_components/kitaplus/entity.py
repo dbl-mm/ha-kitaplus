@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Callable, Mapping
+from typing import TYPE_CHECKING
 
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .api.models import Child
+from .const import CONFIGURATION_URL, DOMAIN, MANUFACTURER
 from .coordinator import KitaPlusCoordinator
 
 
@@ -26,7 +28,9 @@ class KitaPlusEntity(CoordinatorEntity[KitaPlusCoordinator]):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._entry_id)},
             name="KitaPlus",
-            manufacturer="kitaplus",
+            manufacturer=MANUFACTURER,
+            model="Eltern-App",
+            configuration_url=CONFIGURATION_URL,
             entry_type=DeviceEntryType.SERVICE,
         )
 
@@ -45,13 +49,45 @@ class KitaPlusEntity(CoordinatorEntity[KitaPlusCoordinator]):
 class KitaPlusChildEntity(KitaPlusEntity):
     """Entity attached to a child device."""
 
-    def __init__(self, coordinator: KitaPlusCoordinator, child: dict[str, Any]) -> None:
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child) -> None:
         super().__init__(coordinator)
         self._child_id: int = child["id"]
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{self._entry_id}_{self._child_id}")},
             name=child.get("vorname") or "Kind",
-            manufacturer="kitaplus",
+            manufacturer=MANUFACTURER,
+            model="Kind",
+            configuration_url=CONFIGURATION_URL,
             entry_type=DeviceEntryType.SERVICE,
             via_device=(DOMAIN, self._entry_id),
         )
+
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from . import KitaPlusConfigEntry
+
+
+@callback
+def async_add_when_new(
+    entry: KitaPlusConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+    discover: Callable[[KitaPlusCoordinator], Mapping[str, Callable[[], KitaPlusEntity]]],
+) -> None:
+    """Add entities now and whenever a later update brings something new (a new child, a new account).
+
+    `discover` maps a stable key to a factory. Keys seen before are skipped, so nothing is added twice.
+    """
+    coordinator = entry.runtime_data
+    known: set[str] = set()
+
+    @callback
+    def _add() -> None:
+        new = {key: factory for key, factory in discover(coordinator).items() if key not in known}
+        if new:
+            known.update(new)
+            async_add_entities([factory() for factory in new.values()])
+
+    _add()
+    entry.async_on_unload(coordinator.async_add_listener(_add))

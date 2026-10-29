@@ -16,6 +16,8 @@ from custom_components.kitaplus.api.exceptions import (
 )
 from custom_components.kitaplus.const import API_BASE_URL
 
+pytestmark = pytest.mark.real_client
+
 
 def _jwt(exp: float) -> str:
     seg = lambda d: base64.urlsafe_b64encode(json.dumps(d).encode()).decode().rstrip("=")  # noqa: E731
@@ -269,3 +271,33 @@ async def test_all_read_endpoints_return_their_payload(client):
             {"datum": "2026-06-13T00:00:00"}
         ]
         assert await client.async_get_meals(2, 7, "2026-06-13", "2026-06-27") == []
+
+
+async def test_account_id_is_the_only_thing_read_from_the_account_answer(client):
+    with aioresponses() as m:
+        await _logged_in(client, m)
+        m.get(
+            f"{API_BASE_URL}/benutzer/get_own",
+            payload={"success": True, "data": {"id": 77, "email": "x", "vorname": "y"}},
+        )
+        assert await client.async_get_account_id() == 77
+
+
+async def test_a_login_without_expiry_information_gets_a_sane_default(client):
+    answer = {"success": True, "token": _jwt(time.time() + 3600), "refresh_token": "r"}  # no expiration field
+    with aioresponses() as m:
+        m.post(f"{API_BASE_URL}/app/login_check", payload=answer)
+        await client.async_login("a@b.de", "pw")
+    assert time.time() < client.tokens.refresh_expires <= time.time() + 86401
+
+
+async def test_an_error_page_that_is_not_json_is_an_api_error_not_a_crash(client):
+    with aioresponses() as m:
+        await _logged_in(client, m)
+        m.get(
+            f"{API_BASE_URL}/orga_nachrichten/index?limit=15&page=1&start=0",
+            status=500,
+            body="<html>boom</html>",
+        )
+        with pytest.raises(KitaPlusApiError):
+            await client.async_get_board()

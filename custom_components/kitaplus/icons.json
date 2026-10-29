@@ -1,0 +1,49 @@
+{
+  "entity": {
+    "sensor": {
+      "board": {
+        "default": "mdi:bulletin-board"
+      },
+      "messages": {
+        "default": "mdi:email-outline"
+      },
+      "pending_replies": {
+        "default": "mdi:email-alert-outline"
+      },
+      "meal_today": {
+        "default": "mdi:silverware-fork-knife"
+      },
+      "meal_tomorrow": {
+        "default": "mdi:silverware-fork-knife"
+      },
+      "session_valid_until": {
+        "default": "mdi:clock-check-outline"
+      }
+    },
+    "binary_sensor": {
+      "closed_today": {
+        "default": "mdi:school",
+        "state": {
+          "on": "mdi:calendar-remove"
+        }
+      },
+      "closed_tomorrow": {
+        "default": "mdi:school",
+        "state": {
+          "on": "mdi:calendar-remove"
+        }
+      }
+    },
+    "calendar": {
+      "appointments": {
+        "default": "mdi:calendar"
+      },
+      "closures": {
+        "default": "mdi:calendar-remove"
+      },
+      "meals": {
+        "default": "mdi:silverware-fork-knife"
+      }
+    }
+  }
+}

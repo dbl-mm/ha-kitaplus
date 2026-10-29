@@ -11,3 +11,4 @@ docs/_raw/
 .coverage
 htmlcov/
 .mypy_cache/
+coverage.json

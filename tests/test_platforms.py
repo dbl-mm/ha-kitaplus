@@ -170,3 +170,17 @@ def test_parse_handles_missing_dates_offsets_and_garbage() -> None:
 
 def test_entry_helper_has_no_password() -> None:
     assert "password" not in make_entry().data
+
+
+async def test_an_ordered_meal_without_any_name_does_not_break_the_sensor(hass, stack, freezer) -> None:
+    at(freezer, "2026-06-13T10:00:00")
+    day = {
+        "datum": "2026-06-13T00:00:00",
+        "mahlzeitArten": [
+            {"name": None, "varianten": [{"name": None, "bestellung": {"istAbbestellt": False}}]}
+        ],
+    }
+    await setup_integration(hass, stack, async_get_meals=[day])
+    assert (
+        hass.states.get("sensor.vorname_1_meal_today").state == "Ordered"  # ordered, only the name is missing
+    )  # nothing to show by name

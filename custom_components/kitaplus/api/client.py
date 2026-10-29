@@ -12,6 +12,7 @@ import json
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any, cast
 
 import aiohttp
 
@@ -23,6 +24,7 @@ from .exceptions import (
     KitaPlusMaintenanceError,
     KitaPlusTwoFactorRequired,
 )
+from .models import Account, BoardPost, Child, Day, Event, Message
 
 _TIMEOUT = aiohttp.ClientTimeout(total=30)
 _REFRESH_MARGIN = 60  # seconds before JWT expiry
@@ -67,7 +69,7 @@ class KitaPlusClient:
     def set_tokens(self, tokens: Tokens | None) -> None:
         self._tokens = tokens
 
-    def _client_info(self) -> dict:
+    def _client_info(self) -> dict[str, Any]:
         # Fixed identity so that Home Assistant shows up as ONE device.
         return {
             "userAgent": "HomeAssistant-KitaPlus",
@@ -79,7 +81,7 @@ class KitaPlusClient:
             "features": "{}",
         }
 
-    def _store(self, data: dict) -> None:
+    def _store(self, data: dict[str, Any]) -> None:
         previous = self._tokens
         expires = data.get("refresh_token_expiration")
         if expires:
@@ -96,7 +98,7 @@ class KitaPlusClient:
         if self._on_tokens is not None:
             self._on_tokens(self._tokens)
 
-    async def _post(self, path: str, **kwargs) -> tuple[int, dict]:
+    async def _post(self, path: str, **kwargs: Any) -> tuple[int, dict[str, Any]]:
         try:
             async with self._session.post(f"{API_BASE_URL}{path}", timeout=_TIMEOUT, **kwargs) as resp:
                 try:
@@ -162,7 +164,7 @@ class KitaPlusClient:
             "X-Requested-With": "XMLHttpRequest",
         }
 
-    async def _get(self, path: str, **params: str | int) -> dict:
+    async def _get(self, path: str, **params: str | int) -> dict[str, Any]:
         headers = await self._async_headers()
         try:
             async with self._session.get(
@@ -187,40 +189,45 @@ class KitaPlusClient:
             raise KitaPlusApiError(f"Unsuccessful response for {path}")
         return data
 
-    async def async_get_board(self, limit: int = 15) -> list[dict]:
-        return (await self._get("/orga_nachrichten/index", page=1, start=0, limit=limit))["data"]
+    async def async_get_board(self, limit: int = 15) -> list[BoardPost]:
+        data = await self._get("/orga_nachrichten/index", page=1, start=0, limit=limit)
+        return cast("list[BoardPost]", data["data"])
 
-    async def async_get_messages(self, limit: int = 15) -> list[dict]:
-        return (await self._get("/nachrichten/getNachrichten", page=1, start=0, limit=limit))["data"]
+    async def async_get_messages(self, limit: int = 15) -> list[Message]:
+        data = await self._get("/nachrichten/getNachrichten", page=1, start=0, limit=limit)
+        return cast("list[Message]", data["data"])
 
-    async def async_get_accounts(self) -> list[dict]:
-        return (await self._get("/vpp/verpflegungskonten"))["data"]
+    async def async_get_accounts(self) -> list[Account]:
+        return cast("list[Account]", (await self._get("/vpp/verpflegungskonten"))["data"])
 
-    async def async_get_children(self) -> list[dict]:
+    async def async_get_account_id(self) -> int:
+        """Stable id of the KitaPlus user. The rest of the (personal) answer is ignored."""
+        return int((await self._get("/benutzer/get_own"))["data"]["id"])
+
+    async def async_get_children(self) -> list[Child]:
         """Children, reduced to what the integration needs.
 
         The endpoint also returns contacts, addresses and birth dates. They are
         dropped here, before the data leaves the client.
         """
+        answer = await self._get("/benutzer/get_einrichtungen_kinder")
         return [
-            {
-                "id": kind["id"],
-                "vorname": kind.get("vorname"),
-                "istVppAktiv": bool(kind.get("istVppAktiv")),
-                "elternkonto": {"id": (kind.get("elternkonto") or {}).get("id")},
-            }
-            for kind in (await self._get("/benutzer/get_einrichtungen_kinder"))["kinder"]
+            Child(
+                id=kind["id"],
+                vorname=kind.get("vorname"),
+                istVppAktiv=bool(kind.get("istVppAktiv")),
+                elternkonto={"id": (kind.get("elternkonto") or {}).get("id")},
+            )
+            for kind in answer["kinder"]
         ]
 
-    async def async_get_events(self, year: int, month: int) -> list[dict]:
+    async def async_get_events(self, year: int, month: int) -> list[Event]:
         data = await self._get(
             "/termin/getTermine", month=month, year=year, openEnd=1, page=1, start=0, limit=100
         )
-        return data["data"]
+        return cast("list[Event]", data["data"])
 
-    async def async_get_meals(
-        self, child_id: int, parent_account_id: int, start: str, end: str
-    ) -> list[dict]:
+    async def async_get_meals(self, child_id: int, parent_account_id: int, start: str, end: str) -> list[Day]:
         """Meal plan and orders per day, dates as YYYY-MM-DD."""
         data = await self._get(
             "/vpp/bestelldaten",
@@ -231,4 +238,4 @@ class KitaPlusClient:
             ignoriereSchliesstage=1,
         )
         rows = data.get("data") or []
-        return rows[0].get("tage", []) if rows else []
+        return cast("list[Day]", rows[0].get("tage", [])) if rows else []

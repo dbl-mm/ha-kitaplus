@@ -32,6 +32,18 @@
         "data_description": {
           "password": "Your current KitaPlus password. Exactly one sign-in attempt is made."
         }
+      },
+      "reconfigure": {
+        "title": "Change KitaPlus sign-in",
+        "description": "Sign in again or change the email address. Only the same KitaPlus account is accepted. Each submit is exactly one sign-in attempt, and setup pauses after {max} failed attempts.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "email": "The email address of your KitaPlus parent account. It is sent exactly as you type it.",
+          "password": "Your KitaPlus password. It is only used for this sign-in and is never stored."
+        }
       }
     },
     "error": {
@@ -47,7 +59,9 @@
       "reauth_successful": "Sign-in renewed.",
       "account_locked": "Your KitaPlus account is locked. Message from KitaPlus: “{server_message}”. Home Assistant will not try again. Please contact the Kita management, only they can unlock the account.",
       "too_many_attempts": "Setup was stopped after {max} failed attempts so your account does not get locked. Last message from KitaPlus: “{server_message}”. Check your credentials in the KitaPlus app, then start the setup again.",
-      "cooling_down": "Too many failed sign-ins for this account. To keep KitaPlus from locking it, new attempts are paused for {minutes} minutes. Please check your credentials in the KitaPlus app in the meantime."
+      "cooling_down": "Too many failed sign-ins for this account. To keep KitaPlus from locking it, new attempts are paused for {minutes} minutes. Please check your credentials in the KitaPlus app in the meantime.",
+      "wrong_account": "This is a different KitaPlus account than the one set up here. Nothing was changed.",
+      "reconfigure_successful": "Sign-in updated."
     }
   },
   "entity": {
@@ -75,6 +89,9 @@
         "state": {
           "none": "Nothing ordered"
         }
+      },
+      "session_valid_until": {
+        "name": "Session valid until"
       }
     },
     "calendar": {
@@ -122,6 +139,23 @@
           "scan_interval": "How often Home Assistant asks KitaPlus for new data. Shorter than 15 minutes is not allowed."
         }
       }
+    }
+  },
+  "exceptions": {
+    "session_expired": {
+      "message": "No stored KitaPlus session. Please sign in again."
+    },
+    "auth_rejected": {
+      "message": "KitaPlus rejected the stored session. Message from KitaPlus: {server_message}"
+    },
+    "maintenance": {
+      "message": "KitaPlus reports maintenance. This is not a password problem. Home Assistant will try again later."
+    },
+    "unexpected_format": {
+      "message": "KitaPlus sent an unexpected response format ({error}). The service may have changed. Please share the diagnostics file in an issue."
+    },
+    "api_error": {
+      "message": "KitaPlus request failed: {error}"
     }
   }
 }

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
+from functools import partial
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -10,13 +12,15 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
+from .api.models import BoardPost, Child, MealEntry, Message
 from .coordinator import KitaPlusCoordinator
-from .entity import KitaPlusChildEntity, KitaPlusEntity
+from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
 from .helpers import meals_on, pending_replies
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
@@ -24,18 +28,31 @@ PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the
 _MAX_ITEMS = 5
 _MAX_TEXT = 500
 _NOTHING_ORDERED = {"de": "Nichts bestellt", "en": "Nothing ordered"}
+_ORDERED = {"de": "Bestellt", "en": "Ordered"}
 
 
-def _short(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _board_short(posts: list[BoardPost]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": post.get("id"),
+            "datum": post.get("datum"),
+            "titel": post.get("titel"),
+            "text": (post.get("text") or "")[:_MAX_TEXT],
+        }
+        for post in posts[:_MAX_ITEMS]
+    ]
+
+
+def _messages_short(messages: list[Message]) -> list[dict[str, Any]]:
     out = []
-    for i in items[:_MAX_ITEMS]:
-        src = i.get("nachricht") or i  # mailbox entries wrap the message
+    for msg in messages[:_MAX_ITEMS]:
+        note = msg.get("nachricht") or {}
         out.append(
             {
-                "id": i.get("id"),
-                "datum": src.get("datum") or i.get("abrufDatum"),
-                "titel": src.get("titel"),
-                "text": (src.get("text") or "")[:_MAX_TEXT],
+                "id": msg.get("id"),
+                "datum": note.get("datum") or msg.get("abrufDatum"),
+                "titel": note.get("titel"),
+                "text": (note.get("text") or "")[:_MAX_TEXT],
             }
         )
     return out
@@ -44,28 +61,29 @@ def _short(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
 async def async_setup_entry(
     hass: HomeAssistant, entry: KitaPlusConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    coordinator = entry.runtime_data
-    entities: list[KitaPlusEntity] = [
-        BoardSensor(coordinator),
-        MessagesSensor(coordinator),
-        PendingRepliesSensor(coordinator),
-    ]
-    for child in coordinator.data.children:
-        if child["id"] in coordinator.data.meals:
-            entities += [MealSensor(coordinator, child, 0), MealSensor(coordinator, child, 1)]
-    entities += [
-        BalanceSensor(coordinator, a["id"])
-        for a in coordinator.data.accounts
-        if "id" in a and a.get("istAktiv", True)
-    ]
-    async_add_entities(entities)
+    def discover(coordinator: KitaPlusCoordinator) -> dict[str, Callable[[], KitaPlusEntity]]:
+        found: dict[str, Callable[[], KitaPlusEntity]] = {
+            "board": lambda: BoardSensor(coordinator),
+            "messages": lambda: MessagesSensor(coordinator),
+            "pending": lambda: PendingRepliesSensor(coordinator),
+            "session": lambda: SessionSensor(coordinator),
+        }
+        for child in coordinator.data.children:
+            if child["id"] in coordinator.data.meals:
+                for offset in (0, 1):
+                    found[f"meal-{child['id']}-{offset}"] = partial(MealSensor, coordinator, child, offset)
+        for account in coordinator.data.accounts:
+            if "id" in account and account.get("istAktiv", True):
+                found[f"balance-{account['id']}"] = partial(BalanceSensor, coordinator, account["id"])
+        return found
+
+    async_add_when_new(entry, async_add_entities, discover)
 
 
 class BoardSensor(KitaPlusEntity, SensorEntity):
     """Latest bulletin board post."""
 
     _attr_translation_key = "board"
-    _attr_icon = "mdi:bulletin-board"
     _unrecorded_attributes = frozenset({"posts"})  # long texts stay out of the database
 
     def __init__(self, coordinator: KitaPlusCoordinator) -> None:
@@ -79,14 +97,13 @@ class BoardSensor(KitaPlusEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"posts": _short(self.coordinator.data.board)}
+        return {"posts": _board_short(self.coordinator.data.board)}
 
 
 class MessagesSensor(KitaPlusEntity, SensorEntity):
     """Number of messages in the mailbox."""
 
     _attr_translation_key = "messages"
-    _attr_icon = "mdi:email-outline"
     _unrecorded_attributes = frozenset({"messages"})
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -100,7 +117,7 @@ class MessagesSensor(KitaPlusEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"messages": _short(self.coordinator.data.messages)}
+        return {"messages": _messages_short(self.coordinator.data.messages)}
 
 
 class BalanceSensor(KitaPlusEntity, SensorEntity):
@@ -131,7 +148,6 @@ class PendingRepliesSensor(KitaPlusEntity, SensorEntity):
     """Messages that still need a confirmation."""
 
     _attr_translation_key = "pending_replies"
-    _attr_icon = "mdi:email-alert-outline"
     _unrecorded_attributes = frozenset({"messages"})
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -151,30 +167,50 @@ class PendingRepliesSensor(KitaPlusEntity, SensorEntity):
 class MealSensor(KitaPlusChildEntity, SensorEntity):
     """Ordered meal for today or tomorrow."""
 
-    _attr_icon = "mdi:silverware-fork-knife"
     _follows_the_day = True
     _unrecorded_attributes = frozenset({"offered"})
 
-    def __init__(self, coordinator: KitaPlusCoordinator, child: dict[str, Any], offset: int) -> None:
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child, offset: int) -> None:
         super().__init__(coordinator, child)
         self._offset = offset
         key = "meal_tomorrow" if offset else "meal_today"
         self._attr_translation_key = key
         self._attr_unique_id = f"{self._entry_id}_{self._child_id}_{key}"
 
-    def _meals(self) -> list[dict[str, Any]]:
+    def _meals(self) -> list[MealEntry]:
         day = dt_util.now().date() + timedelta(days=self._offset)
         return meals_on(self.coordinator.data.meals.get(self._child_id, []), day)
 
     @property
     def native_value(self) -> str | None:
-        ordered = [m["variante"] or m["art"] for m in self._meals() if m["bestellt"]]
-        if ordered:
-            return ", ".join(ordered)[:255]
-        if not self._meals():
+        meals = self._meals()
+        if not meals:
             return None
-        return _NOTHING_ORDERED.get(self.hass.config.language[:2], _NOTHING_ORDERED["en"])
+        language = self.hass.config.language[:2]
+        ordered = [m for m in meals if m["bestellt"]]
+        if not ordered:
+            return _NOTHING_ORDERED.get(language, _NOTHING_ORDERED["en"])
+        names = [name for m in ordered if (name := m["variante"] or m["art"])]
+        return ", ".join(names)[:255] or _ORDERED.get(language, _ORDERED["en"])
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {"offered": self._meals()}
+
+
+class SessionSensor(KitaPlusEntity, SensorEntity):
+    """Until when the stored KitaPlus session works. Helps to see a pending sign-in in advance."""
+
+    _attr_translation_key = "session_valid_until"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: KitaPlusCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._entry_id}_session_valid_until"
+
+    @property
+    def native_value(self) -> datetime | None:
+        tokens = self.coordinator.client.tokens
+        return datetime.fromtimestamp(tokens.refresh_expires, UTC) if tokens else None
