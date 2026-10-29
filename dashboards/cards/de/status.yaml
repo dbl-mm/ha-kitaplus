@@ -3,7 +3,7 @@ type: markdown
 content: |
   {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
   {%- macro clean(t) -%}
-  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
   {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
   {%- endmacro -%}
   {%- macro dlabel(iso) -%}
@@ -28,7 +28,7 @@ content: |
   {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
   {%- set total = ns.opens | count + pend -%}
   {%- if ns.missed | count > 0 -%}
-  <ha-alert alert-type="error" title="Frist verpasst">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Bitte bei der Kita nachfragen.</ha-alert>
+  <ha-alert alert-type="warning" title="Nicht bestellt">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Die Frist ist vorbei.</ha-alert>
   {%- elif total > 0 -%}
   {%- set first = ns.opens[0] if ns.opens else none -%}
   {%- set dlstate = states(first.dl) if first else 'unknown' -%}
@@ -54,3 +54,4 @@ content: |
   {%- else -%}
   <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
   {%- endif -%}
+text_only: true

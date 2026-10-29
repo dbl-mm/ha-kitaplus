@@ -4,7 +4,7 @@ content: |
   {%- set wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] -%}
   {%- set mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] -%}
   {%- macro clean(t) -%}
-  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
   {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
   {%- endmacro -%}
   {%- macro dlabel(iso) -%}
@@ -15,12 +15,12 @@ content: |
   {%- set count = states('sensor.kitaplus_mailbox') | int(0) -%}
   {%- set items = state_attr('sensor.kitaplus_mailbox', 'messages') or [] -%}
   {%- set replies = state_attr('sensor.kitaplus_pending_replies', 'messages') or [] -%}
-  ### <ha-icon icon="mdi:email-outline"></ha-icon> Mailbox · {{ count }} messages
+  ### <ha-icon icon="mdi:email-outline"></ha-icon> Mailbox · {{ count }} {{ 'message' if count == 1 else 'messages' }}
   {% for m in items[:2] %}
   {%- set head = clean(m.titel) | trim -%}
   {%- set due = namespace(value='') -%}
   {%- for r in replies if r.id == m.id and r.frist -%}{%- set due.value = r.frist -%}{%- endfor %}
 
   **{{ (head if head else 'Untitled') | truncate(80, True, '…') }}**
-  {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · <ha-icon icon="mdi:clock-outline"></ha-icon> **Reply by {{ dlabel(due.value) }}**{% elif false %} · no reply needed{% endif %}
+  {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · **Reply by {{ dlabel(due.value) }}**{% elif false %} · no reply needed{% endif %}
   {% endfor -%}

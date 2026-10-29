@@ -4,7 +4,7 @@ content: |
   {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
   {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
   {%- macro clean(t) -%}
-  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
   {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
   {%- endmacro -%}
   {%- macro dlabel(iso) -%}
@@ -19,6 +19,6 @@ content: |
   {%- endif %}
   {% for e in entries[:3] %}
   {%- set head = clean(e.titel) | trim %}
-  **{{ dlabel(e.datum) }}** · {{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}{% if e.zeit %} · {{ e.zeit }} Uhr{% endif %}{% if e.schliesstag %} · <ha-icon icon="mdi:calendar-remove"></ha-icon> **Schließtag**{% endif %}
+  **{{ dlabel(e.datum) }}** · {{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}{% if e.zeit %} · {{ e.zeit }} Uhr{% endif %}{% if e.schliesstag %} · **Schließtag**{% endif %}
 
   {% endfor -%}

@@ -111,6 +111,13 @@ async def test_diagnostics_redacts_names_ids_and_tokens(hass: HomeAssistant) -> 
             p.stop()
     text = str(await async_get_config_entry_diagnostics(hass, entry))
     assert "a@b.de" not in text
+    assert str(entry.data["account_id"]) not in text.replace("**REDACTED**", "")
+    data = await async_get_config_entry_diagnostics(hass, entry)
+    for event in data["events"]:
+        assert set(event) <= {"startdatum", "enddatum", "istSchliesstag", "istFeiertag"}, (
+            "only a fixed set of fields"
+        )
+    assert all(set(child) <= {"istVppAktiv"} for child in data["children"])
     assert "'refresh_token': 'r'" not in text
     for child in entry.runtime_data.data.children:
         assert str(child["id"]) not in text.replace("**REDACTED**", "")

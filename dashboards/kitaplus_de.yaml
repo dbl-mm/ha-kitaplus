@@ -25,7 +25,7 @@ views:
       content: |
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -50,7 +50,7 @@ views:
         {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
         {%- set total = ns.opens | count + pend -%}
         {%- if ns.missed | count > 0 -%}
-        <ha-alert alert-type="error" title="Frist verpasst">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Bitte bei der Kita nachfragen.</ha-alert>
+        <ha-alert alert-type="warning" title="Nicht bestellt">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Die Frist ist vorbei.</ha-alert>
         {%- elif total > 0 -%}
         {%- set first = ns.opens[0] if ns.opens else none -%}
         {%- set dlstate = states(first.dl) if first else 'unknown' -%}
@@ -76,6 +76,7 @@ views:
         {%- else -%}
         <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
         {%- endif -%}
+      text_only: true
     - type: tile
       entity: binary_sensor.kitaplus_heute_geschlossen
       name: Kita heute
@@ -97,7 +98,7 @@ views:
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -106,16 +107,16 @@ views:
         {%- endmacro -%}
 
         {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
-        {%- set icons = {'ordered': 'mdi:cart-check', 'open': 'mdi:cart-arrow-down', 'missed': 'mdi:cart-off', 'not_offered': 'mdi:minus-circle-outline'} -%}
+        {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
         ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
         {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
         {%- set st = states(ent) -%}
         {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
 
-        **{{ label }}** · <ha-icon icon="{{ icons[st] if st in icons else 'mdi:help-circle-outline' }}"></ha-icon> **{{ words[st] if st in words else st }}**
+        **{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
         {% if st != 'not_offered' and meal -%}
         {{ meal | truncate(80, True, '…') }}
-        {% endif -%}
+        {% endif %}
         {% endfor %}
         {%- set dlstate = states('sensor.kind_nachste_bestellfrist') -%}
         {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
@@ -131,7 +132,7 @@ views:
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -161,7 +162,7 @@ views:
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -172,21 +173,21 @@ views:
         {%- set count = states('sensor.kitaplus_postfach') | int(0) -%}
         {%- set items = state_attr('sensor.kitaplus_postfach', 'messages') or [] -%}
         {%- set replies = state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] -%}
-        ### <ha-icon icon="mdi:email-outline"></ha-icon> Postfach · {{ count }} Nachrichten
+        ### <ha-icon icon="mdi:email-outline"></ha-icon> Postfach · {{ count }} {{ 'Nachricht' if count == 1 else 'Nachrichten' }}
         {% for m in items[:2] %}
         {%- set head = clean(m.titel) | trim -%}
         {%- set due = namespace(value='') -%}
         {%- for r in replies if r.id == m.id and r.frist -%}{%- set due.value = r.frist -%}{%- endfor %}
 
         **{{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}**
-        {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · <ha-icon icon="mdi:clock-outline"></ha-icon> **Rückmeldung bis {{ dlabel(due.value) }}**{% elif false %} · keine Rückmeldung offen{% endif %}
+        {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · **Rückmeldung bis {{ dlabel(due.value) }}**{% elif false %} · keine Rückmeldung offen{% endif %}
         {% endfor -%}
     - type: markdown
       content: |
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -201,7 +202,7 @@ views:
         {%- endif %}
         {% for e in entries[:3] %}
         {%- set head = clean(e.titel) | trim %}
-        **{{ dlabel(e.datum) }}** · {{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}{% if e.zeit %} · {{ e.zeit }} Uhr{% endif %}{% if e.schliesstag %} · <ha-icon icon="mdi:calendar-remove"></ha-icon> **Schließtag**{% endif %}
+        **{{ dlabel(e.datum) }}** · {{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}{% if e.zeit %} · {{ e.zeit }} Uhr{% endif %}{% if e.schliesstag %} · **Schließtag**{% endif %}
 
         {% endfor -%}
     - type: tile
@@ -230,7 +231,7 @@ views:
       content: |
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -255,7 +256,7 @@ views:
         {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
         {%- set total = ns.opens | count + pend -%}
         {%- if ns.missed | count > 0 -%}
-        <ha-alert alert-type="error" title="Frist verpasst">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Bitte bei der Kita nachfragen.</ha-alert>
+        <ha-alert alert-type="warning" title="Nicht bestellt">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Die Frist ist vorbei.</ha-alert>
         {%- elif total > 0 -%}
         {%- set first = ns.opens[0] if ns.opens else none -%}
         {%- set dlstate = states(first.dl) if first else 'unknown' -%}
@@ -281,6 +282,7 @@ views:
         {%- else -%}
         <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
         {%- endif -%}
+      text_only: true
     - type: tile
       entity: binary_sensor.kitaplus_heute_geschlossen
       name: Kita heute
@@ -302,7 +304,7 @@ views:
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -311,16 +313,16 @@ views:
         {%- endmacro -%}
 
         {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
-        {%- set icons = {'ordered': 'mdi:cart-check', 'open': 'mdi:cart-arrow-down', 'missed': 'mdi:cart-off', 'not_offered': 'mdi:minus-circle-outline'} -%}
+        {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
         ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
         {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
         {%- set st = states(ent) -%}
         {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
 
-        **{{ label }}** · <ha-icon icon="{{ icons[st] if st in icons else 'mdi:help-circle-outline' }}"></ha-icon> **{{ words[st] if st in words else st }}**
+        **{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
         {% if st != 'not_offered' and meal -%}
         {{ meal | truncate(80, True, '…') }}
-        {% endif -%}
+        {% endif %}
         {% endfor %}
         {%- set dlstate = states('sensor.kind_nachste_bestellfrist') -%}
         {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
@@ -336,7 +338,7 @@ views:
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -363,7 +365,7 @@ views:
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -374,21 +376,21 @@ views:
         {%- set count = states('sensor.kitaplus_postfach') | int(0) -%}
         {%- set items = state_attr('sensor.kitaplus_postfach', 'messages') or [] -%}
         {%- set replies = state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] -%}
-        ### <ha-icon icon="mdi:email-outline"></ha-icon> Postfach · {{ count }} Nachrichten
+        ### <ha-icon icon="mdi:email-outline"></ha-icon> Postfach · {{ count }} {{ 'Nachricht' if count == 1 else 'Nachrichten' }}
         {% for m in items[:1] %}
         {%- set head = clean(m.titel) | trim -%}
         {%- set due = namespace(value='') -%}
         {%- for r in replies if r.id == m.id and r.frist -%}{%- set due.value = r.frist -%}{%- endfor %}
 
         **{{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}**
-        {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · <ha-icon icon="mdi:clock-outline"></ha-icon> **Rückmeldung bis {{ dlabel(due.value) }}**{% elif true %} · keine Rückmeldung offen{% endif %}
+        {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · **Rückmeldung bis {{ dlabel(due.value) }}**{% elif true %} · keine Rückmeldung offen{% endif %}
         {% endfor -%}
     - type: markdown
       content: |
         {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
         {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
         {%- macro clean(t) -%}
-        {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+        {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
         {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
         {%- endmacro -%}
         {%- macro dlabel(iso) -%}
@@ -403,7 +405,7 @@ views:
         {%- endif %}
         {% for e in entries[:2] %}
         {%- set head = clean(e.titel) | trim %}
-        **{{ dlabel(e.datum) }}** · {{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}{% if e.zeit %} · {{ e.zeit }} Uhr{% endif %}{% if e.schliesstag %} · <ha-icon icon="mdi:calendar-remove"></ha-icon> **Schließtag**{% endif %}
+        **{{ dlabel(e.datum) }}** · {{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}{% if e.zeit %} · {{ e.zeit }} Uhr{% endif %}{% if e.schliesstag %} · **Schließtag**{% endif %}
 
         {% endfor -%}
     - type: tile

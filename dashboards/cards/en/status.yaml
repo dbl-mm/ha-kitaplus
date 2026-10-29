@@ -3,7 +3,7 @@ type: markdown
 content: |
   {%- set wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] -%}
   {%- macro clean(t) -%}
-  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
   {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
   {%- endmacro -%}
   {%- macro dlabel(iso) -%}
@@ -28,7 +28,7 @@ content: |
   {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
   {%- set total = ns.opens | count + pend -%}
   {%- if ns.missed | count > 0 -%}
-  <ha-alert alert-type="error" title="Deadline missed">{{ ('The meal for ' ~ ns.missed[0] ~ ' is not ordered.' if ns.missed | count == 1 else 'Not ordered: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Please ask the Kita.</ha-alert>
+  <ha-alert alert-type="warning" title="Not ordered">{{ ('The meal for ' ~ ns.missed[0] ~ ' is not ordered.' if ns.missed | count == 1 else 'Not ordered: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} The deadline has passed.</ha-alert>
   {%- elif total > 0 -%}
   {%- set first = ns.opens[0] if ns.opens else none -%}
   {%- set dlstate = states(first.dl) if first else 'unknown' -%}
@@ -54,3 +54,4 @@ content: |
   {%- else -%}
   <ha-alert alert-type="info" title="Nothing to do today">{{ 'Meals for today and tomorrow are ordered. No reply needed.' if ns.ordered > 0 else 'There is nothing to order. No reply needed.' }}</ha-alert>
   {%- endif -%}
+text_only: true

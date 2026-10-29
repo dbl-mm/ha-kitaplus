@@ -4,7 +4,7 @@ content: |
   {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
   {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
   {%- macro clean(t) -%}
-  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
   {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
   {%- endmacro -%}
   {%- macro dlabel(iso) -%}
@@ -13,16 +13,16 @@ content: |
   {%- endmacro -%}
 
   {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
-  {%- set icons = {'ordered': 'mdi:cart-check', 'open': 'mdi:cart-arrow-down', 'missed': 'mdi:cart-off', 'not_offered': 'mdi:minus-circle-outline'} -%}
+  {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
   ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
   {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
   {%- set st = states(ent) -%}
   {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
 
-  **{{ label }}** · <ha-icon icon="{{ icons[st] if st in icons else 'mdi:help-circle-outline' }}"></ha-icon> **{{ words[st] if st in words else st }}**
+  **{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
   {% if st != 'not_offered' and meal -%}
   {{ meal | truncate(80, True, '…') }}
-  {% endif -%}
+  {% endif %}
   {% endfor %}
   {%- set dlstate = states('sensor.kind_nachste_bestellfrist') -%}
   {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}

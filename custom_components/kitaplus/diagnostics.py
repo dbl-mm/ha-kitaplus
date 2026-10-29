@@ -9,7 +9,13 @@ from homeassistant.core import HomeAssistant
 
 from . import KitaPlusConfigEntry
 
+# Fields of the API answers that may be shown. Everything else is dropped, so a field KitaPlus adds later
+# never ends up in a report that people post in public issues.
+SAFE_EVENT_FIELDS = ("startdatum", "enddatum", "istSchliesstag", "istFeiertag")
+SAFE_CHILD_FIELDS = ("istVppAktiv",)
+
 TO_REDACT = {
+    "account_id",
     "id",
     "kindId",
     "elternkontoId",
@@ -54,8 +60,8 @@ async def async_get_config_entry_diagnostics(
                 "events": len(data.events),
                 "accounts": len(data.accounts),
             },
-            "children": data.children,
-            "events": data.events,
+            "children": [{k: child.get(k) for k in SAFE_CHILD_FIELDS} for child in data.children],
+            "events": [{k: event.get(k) for k in SAFE_EVENT_FIELDS} for event in data.events],
         },
         TO_REDACT,
     )

@@ -134,3 +134,15 @@ def test_upcoming_entries_are_sorted_flattened_and_skip_what_is_over_or_broken()
     ]
     assert len(upcoming_entries(events, today, limit=2)) == 2
     assert upcoming_entries([], today) == []
+
+
+def test_server_messages_are_shown_as_short_plain_text() -> None:
+    from custom_components.kitaplus.helpers import plain_text
+
+    assert plain_text(None) == ""
+    assert plain_text("Falsches   Passwort\n") == "Falsches Passwort"
+    assert (
+        plain_text("Klick [hier](https://example.com) <b>jetzt</b> *fett*")
+        == "Klick hierhttps://example.com bjetzt/b fett"
+    )
+    assert len(plain_text("x" * 500)) == 200

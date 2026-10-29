@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta, tzinfo
 
@@ -173,3 +174,11 @@ def upcoming_entries(events: list[Event], today: date, limit: int = 5) -> list[U
         )
     found.sort(key=lambda item: (item[0], item[1]))
     return [entry for _, _, entry in found[:limit]]
+
+
+_MARKUP = re.compile(r"[<>\[\]()*_`#&]")
+
+
+def plain_text(message: str | None) -> str:
+    """A server message as plain text: Home Assistant shows it as Markdown, and the text is not ours."""
+    return " ".join(_MARKUP.sub("", message or "").split())[:200]

@@ -4,7 +4,7 @@ content: |
   {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
   {%- set mon = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] -%}
   {%- macro clean(t) -%}
-  {%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
+  {%- set s = (t or '') | regex_replace('[<>&"`*_#\\[\\]]', '') | regex_replace('[\n\r\t ]+', ' ') | trim -%}
   {%- for w in s.split(' ') -%}{{ w | truncate(24, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
   {%- endmacro -%}
   {%- macro dlabel(iso) -%}
@@ -15,12 +15,12 @@ content: |
   {%- set count = states('sensor.kitaplus_postfach') | int(0) -%}
   {%- set items = state_attr('sensor.kitaplus_postfach', 'messages') or [] -%}
   {%- set replies = state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] -%}
-  ### <ha-icon icon="mdi:email-outline"></ha-icon> Postfach · {{ count }} Nachrichten
+  ### <ha-icon icon="mdi:email-outline"></ha-icon> Postfach · {{ count }} {{ 'Nachricht' if count == 1 else 'Nachrichten' }}
   {% for m in items[:2] %}
   {%- set head = clean(m.titel) | trim -%}
   {%- set due = namespace(value='') -%}
   {%- for r in replies if r.id == m.id and r.frist -%}{%- set due.value = r.frist -%}{%- endfor %}
 
   **{{ (head if head else 'Ohne Titel') | truncate(80, True, '…') }}**
-  {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · <ha-icon icon="mdi:clock-outline"></ha-icon> **Rückmeldung bis {{ dlabel(due.value) }}**{% elif false %} · keine Rückmeldung offen{% endif %}
+  {{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · **Rückmeldung bis {{ dlabel(due.value) }}**{% elif false %} · keine Rückmeldung offen{% endif %}
   {% endfor -%}

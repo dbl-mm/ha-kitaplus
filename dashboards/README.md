@@ -29,7 +29,7 @@ Gebaut im Sections-Layout, nur mit **eingebauten Karten** (nichts zusätzlich in
 
 ## Was du siehst
 **Heute** (Handy, eine Spalte), von oben nach unten:
-1. **Datum und Status:** eine Karte sagt das Wichtigste. Rangfolge: *Frist verpasst* (rot) vor *N Sachen sind offen* (mit Frist und
+1. **Datum und Status:** eine Karte sagt das Wichtigste. Rangfolge: *Nicht bestellt* (Frist vorbei, gelb, bewusst ohne Alarm: Essen wird oft absichtlich abbestellt) vor *N Sachen sind offen* (mit Frist und
    Restzeit oder „Antwort bis …“) vor *Kita heute geschlossen* (mit Grund und Hinweis zu morgen) vor *Heute ist nichts zu tun*.
    Sind keine Daten da, steht das auch dort.
 2. **Kita heute / morgen:** geöffnet oder geschlossen, mit Grund.

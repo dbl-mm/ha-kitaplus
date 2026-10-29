@@ -2,6 +2,12 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unveröffentlicht]
+### Geändert
+- Sicherheit: Der Diagnose-Export zeigt nur noch eine feste Liste harmloser Felder (statt unbekannte Felder durchzulassen) und schwärzt die Konto-ID. Meldungen des KitaPlus-Servers werden im Anmeldeformular und in den Reparaturen als reiner, gekürzter Text angezeigt. Dashboard-Texte können keine Links mehr enthalten.
+- Dashboard: kleine Zeichen (✓ ○ ✕) statt großer Symbole, Abstand zwischen den Zeilen, „1 Nachricht“.
+- Dashboard: Ist die Frist vorbei und nichts bestellt, meldet die Statuskarte neutral „Nicht bestellt. Die Frist ist vorbei.“ (gelb statt rot, ohne „Bitte bei der Kita nachfragen“), denn oft ist das Absicht. Die Statuskarte hat keinen doppelten Rahmen mehr.
+
 ## [0.3.1]
 ### Neu
 - **Dashboard-Vorlagen nach Designvorlage neu aufgebaut:** Ansichten Heute (Handy), Wand (Tablet, drei Spalten) und Kalender; eine Statuskarte mit fester Rangfolge, Essen pro Kind, Brett, Postfach, „Als Nächstes“. Neuer Sensor **Nächste Termine** (die nächsten Termine und Schließtage in einer Liste).

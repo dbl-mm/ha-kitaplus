@@ -3,7 +3,7 @@
 Transparency rules:
 * every submit is exactly ONE login attempt, never an automatic retry;
 * the user is told which attempt this is and that KitaPlus can lock the account;
-* KitaPlus' own message is shown unchanged;
+* KitaPlus' own message is shown as plain text (markup removed, at most 200 characters);
 * after MAX_ATTEMPTS failed attempts the flow stops, so nobody locks themselves out by trial and error.
 """
 
@@ -64,6 +64,7 @@ from .const import (
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
 )
+from .helpers import plain_text
 
 
 def _failed(hass: HomeAssistant, account: str) -> tuple[int, float]:
@@ -120,7 +121,7 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
             return None, "two_factor"
         except KitaPlusAuthError as err:
             self._failed_attempts = _record_failure(self.hass, self._account)
-            self._server_message = err.server_message or ""
+            self._server_message = plain_text(err.server_message)
             return None, "account_locked" if err.locked else "invalid_auth"
         except KitaPlusMaintenanceError:
             return None, "maintenance"

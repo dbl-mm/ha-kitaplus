@@ -232,7 +232,8 @@ async def test_hero_a_missed_deadline_beats_everything(hass: HomeAssistant, lang
             pending=("1", {"messages": [{"titel": "X", "frist": None}]}),
         ),
     )
-    assert 'alert-type="error"' in out and t["missed_title"] in out and t["ask_kita"] in out
+    assert 'alert-type="warning"' in out and t["missed_title"] in out and t["ask_kita"] in out
+    assert 'alert-type="error"' not in out, "a meal that was left out on purpose is no alarm"
     assert "Mia" in out
 
 
@@ -329,7 +330,7 @@ async def test_kid_card_shows_state_words_icons_meals_and_deadline(hass: HomeAss
     )
     out = Template(card_content("kid", gen.PLACEHOLDER_NAME, language), hass).async_render(parse_result=False)
     assert t["state_words"]["ordered"] in out and t["state_words"]["not_offered"] in out
-    assert "mdi:cart-check" in out and "mdi:minus-circle-outline" in out
+    assert "✓" in out and "–" in out
     assert "Nudeln" in out and "ignored" not in out
     assert t["next_deadline"] in out and t["today"] in out
     set_states(hass, language, today=("open", {"meal": ""}), tomorrow="missed", deadline="unavailable")
@@ -343,7 +344,7 @@ async def test_kid_card_shows_state_words_icons_meals_and_deadline(hass: HomeAss
 
 async def test_board_card_shows_only_the_newest_post_cleaned_up(hass: HomeAssistant) -> None:
     post = {
-        "titel": "**Sommerfest** <b>2026</b>",
+        "titel": "**Sommerfest** <b>2026</b> [Link](https://example.com)",
         "datum": "2026-10-28",
         "text": "Liebe Eltern,\n\n\tbitte  beachten: " + "wort " * 60,
     }
@@ -352,6 +353,7 @@ async def test_board_card_shows_only_the_newest_post_cleaned_up(hass: HomeAssist
     )
     out = Template(card_content("board", "Mia"), hass).async_render(parse_result=False)
     assert "<b>" not in out and out.count("**") == 2 and "Alt" not in out
+    assert "[" not in out and "](" not in out, "no links can be built from a title"
     assert "Mi 28.10." in out and "Liebe Eltern, bitte beachten:" in out and "…" in out
 
 
@@ -393,6 +395,7 @@ async def test_mail_card_lists_two_messages_and_marks_the_one_that_needs_a_reply
     )
     out = Template(card_content("mail", "Mia"), hass).async_render(parse_result=False)
     assert gen.TEXT["de"]["untitled"] in out and "None" not in out
+    assert "1 Nachricht\n" in out or "1 Nachricht " in out and "1 Nachrichten" not in out
 
 
 @pytest.mark.parametrize("language", LANGUAGES)

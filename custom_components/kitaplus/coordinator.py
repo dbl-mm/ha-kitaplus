@@ -38,7 +38,7 @@ from .const import (
     EVENT_NEW_MESSAGE,
     EVENT_ORDER_DEADLINE,
 )
-from .helpers import DeadlineRule, OpenOrder, open_orders
+from .helpers import DeadlineRule, OpenOrder, open_orders, plain_text
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -118,7 +118,7 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
             translation_key="account_locked" if err.locked else "auth_failed",
             translation_placeholders={
                 "email": self.config_entry.data.get(CONF_EMAIL, ""),
-                "server_message": err.server_message or "-",
+                "server_message": plain_text(err.server_message) or "-",
             },
         )
 
@@ -196,7 +196,7 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
             raise ConfigEntryAuthFailed(
                 translation_domain=DOMAIN,
                 translation_key="auth_rejected",
-                translation_placeholders={"server_message": err.server_message or "-"},
+                translation_placeholders={"server_message": plain_text(err.server_message) or "-"},
             ) from err
         except (KeyError, IndexError, TypeError, ValueError, AttributeError) as err:
             # KitaPlus changed its answers: say so instead of a bare "unexpected error".

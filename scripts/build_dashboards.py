@@ -108,10 +108,10 @@ TEXT: dict[str, dict[str, Any]] = {
             "unavailable": "Nicht verfügbar",
             "unknown": "Unbekannt",
         },
-        "missed_title": "Frist verpasst",
+        "missed_title": "Nicht bestellt",
         "missed_one": "'Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.'",
         "missed_many": "'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.'",
-        "ask_kita": "Bitte bei der Kita nachfragen.",
+        "ask_kita": "Die Frist ist vorbei.",
         "open_one": "Eine Sache ist offen",
         "open_many": "' Sachen sind offen'",
         "order_item": "'Essen für ' ~ first.n ~ ' ' ~ first.label ~ ' bestellen.'",
@@ -139,6 +139,7 @@ TEXT: dict[str, dict[str, Any]] = {
         "untitled": "Ohne Titel",
         "mailbox": "Postfach",
         "messages": "Nachrichten",
+        "message_one": "Nachricht",
         "no_reply_open": "keine Rückmeldung offen",
         "reply_until": "Rückmeldung bis",
         "next": "Als Nächstes",
@@ -183,10 +184,10 @@ TEXT: dict[str, dict[str, Any]] = {
             "unavailable": "Unavailable",
             "unknown": "Unknown",
         },
-        "missed_title": "Deadline missed",
+        "missed_title": "Not ordered",
         "missed_one": "'The meal for ' ~ ns.missed[0] ~ ' is not ordered.'",
         "missed_many": "'Not ordered: ' ~ ns.missed | join(', ') ~ '.'",
-        "ask_kita": "Please ask the Kita.",
+        "ask_kita": "The deadline has passed.",
         "open_one": "One thing is open",
         "open_many": "' things are open'",
         "order_item": "'Order the meal for ' ~ first.n ~ ' ' ~ first.label ~ '.'",
@@ -214,6 +215,7 @@ TEXT: dict[str, dict[str, Any]] = {
         "untitled": "Untitled",
         "mailbox": "Mailbox",
         "messages": "messages",
+        "message_one": "message",
         "no_reply_open": "no reply needed",
         "reply_until": "Reply by",
         "next": "Coming up",
@@ -226,12 +228,8 @@ TEXT: dict[str, dict[str, Any]] = {
     },
 }
 
-ICON = {
-    "ordered": "mdi:cart-check",
-    "open": "mdi:cart-arrow-down",
-    "missed": "mdi:cart-off",
-    "not_offered": "mdi:minus-circle-outline",
-}
+# Plain signs: an inline <ha-icon> grows to the size of the heading in Home Assistant, a sign stays text-sized.
+ICON = {"ordered": "✓", "open": "○", "missed": "✕", "not_offered": "–"}
 BOARD_EXCERPT = 100  # characters: about two lines on a phone
 TITLE_LENGTH = 80  # about two lines
 WORD_LENGTH = 24  # longer words (web addresses) are cut so they cannot break the layout
@@ -282,7 +280,7 @@ HELPERS = """
 {%- set wd = @@WD@@ -%}
 {%- set mon = @@MON@@ -%}
 {%- macro clean(t) -%}
-{%- set s = (t or '') | regex_replace('[<>&"`*_#]', '') | regex_replace('[\\n\\r\\t ]+', ' ') | trim -%}
+{%- set s = (t or '') | regex_replace('[<>&"`*_#\\\\[\\\\]]', '') | regex_replace('[\\n\\r\\t ]+', ' ') | trim -%}
 {%- for w in s.split(' ') -%}{{ w | truncate(@@WORD@@, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}
 {%- endmacro -%}
 {%- macro dlabel(iso) -%}
@@ -341,7 +339,7 @@ HERO = """
 {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
 {%- set total = ns.opens | count + pend -%}
 {%- if ns.missed | count > 0 -%}
-<ha-alert alert-type="error" title="@@MISSED_TITLE@@">{{ (@@MISSED_ONE@@ if ns.missed | count == 1 else @@MISSED_MANY@@) | truncate(@@TITLE@@, True, '…') }} @@ASK_KITA@@</ha-alert>
+<ha-alert alert-type="warning" title="@@MISSED_TITLE@@">{{ (@@MISSED_ONE@@ if ns.missed | count == 1 else @@MISSED_MANY@@) | truncate(@@TITLE@@, True, '…') }} @@ASK_KITA@@</ha-alert>
 {%- elif total > 0 -%}
 {%- set first = ns.opens[0] if ns.opens else none -%}
 {%- set dlstate = states(first.dl) if first else 'unknown' -%}
@@ -378,10 +376,10 @@ KID = """
 {%- set st = states(ent) -%}
 {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
 
-**{{ label }}** · <ha-icon icon="{{ icons[st] if st in icons else 'mdi:help-circle-outline' }}"></ha-icon> **{{ words[st] if st in words else st }}**
+**{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
 {% if st != 'not_offered' and meal -%}
 {{ meal | truncate(@@TITLE@@, True, '…') }}
-{% endif -%}
+{% endif %}
 {% endfor %}
 {%- set dlstate = states('@@DEADLINE_ENTITY@@') -%}
 {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
@@ -422,14 +420,14 @@ MAIL = """
 {%- set count = states('@@ENTITY@@') | int(0) -%}
 {%- set items = state_attr('@@ENTITY@@', 'messages') or [] -%}
 {%- set replies = state_attr('@@PENDING@@', 'messages') or [] -%}
-### <ha-icon icon="mdi:email-outline"></ha-icon> @@MAILBOX@@ · {{ count }} @@MESSAGES@@
+### <ha-icon icon="mdi:email-outline"></ha-icon> @@MAILBOX@@ · {{ count }} {{ '@@MESSAGE_ONE@@' if count == 1 else '@@MESSAGES@@' }}
 {% for m in items[:@@LIMIT@@] %}
 {%- set head = clean(m.titel) | trim -%}
 {%- set due = namespace(value='') -%}
 {%- for r in replies if r.id == m.id and r.frist -%}{%- set due.value = r.frist -%}{%- endfor %}
 
 **{{ (head if head else '@@UNTITLED@@') | truncate(@@TITLE@@, True, '…') }}**
-{{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · <ha-icon icon="mdi:clock-outline"></ha-icon> **@@REPLY_UNTIL@@ {{ dlabel(due.value) }}**{% elif @@WALL@@ %} · @@NO_REPLY_OPEN@@{% endif %}
+{{ dlabel(m.datum) if m.datum else '' }}{% if due.value %} · **@@REPLY_UNTIL@@ {{ dlabel(due.value) }}**{% elif @@WALL@@ %} · @@NO_REPLY_OPEN@@{% endif %}
 {% endfor -%}
 """
 
@@ -442,7 +440,7 @@ NEXT = """
 {%- endif %}
 {% for e in entries[:@@LIMIT@@] %}
 {%- set head = clean(e.titel) | trim %}
-**{{ dlabel(e.datum) }}** · {{ (head if head else '@@UNTITLED@@') | truncate(@@TITLE@@, True, '…') }}{% if e.zeit %} · {{ e.zeit }}@@CLOCK@@{% endif %}{% if e.schliesstag %} · <ha-icon icon="mdi:calendar-remove"></ha-icon> **@@CLOSURE@@**{% endif %}
+**{{ dlabel(e.datum) }}** · {{ (head if head else '@@UNTITLED@@') | truncate(@@TITLE@@, True, '…') }}{% if e.zeit %} · {{ e.zeit }}@@CLOCK@@{% endif %}{% if e.schliesstag %} · **@@CLOSURE@@**{% endif %}
 
 {% endfor -%}
 """
@@ -487,7 +485,7 @@ def hero_card(t: dict[str, Any], account: Ids, kids: list[tuple[Ids, str]]) -> d
         for ids, name in kids
     )
     weekdays_helpers = fill(
-        "{%- set wd = @@WD@@ -%}\n{%- macro clean(t) -%}\n{%- set s = (t or '') | regex_replace('[<>&\"`*_#]', '') | regex_replace('[\\n\\r\\t ]+', ' ') | trim -%}\n"
+        "{%- set wd = @@WD@@ -%}\n{%- macro clean(t) -%}\n{%- set s = (t or '') | regex_replace('[<>&\"`*_#\\\\[\\\\]]', '') | regex_replace('[\\n\\r\\t ]+', ' ') | trim -%}\n"
         "{%- for w in s.split(' ') -%}{{ w | truncate(@@WORD@@, True, '…') }}{{ ' ' if not loop.last }}{%- endfor -%}\n{%- endmacro -%}\n"
         "{%- macro dlabel(iso) -%}\n{%- set d = as_datetime(iso) -%}\n{%- set mon = @@MON@@ -%}\n"
         "{%- if d -%}{{ wd[d.weekday()] }} {{ @@DATE_NUMERIC@@ }}{%- endif -%}\n{%- endmacro -%}\n",
@@ -528,7 +526,7 @@ def hero_card(t: dict[str, Any], account: Ids, kids: list[tuple[Ids, str]]) -> d
         CALM_ORDERED=t["calm_ordered"],
         CALM_NOTHING=t["calm_nothing"],
     )
-    return markdown(weekdays_helpers + body)
+    return markdown(weekdays_helpers + body, text_only=True)  # the alert is the frame, no second card border
 
 
 def kita_cards(t: dict[str, Any], account: Ids) -> list[dict]:
@@ -593,6 +591,7 @@ def mail_card(t: dict[str, Any], account: Ids, *, wall: bool = False) -> dict:
         PENDING=account.account("sensor", "pending"),
         MAILBOX=t["mailbox"],
         MESSAGES=t["messages"],
+        MESSAGE_ONE=t["message_one"],
         UNTITLED=t["untitled"],
         TITLE=str(TITLE_LENGTH),
         LIMIT="1" if wall else "2",
