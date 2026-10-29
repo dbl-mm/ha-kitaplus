@@ -14,7 +14,7 @@ Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern
 |---|---|
 | Schwarzes Brett | **Schwarzes Brett**: neuester Titel, die letzten 5 Beiträge als Attribut `posts` |
 | Postfach | **Postfach**: Anzahl der Nachrichten, die letzten 5 als Attribut `messages`; **Offene Rückmeldungen**: Nachrichten, die bestätigt werden müssen, mit Frist |
-| Kalender | **Termine**, **Schließtage** (inkl. Feiertage) und pro Kind **Bestelltes Essen** |
+| Kalender | **Termine**, **Schließtage** (inkl. Feiertage) und pro Kind **Bestelltes Essen**; **Nächste Termine**: die nächsten Termine und Schließtage in einer Liste (Attribut `entries`) |
 | Kita | **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“) |
 | Verpflegung | pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Nächste Bestellfrist**, **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR) |
 | Diagnose | **Sitzung gültig bis** (standardmäßig deaktiviert): bis wann die gespeicherte Anmeldung gilt |
@@ -37,6 +37,11 @@ Den Ordner `custom_components/kitaplus` nach `<config>/custom_components/kitaplu
 ## Updates
 
 Über HACS bekommst du Updates wie bei jeder anderen Integration: HACS legt eine **Update-Entität** an, Home Assistant zeigt unter **Einstellungen → System → Updates** ein Update an, und du installierst es mit einem Klick. Danach ist ein **Neustart von Home Assistant** nötig. Die gespeicherte Anmeldung bleibt erhalten, es gibt **keine neue Anmeldung** bei KitaPlus.
+
+> **Wichtig: nach jedem Update neu starten.** Erst nach dem Neustart läuft der neue Code, und neue Entitäten (zum Beispiel
+> **Nächste Termine**) erscheinen erst dann. Solange nicht neu gestartet wurde, zeigt Home Assistant weiter die alte Version.
+> Siehst du das Update nicht: in HACS bei KitaPlus **⋮ → Daten neu laden** bzw. **Neu herunterladen** wählen, die Version
+> auswählen und danach Home Assistant neu starten. Welche Version läuft, steht unter *Einstellungen → Geräte & Dienste → KitaPlus*.
 
 Was jede Version ändert, steht im [Changelog](CHANGELOG.md) und in den [GitHub-Releases](https://github.com/dbl-mm/ha-kitaplus/releases). Versionen folgen [SemVer](https://semver.org/lang/de/).
 
