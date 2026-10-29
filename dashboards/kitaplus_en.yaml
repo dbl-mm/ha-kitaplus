@@ -1,0 +1,224 @@
+# KitaPlus dashboard (template)
+# Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Raw configuration editor → replace everything.
+# Replace KIND with your child's first name (display) and kind with the same name in lower case
+# (that is how the entities are named, see Settings → Entities). Several children: see the README in this folder.
+# This file is generated (scripts/build_dashboards.py), please do not edit the template itself.
+title: Kita
+views:
+- title: Today
+  path: heute
+  icon: mdi:home-heart
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Kita
+      heading_style: title
+      icon: mdi:school-outline
+    - type: tile
+      entity: binary_sensor.kitaplus_closed_today
+      name: Today
+      icon: mdi:school-outline
+      color: orange
+      state_content:
+      - state
+      - reason
+    - type: tile
+      entity: binary_sensor.kitaplus_closed_tomorrow
+      name: Tomorrow
+      icon: mdi:school-outline
+      color: orange
+      state_content:
+      - state
+      - reason
+  - type: grid
+    cards:
+    - type: heading
+      heading: To do
+      heading_style: title
+      icon: mdi:checkbox-marked-circle-outline
+    - type: conditional
+      conditions:
+      - condition: state
+        entity: binary_sensor.kind_nothing_ordered_tomorrow
+        state: 'on'
+      card:
+        type: tile
+        entity: binary_sensor.kind_nothing_ordered_tomorrow
+        name: Order tomorrow's meal
+        icon: mdi:silverware-fork-knife
+        color: red
+        state_content:
+        - state
+    - type: conditional
+      conditions:
+      - condition: numeric_state
+        entity: sensor.kitaplus_pending_replies
+        above: 0
+      card:
+        type: vertical-stack
+        cards:
+        - type: tile
+          entity: sensor.kitaplus_pending_replies
+          name: Replies needed
+          icon: mdi:email-alert-outline
+          color: orange
+        - type: markdown
+          content: |-
+            {% for m in state_attr('sensor.kitaplus_pending_replies', 'messages') or [] %}
+            - **{{ m.titel }}**{% if m.frist %} · due {{ m.frist[5:10] }}{% endif %}
+            {% endfor %}
+    - type: conditional
+      conditions:
+      - condition: state
+        entity: binary_sensor.kind_nothing_ordered_tomorrow
+        state_not: 'on'
+      - condition: numeric_state
+        entity: sensor.kitaplus_pending_replies
+        below: 1
+      card:
+        type: markdown
+        title: Nothing to do
+        content: ✓ Everything is ordered, no reply is needed.
+  - type: grid
+    cards:
+    - type: heading
+      heading: KIND
+      heading_style: title
+      icon: mdi:account-child-outline
+    - type: tile
+      entity: sensor.kind_meal_today
+      name: Meal today
+      icon: mdi:silverware-fork-knife
+      state_content:
+      - state
+    - type: tile
+      entity: sensor.kind_meal_tomorrow
+      name: Meal tomorrow
+      icon: mdi:silverware-fork-knife
+      state_content:
+      - state
+  - type: grid
+    cards:
+    - type: heading
+      heading: Balance
+      heading_style: title
+      icon: mdi:wallet-outline
+    - type: tile
+      entity: sensor.kitaplus_meal_account_balance
+      name: Balance
+      icon: mdi:cash
+      state_content:
+      - state
+    - type: history-graph
+      title: Balance, last 10 days
+      entities:
+      - sensor.kitaplus_meal_account_balance
+      hours_to_show: 240
+      show_names: false
+- title: Calendar
+  path: kalender
+  icon: mdi:calendar
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Next 7 days
+      heading_style: title
+      icon: mdi:calendar-week
+    - type: calendar
+      entities: &id001
+      - calendar.kitaplus_appointments
+      - calendar.kitaplus_closures
+      - calendar.kind_ordered_meals
+      initial_view: listWeek
+    - type: heading
+      heading: Month
+      heading_style: title
+      icon: mdi:calendar-month
+    - type: calendar
+      entities: *id001
+      initial_view: dayGridMonth
+- title: Messages
+  path: mitteilungen
+  icon: mdi:message-text-outline
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Bulletin board
+      heading_style: title
+      icon: mdi:bulletin-board
+    - type: markdown
+      content: |-
+        {% set items = state_attr('sensor.kitaplus_bulletin_board', 'posts') or [] %}
+        {% if items | length == 0 %}
+        _No posts._
+        {% else %}
+        {% for p in items %}
+        **{{ p.titel or '–' }}**{% if p.datum %} · {{ p.datum[0:10] }}{% endif %}
+        {% if p.text %}
+        {{ p.text | truncate(220) }}
+        {% endif %}
+        {% if not loop.last %}
+        ---
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+  - type: grid
+    cards:
+    - type: heading
+      heading: Mailbox
+      heading_style: title
+      icon: mdi:email-outline
+    - type: markdown
+      content: |-
+        {% set items = state_attr('sensor.kitaplus_mailbox', 'messages') or [] %}
+        {% if items | length == 0 %}
+        _No messages._
+        {% else %}
+        {% for p in items %}
+        **{{ p.titel or '–' }}**{% if p.datum %} · {{ p.datum[0:10] }}{% endif %}
+        {% if p.text %}
+        {{ p.text | truncate(220) }}
+        {% endif %}
+        {% if not loop.last %}
+        ---
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+- title: Diagnostics
+  path: diagnose
+  icon: mdi:stethoscope
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Connection
+      heading_style: title
+      icon: mdi:cloud-check-outline
+    - type: markdown
+      content: The **Session valid until** sensor is off by default. Turn it on under *Settings → Devices & services
+        → KitaPlus → Entities*. It shows when you have to sign in again.
+    - type: tile
+      entity: sensor.kitaplus_session_valid_until
+      name: Session valid until
+      icon: mdi:clock-check-outline
+      state_content:
+      - state
+    - type: entities
+      title: All values
+      entities:
+      - binary_sensor.kitaplus_closed_today
+      - binary_sensor.kitaplus_closed_tomorrow
+      - sensor.kitaplus_bulletin_board
+      - sensor.kitaplus_mailbox
+      - sensor.kitaplus_pending_replies
+      - sensor.kitaplus_meal_account_balance
+      - sensor.kind_meal_today
+      - sensor.kind_meal_tomorrow
+      - binary_sensor.kind_nothing_ordered_tomorrow

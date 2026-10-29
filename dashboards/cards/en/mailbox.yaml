@@ -1,0 +1,23 @@
+# KitaPlus dashboard (template)
+type: vertical-stack
+cards:
+- type: heading
+  heading: Mailbox
+  heading_style: title
+  icon: mdi:email-outline
+- type: markdown
+  content: |-
+    {% set items = state_attr('sensor.kitaplus_mailbox', 'messages') or [] %}
+    {% if items | length == 0 %}
+    _No messages._
+    {% else %}
+    {% for p in items %}
+    **{{ p.titel or '–' }}**{% if p.datum %} · {{ p.datum[0:10] }}{% endif %}
+    {% if p.text %}
+    {{ p.text | truncate(220) }}
+    {% endif %}
+    {% if not loop.last %}
+    ---
+    {% endif %}
+    {% endfor %}
+    {% endif %}

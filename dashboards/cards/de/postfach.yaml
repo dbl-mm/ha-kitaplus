@@ -1,0 +1,23 @@
+# KitaPlus-Dashboard (Vorlage)
+type: vertical-stack
+cards:
+- type: heading
+  heading: Postfach
+  heading_style: title
+  icon: mdi:email-outline
+- type: markdown
+  content: |-
+    {% set items = state_attr('sensor.kitaplus_postfach', 'messages') or [] %}
+    {% if items | length == 0 %}
+    _Keine Nachrichten._
+    {% else %}
+    {% for p in items %}
+    **{{ p.titel or '–' }}**{% if p.datum %} · {{ p.datum[8:10] }}.{{ p.datum[5:7] }}.{{ p.datum[0:4] }}{% endif %}
+    {% if p.text %}
+    {{ p.text | truncate(220) }}
+    {% endif %}
+    {% if not loop.last %}
+    ---
+    {% endif %}
+    {% endfor %}
+    {% endif %}

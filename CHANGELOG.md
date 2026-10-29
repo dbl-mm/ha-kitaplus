@@ -10,6 +10,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 - Diagnose-Sensor „Sitzung gültig bis“ (standardmäßig aus), Geräte mit Modell und Link.
 - Übersetzte Fehlermeldungen, Icons über `icons.json`, Beschreibungen zu allen Eingabefeldern.
 - Dokumentation: Entfernen, Datenaktualisierung, Anwendungsfälle, Fehlerbehebung.
+- **7 Blueprints** (Essen-Erinnerung, Schließtag, Neue Mitteilung, Rückmeldung, Guthaben, Sitzung läuft ab, Tagesbriefing), per Knopf im README importierbar.
+- **Dashboard-Vorlagen** (Heute, Kalender, Mitteilungen, Diagnose) auf Deutsch und Englisch, nur eingebaute Karten, plus Einzelkarten.
+- Die Sensoren „Heute/Morgen geschlossen“ nennen den Grund im Attribut `reason`; Kacheln zeigen „Geschlossen/Geöffnet“ und „Nicht bestellt“ statt Ein/Aus.
 - `quality_scale.yaml` (Selbsteinstufung Platinum), `mypy --strict`, 100 % Testabdeckung.
 ### Behoben
 - Fehlerantworten werden auch bei komprimierten Antworten gelesen, damit Wartungs- und Serverhinweise nicht verloren gehen.

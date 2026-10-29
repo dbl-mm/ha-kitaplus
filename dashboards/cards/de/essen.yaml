@@ -1,0 +1,19 @@
+# KitaPlus-Dashboard (Vorlage)
+type: vertical-stack
+cards:
+- type: heading
+  heading: KIND
+  heading_style: title
+  icon: mdi:account-child-outline
+- type: tile
+  entity: sensor.kind_essen_heute
+  name: Essen heute
+  icon: mdi:silverware-fork-knife
+  state_content:
+  - state
+- type: tile
+  entity: sensor.kind_essen_morgen
+  name: Essen morgen
+  icon: mdi:silverware-fork-knife
+  state_content:
+  - state

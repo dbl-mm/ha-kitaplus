@@ -1,0 +1,224 @@
+# KitaPlus-Dashboard (Vorlage)
+# Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor → alles ersetzen.
+# Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben
+# (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.
+# Diese Datei wird erzeugt (scripts/build_dashboards.py), bitte nicht in der Vorlage selbst ändern.
+title: Kita
+views:
+- title: Heute
+  path: heute
+  icon: mdi:home-heart
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Kita
+      heading_style: title
+      icon: mdi:school-outline
+    - type: tile
+      entity: binary_sensor.kitaplus_heute_geschlossen
+      name: Heute
+      icon: mdi:school-outline
+      color: orange
+      state_content:
+      - state
+      - reason
+    - type: tile
+      entity: binary_sensor.kitaplus_morgen_geschlossen
+      name: Morgen
+      icon: mdi:school-outline
+      color: orange
+      state_content:
+      - state
+      - reason
+  - type: grid
+    cards:
+    - type: heading
+      heading: Zu erledigen
+      heading_style: title
+      icon: mdi:checkbox-marked-circle-outline
+    - type: conditional
+      conditions:
+      - condition: state
+        entity: binary_sensor.kind_morgen_nicht_bestellt
+        state: 'on'
+      card:
+        type: tile
+        entity: binary_sensor.kind_morgen_nicht_bestellt
+        name: Essen für morgen bestellen
+        icon: mdi:silverware-fork-knife
+        color: red
+        state_content:
+        - state
+    - type: conditional
+      conditions:
+      - condition: numeric_state
+        entity: sensor.kitaplus_offene_ruckmeldungen
+        above: 0
+      card:
+        type: vertical-stack
+        cards:
+        - type: tile
+          entity: sensor.kitaplus_offene_ruckmeldungen
+          name: Rückmeldungen offen
+          icon: mdi:email-alert-outline
+          color: orange
+        - type: markdown
+          content: |-
+            {% for m in state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] %}
+            - **{{ m.titel }}**{% if m.frist %} · bis {{ m.frist[8:10] }}.{{ m.frist[5:7] }}.{% endif %}
+            {% endfor %}
+    - type: conditional
+      conditions:
+      - condition: state
+        entity: binary_sensor.kind_morgen_nicht_bestellt
+        state_not: 'on'
+      - condition: numeric_state
+        entity: sensor.kitaplus_offene_ruckmeldungen
+        below: 1
+      card:
+        type: markdown
+        title: Nichts zu tun
+        content: ✓ Alles bestellt, keine Rückmeldung offen.
+  - type: grid
+    cards:
+    - type: heading
+      heading: KIND
+      heading_style: title
+      icon: mdi:account-child-outline
+    - type: tile
+      entity: sensor.kind_essen_heute
+      name: Essen heute
+      icon: mdi:silverware-fork-knife
+      state_content:
+      - state
+    - type: tile
+      entity: sensor.kind_essen_morgen
+      name: Essen morgen
+      icon: mdi:silverware-fork-knife
+      state_content:
+      - state
+  - type: grid
+    cards:
+    - type: heading
+      heading: Guthaben
+      heading_style: title
+      icon: mdi:wallet-outline
+    - type: tile
+      entity: sensor.kitaplus_kontostand_verpflegung
+      name: Guthaben
+      icon: mdi:cash
+      state_content:
+      - state
+    - type: history-graph
+      title: Guthaben, letzte 10 Tage
+      entities:
+      - sensor.kitaplus_kontostand_verpflegung
+      hours_to_show: 240
+      show_names: false
+- title: Kalender
+  path: kalender
+  icon: mdi:calendar
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Die nächsten 7 Tage
+      heading_style: title
+      icon: mdi:calendar-week
+    - type: calendar
+      entities: &id001
+      - calendar.kitaplus_termine
+      - calendar.kitaplus_schliesstage
+      - calendar.kind_bestelltes_essen
+      initial_view: listWeek
+    - type: heading
+      heading: Monat
+      heading_style: title
+      icon: mdi:calendar-month
+    - type: calendar
+      entities: *id001
+      initial_view: dayGridMonth
+- title: Mitteilungen
+  path: mitteilungen
+  icon: mdi:message-text-outline
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Schwarzes Brett
+      heading_style: title
+      icon: mdi:bulletin-board
+    - type: markdown
+      content: |-
+        {% set items = state_attr('sensor.kitaplus_schwarzes_brett', 'posts') or [] %}
+        {% if items | length == 0 %}
+        _Keine Beiträge._
+        {% else %}
+        {% for p in items %}
+        **{{ p.titel or '–' }}**{% if p.datum %} · {{ p.datum[8:10] }}.{{ p.datum[5:7] }}.{{ p.datum[0:4] }}{% endif %}
+        {% if p.text %}
+        {{ p.text | truncate(220) }}
+        {% endif %}
+        {% if not loop.last %}
+        ---
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+  - type: grid
+    cards:
+    - type: heading
+      heading: Postfach
+      heading_style: title
+      icon: mdi:email-outline
+    - type: markdown
+      content: |-
+        {% set items = state_attr('sensor.kitaplus_postfach', 'messages') or [] %}
+        {% if items | length == 0 %}
+        _Keine Nachrichten._
+        {% else %}
+        {% for p in items %}
+        **{{ p.titel or '–' }}**{% if p.datum %} · {{ p.datum[8:10] }}.{{ p.datum[5:7] }}.{{ p.datum[0:4] }}{% endif %}
+        {% if p.text %}
+        {{ p.text | truncate(220) }}
+        {% endif %}
+        {% if not loop.last %}
+        ---
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+- title: Diagnose
+  path: diagnose
+  icon: mdi:stethoscope
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Verbindung
+      heading_style: title
+      icon: mdi:cloud-check-outline
+    - type: markdown
+      content: Der Sensor **Sitzung gültig bis** ist standardmäßig ausgeschaltet. Einschalten unter *Einstellungen
+        → Geräte & Dienste → KitaPlus → Entitäten*. Er zeigt, wann du dich neu anmelden musst.
+    - type: tile
+      entity: sensor.kitaplus_sitzung_gultig_bis
+      name: Sitzung gültig bis
+      icon: mdi:clock-check-outline
+      state_content:
+      - state
+    - type: entities
+      title: Alle Werte
+      entities:
+      - binary_sensor.kitaplus_heute_geschlossen
+      - binary_sensor.kitaplus_morgen_geschlossen
+      - sensor.kitaplus_schwarzes_brett
+      - sensor.kitaplus_postfach
+      - sensor.kitaplus_offene_ruckmeldungen
+      - sensor.kitaplus_kontostand_verpflegung
+      - sensor.kind_essen_heute
+      - sensor.kind_essen_morgen
+      - binary_sensor.kind_morgen_nicht_bestellt

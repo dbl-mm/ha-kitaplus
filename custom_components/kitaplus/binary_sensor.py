@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import timedelta
+from datetime import date, timedelta
 from functools import partial
 from typing import Any
 
@@ -16,7 +16,7 @@ from . import KitaPlusConfigEntry
 from .api.models import Child, MealEntry
 from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
-from .helpers import is_closed_on, meals_on
+from .helpers import closure_on, is_closed_on, meals_on
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
@@ -33,10 +33,18 @@ class ClosedSensor(KitaPlusEntity, BinarySensorEntity):
         self._attr_translation_key = key
         self._attr_unique_id = f"{self._entry_id}_{key}"
 
+    def _day(self) -> date:
+        return dt_util.now().date() + timedelta(days=self._offset)
+
     @property
     def is_on(self) -> bool:
-        day = dt_util.now().date() + timedelta(days=self._offset)
-        return is_closed_on(self.coordinator.data.events, day)
+        return is_closed_on(self.coordinator.data.events, self._day())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Why the Kita is closed (the name KitaPlus gives the closure day), for notifications."""
+        event = closure_on(self.coordinator.data.events, self._day())
+        return {"reason": (event.get("name") or None) if event else None}
 
 
 class NoOrderTomorrowSensor(KitaPlusChildEntity, BinarySensorEntity):

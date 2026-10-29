@@ -1,0 +1,100 @@
+blueprint:
+  name: "KitaPlus: Warnung bei niedrigem Verpflegungs-Guthaben"
+  description: |
+    Meldet, wenn das **Guthaben für die Verpflegung** unter einen Betrag fällt, und erinnert auf Wunsch jeden Tag,
+    bis aufgeladen ist. *(English: warns when the meal account balance drops below a threshold.)*
+
+    In der Aktion stehen `balance` (aktuelles Guthaben), `threshold` und `message` zur Verfügung.
+  domain: automation
+  author: dbl-mm
+  source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/guthaben_niedrig.yaml
+  homeassistant:
+    min_version: 2025.8.0
+  input:
+    balance_sensor:
+      name: Sensor „Kontostand Verpflegung“
+      selector:
+        entity:
+          filter:
+            - integration: kitaplus
+              domain: sensor
+              device_class: monetary
+    threshold:
+      name: Warnen unter
+      description: Betrag in Euro.
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 200
+          step: 1
+          mode: box
+          unit_of_measurement: EUR
+    notify_action:
+      name: Was soll passieren?
+      description: Standard ist eine Mitteilung über `notify.notify`.
+      default:
+        - action: notify.notify
+          data:
+            title: Kita
+            message: "{{ message }}"
+      selector:
+        action:
+    advanced:
+      name: Erweitert
+      icon: mdi:cog
+      collapsed: true
+      input:
+        remind_daily:
+          name: Jeden Tag erinnern, solange das Guthaben niedrig ist
+          default: false
+          selector:
+            boolean:
+        remind_time:
+          name: Uhrzeit der täglichen Erinnerung
+          default: "09:00:00"
+          selector:
+            time:
+        settle_time:
+          name: Erst melden, wenn der Wert so lange niedrig bleibt
+          description: Verhindert Meldungen bei kurzen Schwankungen, etwa während einer Buchung.
+          default:
+            minutes: 10
+          selector:
+            duration:
+
+mode: single
+max_exceeded: silent
+
+variables:
+  balance_sensor: !input balance_sensor
+  threshold: !input threshold
+  remind_daily: !input remind_daily
+  balance: "{{ states(balance_sensor) | float(0) }}"
+  message: "Das Verpflegungs-Guthaben beträgt nur noch {{ '%.2f' | format(balance) }} € (Grenze {{ '%.2f' | format(threshold | float(0)) }} €)."
+
+triggers:
+  - trigger: numeric_state
+    entity_id: !input balance_sensor
+    below: !input threshold
+    for: !input settle_time
+    id: below
+  - trigger: time
+    at: !input remind_time
+    id: daily
+
+conditions:
+  - condition: numeric_state
+    entity_id: !input balance_sensor
+    below: !input threshold
+  - condition: or
+    alias: Sofort beim Unterschreiten, die tägliche Erinnerung nur auf Wunsch
+    conditions:
+      - condition: trigger
+        id: below
+      - condition: template
+        value_template: "{{ remind_daily }}"
+
+actions:
+  - alias: Deine Aktion
+    sequence: !input notify_action

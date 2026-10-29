@@ -1,0 +1,67 @@
+blueprint:
+  name: "KitaPlus: Hinweis, bevor die Anmeldung abläuft"
+  description: |
+    Warnt rechtzeitig, bevor die gespeicherte **KitaPlus-Anmeldung** abläuft, damit du dich in Ruhe neu anmelden kannst
+    (**Einstellungen → Geräte & Dienste → KitaPlus → ⋮ → Neu konfigurieren**). Danach zeigt Home Assistant
+    sonst eine Reparatur-Meldung. *(English: warns before the stored KitaPlus sign-in expires.)*
+
+    **Wichtig:** Der Sensor „Sitzung gültig bis“ ist standardmäßig **deaktiviert**. Aktiviere ihn unter
+    Einstellungen → Geräte & Dienste → KitaPlus → Entitäten, bevor du diesen Blueprint nutzt.
+
+    In der Aktion stehen `message` und `days` (Tage vor Ablauf) zur Verfügung.
+  domain: automation
+  author: dbl-mm
+  source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/sitzung_laeuft_ab.yaml
+  homeassistant:
+    min_version: 2025.8.0
+  input:
+    session_sensor:
+      name: Sensor „Sitzung gültig bis“
+      selector:
+        entity:
+          filter:
+            - integration: kitaplus
+              domain: sensor
+              device_class: timestamp
+    warn_before:
+      name: Wie früh warnen?
+      default: "-72:00:00"
+      selector:
+        select:
+          options:
+            - label: 1 Tag vorher
+              value: "-24:00:00"
+            - label: 3 Tage vorher
+              value: "-72:00:00"
+            - label: 7 Tage vorher
+              value: "-168:00:00"
+    notify_action:
+      name: Was soll passieren?
+      description: Standard ist eine Mitteilung über `notify.notify`.
+      default:
+        - action: notify.notify
+          data:
+            title: KitaPlus
+            message: "{{ message }}"
+      selector:
+        action:
+
+mode: single
+max_exceeded: silent
+
+variables:
+  warn_before: !input warn_before
+  days: "{{ (warn_before.split(':')[0] | replace('-', '') | int(0)) // 24 }}"
+  message: >-
+    Die KitaPlus-Anmeldung in Home Assistant läuft in etwa {{ days }} {{ 'Tag' if days == 1 else 'Tagen' }} ab.
+    Bitte unter Einstellungen → Geräte & Dienste → KitaPlus → Neu konfigurieren einmal neu anmelden.
+
+triggers:
+  - trigger: time
+    at:
+      entity_id: !input session_sensor
+      offset: !input warn_before
+
+actions:
+  - alias: Deine Aktion
+    sequence: !input notify_action

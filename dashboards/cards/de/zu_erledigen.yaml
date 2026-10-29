@@ -1,0 +1,46 @@
+# KitaPlus-Dashboard (Vorlage)
+type: vertical-stack
+cards:
+- type: conditional
+  conditions:
+  - condition: state
+    entity: binary_sensor.kind_morgen_nicht_bestellt
+    state: 'on'
+  card:
+    type: tile
+    entity: binary_sensor.kind_morgen_nicht_bestellt
+    name: Essen für morgen bestellen
+    icon: mdi:silverware-fork-knife
+    color: red
+    state_content:
+    - state
+- type: conditional
+  conditions:
+  - condition: numeric_state
+    entity: sensor.kitaplus_offene_ruckmeldungen
+    above: 0
+  card:
+    type: vertical-stack
+    cards:
+    - type: tile
+      entity: sensor.kitaplus_offene_ruckmeldungen
+      name: Rückmeldungen offen
+      icon: mdi:email-alert-outline
+      color: orange
+    - type: markdown
+      content: |-
+        {% for m in state_attr('sensor.kitaplus_offene_ruckmeldungen', 'messages') or [] %}
+        - **{{ m.titel }}**{% if m.frist %} · bis {{ m.frist[8:10] }}.{{ m.frist[5:7] }}.{% endif %}
+        {% endfor %}
+- type: conditional
+  conditions:
+  - condition: state
+    entity: binary_sensor.kind_morgen_nicht_bestellt
+    state_not: 'on'
+  - condition: numeric_state
+    entity: sensor.kitaplus_offene_ruckmeldungen
+    below: 1
+  card:
+    type: markdown
+    title: Nichts zu tun
+    content: ✓ Alles bestellt, keine Rückmeldung offen.

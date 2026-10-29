@@ -1,0 +1,148 @@
+blueprint:
+  name: "KitaPlus: Tagesbriefing"
+  description: |
+    Schickt zur gewählten Uhrzeit **eine einzige Zusammenfassung**: Ist die Kita heute oder morgen geschlossen,
+    was ist für heute und morgen bestellt, wie viele Rückmeldungen sind offen und wie hoch ist das Guthaben.
+    Jeder Baustein lässt sich einzeln abschalten; was nicht zutrifft, erscheint nicht.
+    *(English: one daily summary of closures, meals, open replies and balance.)*
+
+    In der Aktion stehen `message` (fertiger Text) und `lines` (die einzelnen Zeilen) zur Verfügung.
+  domain: automation
+  author: dbl-mm
+  source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/tagesbriefing.yaml
+  homeassistant:
+    min_version: 2025.8.0
+  input:
+    briefing_time:
+      name: Uhrzeit
+      default: "07:00:00"
+      selector:
+        time:
+    notify_action:
+      name: Was soll passieren?
+      description: Standard ist eine Mitteilung über `notify.notify`.
+      default:
+        - action: notify.notify
+          data:
+            title: Kita heute
+            message: "{{ message }}"
+      selector:
+        action:
+    closure:
+      name: Schließtage
+      icon: mdi:school
+      collapsed: false
+      input:
+        closed_today:
+          name: Sensor „Heute geschlossen“
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: binary_sensor
+        closed_tomorrow:
+          name: Sensor „Morgen geschlossen“
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: binary_sensor
+    meals:
+      name: Essen
+      icon: mdi:silverware-fork-knife
+      collapsed: false
+      input:
+        meal_today:
+          name: Sensoren „Essen heute“ (pro Kind)
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: sensor
+        meal_tomorrow:
+          name: Sensoren „Essen morgen“ (pro Kind)
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: sensor
+    more:
+      name: Rückmeldungen und Guthaben
+      icon: mdi:email-alert-outline
+      collapsed: true
+      input:
+        pending:
+          name: Sensor „Offene Rückmeldungen“
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: sensor
+        balance:
+          name: Sensor „Kontostand Verpflegung“
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: sensor
+                  device_class: monetary
+
+mode: single
+max_exceeded: silent
+
+variables:
+  closed_today: !input closed_today
+  closed_tomorrow: !input closed_tomorrow
+  meal_today: !input meal_today
+  meal_tomorrow: !input meal_tomorrow
+  pending: !input pending
+  balance: !input balance
+  lines: >-
+    {% set ns = namespace(out=[]) %}
+    {% for e in closed_today if is_state(e, 'on') %}
+      {% set r = state_attr(e, 'reason') %}
+      {% set ns.out = ns.out + ['Kita heute geschlossen' ~ (' (' ~ r ~ ')' if r else '')] %}
+    {% endfor %}
+    {% for e in closed_tomorrow if is_state(e, 'on') %}
+      {% set r = state_attr(e, 'reason') %}
+      {% set ns.out = ns.out + ['Kita morgen geschlossen' ~ (' (' ~ r ~ ')' if r else '')] %}
+    {% endfor %}
+    {% for e in meal_today if states(e) not in ['unknown', 'unavailable'] %}
+      {% set ns.out = ns.out + [(device_attr(e, 'name') or 'Kind') ~ ' heute: ' ~ states(e)] %}
+    {% endfor %}
+    {% for e in meal_tomorrow if states(e) not in ['unknown', 'unavailable'] %}
+      {% set ns.out = ns.out + [(device_attr(e, 'name') or 'Kind') ~ ' morgen: ' ~ states(e)] %}
+    {% endfor %}
+    {% for e in pending if states(e) | int(0) > 0 %}
+      {% set ns.out = ns.out + [states(e) ~ ' Rückmeldung(en) offen'] %}
+    {% endfor %}
+    {% for e in balance if is_number(states(e)) %}
+      {% set ns.out = ns.out + ['Guthaben: ' ~ '%.2f' | format(states(e) | float) ~ ' €'] %}
+    {% endfor %}
+    {{ ns.out }}
+  message: "{{ lines | join('\n') }}"
+
+triggers:
+  - trigger: time
+    at: !input briefing_time
+
+conditions:
+  - condition: template
+    alias: Es gibt etwas zu berichten
+    value_template: "{{ lines | length > 0 }}"
+
+actions:
+  - alias: Deine Aktion
+    sequence: !input notify_action

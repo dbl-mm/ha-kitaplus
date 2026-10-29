@@ -107,13 +107,25 @@
     },
     "binary_sensor": {
       "closed_today": {
-        "name": "Heute geschlossen"
+        "name": "Heute geschlossen",
+        "state": {
+          "on": "Geschlossen",
+          "off": "Geöffnet"
+        }
       },
       "closed_tomorrow": {
-        "name": "Morgen geschlossen"
+        "name": "Morgen geschlossen",
+        "state": {
+          "on": "Geschlossen",
+          "off": "Geöffnet"
+        }
       },
       "no_order_tomorrow": {
-        "name": "Morgen nicht bestellt"
+        "name": "Morgen nicht bestellt",
+        "state": {
+          "on": "Nicht bestellt",
+          "off": "In Ordnung"
+        }
       }
     }
   },

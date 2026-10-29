@@ -1,0 +1,81 @@
+blueprint:
+  name: "KitaPlus: Benachrichtigung bei neuem Beitrag oder neuer Nachricht"
+  description: |
+    Meldet jeden **neuen Beitrag am Schwarzen Brett** und jede **neue Nachricht im Postfach**, sobald die
+    Integration sie erkennt (je nach Abfrageintervall, Standard 30 Minuten). Optional nur bei bestimmten Stichwörtern.
+    *(English: notifies you about new bulletin board posts and new mailbox messages, optionally filtered by keywords.)*
+
+    Beim ersten Abruf nach einem Neustart meldet die Integration nichts, damit du nicht mit alten Einträgen
+    überflutet wirst. In der Aktion stehen `title`, `source` (`board` oder `message`), `source_label` und `message`
+    zur Verfügung.
+  domain: automation
+  author: dbl-mm
+  source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/neue_mitteilung.yaml
+  homeassistant:
+    min_version: 2025.8.0
+  input:
+    source:
+      name: Was soll gemeldet werden?
+      default: both
+      selector:
+        select:
+          options:
+            - label: Schwarzes Brett und Postfach
+              value: both
+            - label: Nur Schwarzes Brett
+              value: board
+            - label: Nur Postfach
+              value: message
+    notify_action:
+      name: Was soll passieren?
+      description: Standard ist eine Mitteilung über `notify.notify` mit dem Titel des Eintrags.
+      default:
+        - action: notify.notify
+          data:
+            title: "Kita: {{ source_label }}"
+            message: "{{ title or 'Neuer Eintrag' }}"
+      selector:
+        action:
+    advanced:
+      name: Erweitert
+      icon: mdi:cog
+      collapsed: true
+      input:
+        keywords:
+          name: Nur bei Stichwörtern im Titel
+          description: Durch Komma getrennt, ohne Beachtung von Groß- und Kleinschreibung (zum Beispiel `ausflug, elternabend`). Leer lassen für alle.
+          default: ""
+          selector:
+            text:
+
+mode: queued
+max: 10
+
+variables:
+  watch: !input source
+  keywords_raw: !input keywords
+  keyword_list: "{{ keywords_raw.split(',') | map('trim') | map('lower') | reject('eq', '') | list }}"
+  title: "{{ trigger.event.data.title or '' }}"
+  source: "{{ trigger.id }}"
+  source_label: "{{ 'Schwarzes Brett' if trigger.id == 'board' else 'Postfach' }}"
+  message: "{{ source_label }}: {{ title or 'Neuer Eintrag' }}"
+
+triggers:
+  - trigger: event
+    event_type: kitaplus_new_board_post
+    id: board
+  - trigger: event
+    event_type: kitaplus_new_message
+    id: message
+
+conditions:
+  - condition: template
+    alias: Die gewählte Quelle passt
+    value_template: "{{ watch == 'both' or watch == source }}"
+  - condition: template
+    alias: Ein Stichwort kommt im Titel vor (oder es gibt keine Stichwörter)
+    value_template: "{{ keyword_list | length == 0 or keyword_list | select('in', title | lower) | list | length > 0 }}"
+
+actions:
+  - alias: Deine Aktion
+    sequence: !input notify_action

@@ -1,0 +1,27 @@
+# KitaPlus-Dashboard (Vorlage)
+type: vertical-stack
+cards:
+- type: heading
+  heading: Kita
+  heading_style: title
+  icon: mdi:school-outline
+- type: grid
+  columns: 2
+  square: false
+  cards:
+  - type: tile
+    entity: binary_sensor.kitaplus_heute_geschlossen
+    name: Heute
+    icon: mdi:school-outline
+    color: orange
+    state_content:
+    - state
+    - reason
+  - type: tile
+    entity: binary_sensor.kitaplus_morgen_geschlossen
+    name: Morgen
+    icon: mdi:school-outline
+    color: orange
+    state_content:
+    - state
+    - reason

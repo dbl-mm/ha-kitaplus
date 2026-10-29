@@ -1,0 +1,23 @@
+# KitaPlus dashboard (template)
+type: vertical-stack
+cards:
+- type: heading
+  heading: Bulletin board
+  heading_style: title
+  icon: mdi:bulletin-board
+- type: markdown
+  content: |-
+    {% set items = state_attr('sensor.kitaplus_bulletin_board', 'posts') or [] %}
+    {% if items | length == 0 %}
+    _No posts._
+    {% else %}
+    {% for p in items %}
+    **{{ p.titel or '–' }}**{% if p.datum %} · {{ p.datum[0:10] }}{% endif %}
+    {% if p.text %}
+    {{ p.text | truncate(220) }}
+    {% endif %}
+    {% if not loop.last %}
+    ---
+    {% endif %}
+    {% endfor %}
+    {% endif %}

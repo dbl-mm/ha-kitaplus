@@ -1,0 +1,19 @@
+# KitaPlus dashboard (template)
+type: vertical-stack
+cards:
+- type: heading
+  heading: Balance
+  heading_style: title
+  icon: mdi:wallet-outline
+- type: tile
+  entity: sensor.kitaplus_meal_account_balance
+  name: Balance
+  icon: mdi:cash
+  state_content:
+  - state
+- type: history-graph
+  title: Balance, last 10 days
+  entities:
+  - sensor.kitaplus_meal_account_balance
+  hours_to_show: 240
+  show_names: false

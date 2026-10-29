@@ -184,3 +184,17 @@ async def test_an_ordered_meal_without_any_name_does_not_break_the_sensor(hass, 
     assert (
         hass.states.get("sensor.vorname_1_meal_today").state == "Ordered"  # ordered, only the name is missing
     )  # nothing to show by name
+
+
+async def test_closed_sensor_tells_the_reason_for_notifications(hass, stack, freezer) -> None:
+    at(freezer, "2026-06-13T10:00:00")
+    closure = {
+        "id": 1,
+        "name": "Brückentag",
+        "istSchliesstag": True,
+        "startdatum": "2026-06-14T00:00:00",
+        "enddatum": "2026-06-14T23:59:00",
+    }
+    await setup_integration(hass, stack, async_get_events=[closure])
+    assert hass.states.get("binary_sensor.kitaplus_closed_tomorrow").attributes["reason"] == "Brückentag"
+    assert hass.states.get("binary_sensor.kitaplus_closed_today").attributes["reason"] is None

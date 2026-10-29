@@ -1,0 +1,20 @@
+# KitaPlus-Dashboard (Vorlage)
+type: vertical-stack
+cards:
+- type: heading
+  heading: Die nächsten 7 Tage
+  heading_style: title
+  icon: mdi:calendar-week
+- type: calendar
+  entities: &id001
+  - calendar.kitaplus_termine
+  - calendar.kitaplus_schliesstage
+  - calendar.kind_bestelltes_essen
+  initial_view: listWeek
+- type: heading
+  heading: Monat
+  heading_style: title
+  icon: mdi:calendar-month
+- type: calendar
+  entities: *id001
+  initial_view: dayGridMonth

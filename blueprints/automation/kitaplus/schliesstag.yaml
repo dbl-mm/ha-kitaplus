@@ -1,0 +1,108 @@
+blueprint:
+  name: "KitaPlus: Schließtag – Hinweis am Vorabend und Aktion am Morgen"
+  description: |
+    Meldet **am Vorabend**, dass die Kita morgen geschlossen ist (auch Feiertage), und kann **am Morgen des
+    Schließtags** eine Aktion ausführen, zum Beispiel den Wecker abschalten oder die Betreuung anstoßen.
+    *(English: evening notice before a closure day and an optional action on the morning of the closure.)*
+
+    In den Aktionen stehen `message`, `reason` (Name des Schließtags, kann leer sein) und `when`
+    (`tomorrow` oder `today`) zur Verfügung.
+  domain: automation
+  author: dbl-mm
+  source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/schliesstag.yaml
+  homeassistant:
+    min_version: 2025.8.0
+  input:
+    closed_tomorrow:
+      name: Sensor „Morgen geschlossen“
+      selector:
+        entity:
+          filter:
+            - integration: kitaplus
+              domain: binary_sensor
+    evening_time:
+      name: Uhrzeit des Hinweises am Vorabend
+      default: "19:00:00"
+      selector:
+        time:
+    evening_action:
+      name: Aktion am Vorabend
+      description: Standard ist eine Mitteilung über `notify.notify`.
+      default:
+        - action: notify.notify
+          data:
+            title: Kita
+            message: "{{ message }}"
+      selector:
+        action:
+    advanced:
+      name: Am Morgen des Schließtags (optional)
+      icon: mdi:weather-sunset-up
+      collapsed: true
+      input:
+        closed_today:
+          name: Sensor „Heute geschlossen“
+          description: Nur nötig, wenn du am Morgen etwas ausführen willst.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: binary_sensor
+        morning_time:
+          name: Uhrzeit am Morgen
+          default: "06:30:00"
+          selector:
+            time:
+        morning_action:
+          name: Aktion am Morgen
+          description: Zum Beispiel einen Wecker abschalten. Leer lassen, wenn nichts passieren soll.
+          default: []
+          selector:
+            action:
+
+mode: single
+max_exceeded: silent
+
+variables:
+  closed_tomorrow: !input closed_tomorrow
+  closed_today: !input closed_today
+
+triggers:
+  - trigger: time
+    at: !input evening_time
+    id: evening
+  - trigger: time
+    at: !input morning_time
+    id: morning
+
+actions:
+  - choose:
+      - alias: Am Vorabend, wenn morgen geschlossen ist
+        conditions:
+          - condition: trigger
+            id: evening
+          - condition: state
+            entity_id: !input closed_tomorrow
+            state: "on"
+        sequence:
+          - variables:
+              when: tomorrow
+              reason: "{{ state_attr(closed_tomorrow, 'reason') or '' }}"
+              message: "Die Kita ist morgen geschlossen{{ ' (' ~ reason ~ ')' if reason }}."
+          - alias: Deine Aktion am Vorabend
+            sequence: !input evening_action
+      - alias: Am Morgen, wenn heute geschlossen ist
+        conditions:
+          - condition: trigger
+            id: morning
+          - condition: template
+            value_template: "{{ closed_today | select('is_state', 'on') | list | count > 0 }}"
+        sequence:
+          - variables:
+              when: today
+              reason: "{{ state_attr((closed_today | select('is_state', 'on') | list)[0], 'reason') or '' }}"
+              message: "Die Kita ist heute geschlossen{{ ' (' ~ reason ~ ')' if reason }}."
+          - alias: Deine Aktion am Morgen
+            sequence: !input morning_action

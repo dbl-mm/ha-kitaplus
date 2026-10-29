@@ -112,7 +112,7 @@ rules:
     comment: README.md, section Datenaktualisierung.
   docs-examples:
     status: done
-    comment: README.md, section Beispiele.
+    comment: README.md sections Beispiele, Blueprints (seven importable blueprints) and Dashboard-Vorlagen.
   docs-known-limitations:
     status: done
     comment: README.md, section Bekannte Einschränkungen.

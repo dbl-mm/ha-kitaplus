@@ -15,16 +15,21 @@ def _d(value: str | None) -> date | None:
         return None
 
 
-def is_closed_on(events: list[Event], day: date) -> bool:
-    """True if a closure day or public holiday covers `day`."""
+def closure_on(events: list[Event], day: date) -> Event | None:
+    """The closure day or public holiday that covers `day`, if any."""
     for event in events:
         if not (event.get("istSchliesstag") or event.get("istFeiertag")):
             continue
         start = _d(event.get("startdatum"))
         end = _d(event.get("enddatum")) or start  # open ended entries count for their first day
         if start and end and start <= day <= end:
-            return True
-    return False
+            return event
+    return None
+
+
+def is_closed_on(events: list[Event], day: date) -> bool:
+    """True if a closure day or public holiday covers `day`."""
+    return closure_on(events, day) is not None
 
 
 def meals_on(days: list[Day], day: date) -> list[MealEntry]:
