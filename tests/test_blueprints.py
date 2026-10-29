@@ -13,7 +13,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.yaml import load_yaml
 from pytest_homeassistant_custom_component.common import async_capture_events, async_fire_time_changed
 
-from .common import CLIENT, make_entry, setup_integration
+from .common import CLIENT, make_entry, meal_day, setup_integration
 
 BLUEPRINT_DIR = Path(__file__).parent.parent / "blueprints" / "automation" / "kitaplus"
 SOURCE = "https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/"
@@ -44,6 +44,7 @@ def _install(hass: HomeAssistant, name: str) -> None:
 
 async def start(hass: HomeAssistant, name: str, inputs: dict) -> None:
     await hass.async_add_executor_job(_install, hass, name)
+    assert await async_setup_component(hass, "homeassistant", {})  # always present in a real installation
     config = {"automation": {"alias": name, "use_blueprint": {"path": f"kitaplus/{name}", "input": inputs}}}
     assert await async_setup_component(hass, "automation", config)
     await hass.async_block_till_done()
@@ -93,68 +94,109 @@ def test_all_seven_blueprints_exist() -> None:
 
 # ---------------------------------------------------------------------------- essen_erinnerung
 
-NO_ORDER = "binary_sensor.vorname_1_nothing_ordered_tomorrow"
+STATUS_TOMORROW = "sensor.vorname_1_order_status_tomorrow"
+STATUS_TODAY = "sensor.vorname_1_order_status_today"
 CLOSED_TOMORROW = "binary_sensor.kitaplus_closed_tomorrow"
 
 
-def meal_day(day: str, *, ordered: bool, orderable: bool) -> dict:
-    """One offered meal, with or without an order and with or without an open order deadline."""
-    variant = {"name": "Menü", "istBestellbar": orderable, "istAbbestellbar": orderable}
-    if ordered:
-        variant["bestellung"] = {"istAbbestellt": False}
-    return {"datum": f"{day}T00:00:00", "mahlzeitArten": [{"name": "Mittag", "varianten": [variant]}]}
+def food_action() -> list[dict]:
+    return user_action(child="{{ child }}", day="{{ day }}", status="{{ status }}")
 
 
 async def test_food_reminder_fires_with_variables(hass, stack, freezer) -> None:
     await at(hass, freezer, "2026-06-14T10:00:00")  # tomorrow is the 15th: offered, not ordered, still open
     meals = [meal_day("2026-06-15", ordered=False, orderable=True)]
     await setup_integration(hass, stack, async_get_meals=meals)
-    assert hass.states.get(NO_ORDER).state == "on"
+    assert hass.states.get(STATUS_TOMORROW).state == "open"
     fired = results(hass)
     await start(
-        hass,
-        "essen_erinnerung.yaml",
-        {
-            "sensors": [NO_ORDER],
-            "reminder_time": "18:00:00",
-            "notify_action": user_action(child="{{ child }}"),
-        },
+        hass, "essen_erinnerung.yaml", {"status_tomorrow": [STATUS_TOMORROW], "notify_action": food_action()}
     )
     await at(hass, freezer, "2026-06-14T18:00:00")
     assert len(fired) == 1, "the blueprint's variables must reach the user's action"
-    assert fired[0].data["child"] == "vorname-1"
-    assert "vorname-1" in fired[0].data["message"]
+    data = fired[0].data
+    assert (data["child"], data["day"], data["status"]) == ("vorname-1", "tomorrow", "open")
+    assert (
+        data["message"]
+        == "Für morgen ist für vorname-1 noch kein Essen bestellt. Bestellen ist noch möglich."
+    )
 
 
-async def test_food_reminder_respects_an_expired_order_deadline(hass, stack, freezer) -> None:
+async def test_food_reminder_never_asks_to_order_after_the_deadline(hass, stack, freezer) -> None:
     await at(hass, freezer, "2026-06-14T10:00:00")
-    meals = [meal_day("2026-06-15", ordered=False, orderable=False)]  # too late to order
+    meals = [meal_day("2026-06-15", ordered=False, orderable=False)]  # KitaPlus no longer accepts an order
     await setup_integration(hass, stack, async_get_meals=meals)
+    assert hass.states.get(STATUS_TOMORROW).state == "missed"
     fired = results(hass)
-    await start(hass, "essen_erinnerung.yaml", {"sensors": [NO_ORDER], "notify_action": user_action()})
+    await start(
+        hass, "essen_erinnerung.yaml", {"status_tomorrow": [STATUS_TOMORROW], "notify_action": food_action()}
+    )
     await at(hass, freezer, "2026-06-14T18:00:00")
-    assert fired == [], "by default nobody is reminded of something that can no longer be done"
-
-    await hass.config_entries.async_unload(hass.config_entries.async_entries("kitaplus")[0].entry_id)
-    await hass.async_block_till_done()
+    assert fired == [], "by default nobody is told to do something that is no longer possible"
 
 
-async def test_food_reminder_can_ignore_the_deadline_on_request(hass, stack, freezer) -> None:
+async def test_food_reminder_can_report_a_missed_deadline_on_request(hass, stack, freezer) -> None:
     await at(hass, freezer, "2026-06-14T10:00:00")
     meals = [meal_day("2026-06-15", ordered=False, orderable=False)]
     await setup_integration(hass, stack, async_get_meals=meals)
     fired = results(hass)
-    inputs = {"sensors": [NO_ORDER], "only_if_orderable": False, "notify_action": user_action()}
+    inputs = {"status_tomorrow": [STATUS_TOMORROW], "report_missed": True, "notify_action": food_action()}
     await start(hass, "essen_erinnerung.yaml", inputs)
     await at(hass, freezer, "2026-06-14T18:00:00")
-    assert len(fired) == 1
+    assert len(fired) == 1 and fired[0].data["status"] == "missed"
+    assert fired[0].data["message"].endswith("nichts bestellt, und die Bestellfrist ist vorbei.")
+
+
+SLOW_POLLING = {"scan_interval": 240}  # the integration itself will not poll between 17:00 and 18:00
+
+
+async def test_food_reminder_asks_for_current_data_because_the_deadline_may_have_passed(
+    hass, stack, freezer
+) -> None:
+    """The last update said "open"; by the reminder KitaPlus has closed the order window."""
+    await at(hass, freezer, "2026-06-14T17:00:00")
+    meals = [meal_day("2026-06-15", ordered=False, orderable=True)]
+    await setup_integration(hass, stack, entry=make_entry(SLOW_POLLING), async_get_meals=meals)
+    assert hass.states.get(STATUS_TOMORROW).state == "open"
+    stack.enter_context(
+        patch(
+            f"{CLIENT}.async_get_meals", return_value=[meal_day("2026-06-15", ordered=False, orderable=False)]
+        )
+    )
+    fired = results(hass)
+    await start(
+        hass, "essen_erinnerung.yaml", {"status_tomorrow": [STATUS_TOMORROW], "notify_action": food_action()}
+    )
+    await at(hass, freezer, "2026-06-14T18:00:00")
+    assert hass.states.get(STATUS_TOMORROW).state == "missed", "the blueprint refreshed the data first"
+    assert fired == [], "so it did not send a reminder that can no longer be acted on"
+
+
+async def test_food_reminder_without_refresh_trusts_the_last_update(hass, stack, freezer) -> None:
+    await at(hass, freezer, "2026-06-14T17:00:00")
+    meals = [meal_day("2026-06-15", ordered=False, orderable=True)]
+    await setup_integration(hass, stack, entry=make_entry(SLOW_POLLING), async_get_meals=meals)
+    stack.enter_context(
+        patch(
+            f"{CLIENT}.async_get_meals", return_value=[meal_day("2026-06-15", ordered=False, orderable=False)]
+        )
+    )
+    fired = results(hass)
+    inputs = {"status_tomorrow": [STATUS_TOMORROW], "refresh_first": False, "notify_action": food_action()}
+    await start(hass, "essen_erinnerung.yaml", inputs)
+    await at(hass, freezer, "2026-06-14T18:00:00")
+    assert hass.states.get(STATUS_TOMORROW).state == "open", "nothing refreshed the data"
+    assert len(fired) == 1, "documented trade-off: without a refresh the data can be one poll interval old"
 
 
 async def test_food_reminder_is_silent_when_everything_is_ordered(hass, stack, freezer) -> None:
     await at(hass, freezer, "2026-06-13T10:00:00")  # tomorrow (14th) is ordered in the fixture
     await setup_integration(hass, stack)
+    assert hass.states.get(STATUS_TOMORROW).state == "ordered"
     fired = results(hass)
-    await start(hass, "essen_erinnerung.yaml", {"sensors": [NO_ORDER], "notify_action": user_action()})
+    await start(
+        hass, "essen_erinnerung.yaml", {"status_tomorrow": [STATUS_TOMORROW], "notify_action": food_action()}
+    )
     await at(hass, freezer, "2026-06-13T18:00:00")
     assert fired == []
 
@@ -171,13 +213,47 @@ async def test_food_reminder_stays_quiet_when_the_kita_is_closed_tomorrow(hass, 
     meals = [meal_day("2026-06-15", ordered=False, orderable=True)]
     await setup_integration(hass, stack, async_get_events=[closure], async_get_meals=meals)
     fired = results(hass)
-    await start(
-        hass,
-        "essen_erinnerung.yaml",
-        {"sensors": [NO_ORDER], "closed_tomorrow": [CLOSED_TOMORROW], "notify_action": user_action()},
-    )
+    inputs = {
+        "status_tomorrow": [STATUS_TOMORROW],
+        "closed_tomorrow": [CLOSED_TOMORROW],
+        "notify_action": food_action(),
+    }
+    await start(hass, "essen_erinnerung.yaml", inputs)
     await at(hass, freezer, "2026-06-14T18:00:00")
     assert fired == []
+
+
+async def test_food_last_chance_covers_a_deadline_on_the_same_day(hass, stack, freezer) -> None:
+    await at(hass, freezer, "2026-06-15T06:00:00")  # a Kita that takes orders until 9:00 on the day itself
+    await setup_integration(
+        hass, stack, async_get_meals=[meal_day("2026-06-15", ordered=False, orderable=True)]
+    )
+    assert hass.states.get(STATUS_TODAY).state == "open"
+    fired = results(hass)
+    inputs = {
+        "status_tomorrow": [STATUS_TOMORROW],
+        "status_today": [STATUS_TODAY],
+        "last_chance_time": "07:30:00",
+        "notify_action": food_action(),
+    }
+    await start(hass, "essen_erinnerung.yaml", inputs)
+    await at(hass, freezer, "2026-06-15T07:30:00")
+    assert len(fired) == 1
+    assert (fired[0].data["day"], fired[0].data["status"]) == ("today", "open")
+    assert fired[0].data["message"].startswith("Für heute ist für vorname-1 noch kein Essen bestellt")
+
+
+async def test_food_last_chance_does_nothing_without_today_sensors(hass, stack, freezer) -> None:
+    await at(hass, freezer, "2026-06-15T06:00:00")
+    await setup_integration(
+        hass, stack, async_get_meals=[meal_day("2026-06-15", ordered=False, orderable=True)]
+    )
+    fired = results(hass)
+    await start(
+        hass, "essen_erinnerung.yaml", {"status_tomorrow": [STATUS_TOMORROW], "notify_action": food_action()}
+    )
+    await at(hass, freezer, "2026-06-15T07:30:00")
+    assert fired == [], "the optional morning reminder is off unless sensors are chosen"
 
 
 # ---------------------------------------------------------------------------- schliesstag
@@ -524,3 +600,25 @@ def test_every_blueprint_has_a_working_import_button_in_the_readme() -> None:
             f"blueprints/automation/kitaplus/{path.name}"
             in (BLUEPRINT_DIR.parent.parent.parent / "docs" / "blueprints.md").read_text()
         )
+
+
+async def test_daily_briefing_tells_open_and_missed_orders_apart(hass, stack, freezer) -> None:
+    await at(hass, freezer, "2026-06-14T06:00:00")
+    meals = [
+        meal_day("2026-06-14", ordered=False, orderable=True),  # today: can still be ordered
+        meal_day("2026-06-15", ordered=False, orderable=False),  # tomorrow: the deadline is over
+    ]
+    await setup_integration(hass, stack, async_get_meals=meals)
+    fired = results(hass)
+    inputs = {
+        "status_today": [STATUS_TODAY],
+        "status_tomorrow": [STATUS_TOMORROW],
+        "notify_action": user_action(),
+    }
+    await start(hass, "tagesbriefing.yaml", inputs)
+    await at(hass, freezer, "2026-06-14T07:00:00")
+    assert len(fired) == 1
+    assert fired[0].data["message"].split("\n") == [
+        "vorname-1 heute: noch nichts bestellt, Bestellen ist noch möglich",
+        "vorname-1 morgen: nichts bestellt, die Bestellfrist ist vorbei",
+    ]

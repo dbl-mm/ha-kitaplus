@@ -34,8 +34,9 @@ Das Skript verwendet die Namen, wie sie in Home Assistant stehen, und erzeugt di
 
 ## Was du siehst
 1. **Heute** beantwortet zuerst: *Muss ich etwas tun?* Oben der Status (Kita heute und morgen geöffnet oder geschlossen,
-   mit Grund). Darunter **Zu erledigen**: erscheint nur, wenn das Essen für morgen nicht bestellt ist oder eine Rückmeldung
-   offen ist; sonst steht dort ruhig „Nichts zu tun“. Danach je Kind das Essen heute und morgen, dann das Guthaben mit
+   mit Grund). Darunter **Zu erledigen**: erscheint nur, wenn Essen für heute oder morgen **noch bestellt werden kann** (Bestellstatus „Offen“,
+   mit Hinweis auf die Frist deiner Kita) oder eine Rückmeldung offen ist; sonst steht dort ruhig „Nichts zu tun“. Ist die Frist
+   schon verpasst, wird nicht mehr zum Bestellen aufgefordert. Danach je Kind das Essen heute und morgen, dann das Guthaben mit
    Verlauf.
 2. **Kalender** mit den nächsten 7 Tagen und dem Monat: Termine, Schließtage und bestelltes Essen.
 3. **Mitteilungen**: Schwarzes Brett und Postfach mit Titel, Datum und Textanfang.

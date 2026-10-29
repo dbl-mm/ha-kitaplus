@@ -54,6 +54,24 @@ def meals_on(days: list[Day], day: date) -> list[MealEntry]:
     return out
 
 
+ORDER_STATES = ["ordered", "open", "missed", "not_offered"]
+
+
+def order_status(meals: list[MealEntry]) -> str:
+    """Where an order stands for one day, judged only by what KitaPlus itself reports.
+
+    ordered      something is ordered
+    open         meals are offered, nothing is ordered and KitaPlus still accepts orders
+    missed       meals are offered, nothing is ordered and KitaPlus no longer accepts orders (deadline over)
+    not_offered  there is no meal that day
+    """
+    if not meals:
+        return "not_offered"
+    if any(m["bestellt"] for m in meals):
+        return "ordered"
+    return "open" if any(m["bestellbar"] for m in meals) else "missed"
+
+
 def pending_replies(messages: list[Message]) -> list[PendingReply]:
     """Messages that need a confirmation and have not been answered yet."""
     out: list[PendingReply] = []

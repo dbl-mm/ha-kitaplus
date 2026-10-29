@@ -232,3 +232,26 @@ async def test_empty_lists_say_so_instead_of_showing_nothing(hass: HomeAssistant
     t = gen.TEXT[language]
     text = "\n".join(Template(c, hass).async_render(parse_result=False) for c in markdown_cards(language))
     assert t["no_posts"] in text and t["no_messages"] in text
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_the_order_reminder_only_shows_while_ordering_is_still_possible(language) -> None:
+    """A missed deadline must never produce a "please order" card: there is nothing left to do about it."""
+    for name, text in design_subjects(language).items():
+        for card in iter_cards(yaml.safe_load(text)):
+            for condition in card.get("conditions", []):
+                if str(condition.get("entity", "")).endswith(
+                    (gen.SLUGS[language]["status_today"], gen.SLUGS[language]["status_tomorrow"])
+                ):
+                    assert condition == {
+                        "condition": "state",
+                        "entity": condition["entity"],
+                        **({"state": "open"} if "state" in condition else {"state_not": "open"}),
+                    }, f"{name}: only 'open' may trigger (or calm) a card, never 'missed'"
+    todo = yaml.safe_load(design_subjects(language)["generated"])["views"][0]["sections"][1]["cards"]
+    reminders = [
+        c for c in todo if c.get("type") == "conditional" and c["conditions"][0].get("state") == "open"
+    ]
+    assert len(reminders) == 2, "one for today and one for tomorrow"
+    hint = gen.TEXT[language]["deadline_hint"]
+    assert all(any(inner.get("content") == hint for inner in c["card"]["cards"]) for c in reminders)

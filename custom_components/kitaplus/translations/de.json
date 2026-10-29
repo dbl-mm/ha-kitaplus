@@ -92,6 +92,24 @@
       },
       "session_valid_until": {
         "name": "Sitzung gültig bis"
+      },
+      "order_status_today": {
+        "name": "Bestellstatus heute",
+        "state": {
+          "ordered": "Bestellt",
+          "open": "Offen",
+          "missed": "Frist verpasst",
+          "not_offered": "Kein Essen"
+        }
+      },
+      "order_status_tomorrow": {
+        "name": "Bestellstatus morgen",
+        "state": {
+          "ordered": "Bestellt",
+          "open": "Offen",
+          "missed": "Frist verpasst",
+          "not_offered": "Kein Essen"
+        }
       }
     },
     "calendar": {

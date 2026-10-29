@@ -13,7 +13,7 @@ from .conftest import load
 CLIENT = "custom_components.kitaplus.api.client.KitaPlusClient"
 
 
-def make_entry(**data) -> MockConfigEntry:
+def make_entry(options: dict | None = None, **data) -> MockConfigEntry:
     return MockConfigEntry(
         domain=DOMAIN,
         unique_id="a@b.de",
@@ -24,6 +24,7 @@ def make_entry(**data) -> MockConfigEntry:
             "refresh_expires": 4102444800,
             **data,
         },
+        options=options or {},
     )
 
 
@@ -52,3 +53,11 @@ async def setup_integration(hass: HomeAssistant, stack: ExitStack, entry=None, *
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     return entry
+
+
+def meal_day(day: str, *, ordered: bool, orderable: bool) -> dict:
+    """One offered meal, with or without an order and with or without an open order deadline."""
+    variant: dict = {"name": "Menü", "istBestellbar": orderable, "istAbbestellbar": orderable}
+    if ordered:
+        variant["bestellung"] = {"istAbbestellt": False}
+    return {"datum": f"{day}T00:00:00", "mahlzeitArten": [{"name": "Mittag", "varianten": [variant]}]}

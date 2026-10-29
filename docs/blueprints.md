@@ -16,13 +16,22 @@ Alle Blueprints folgen denselben Regeln:
 
 | Blueprint | Wann | Variablen für deine Aktion |
 |---|---|---|
-| [Essen-Erinnerung](../blueprints/automation/kitaplus/essen_erinnerung.yaml) | zur Uhrzeit, wenn morgen Essen angeboten, aber nichts bestellt ist (nur wenn noch bestellbar, nicht an Schließtagen) | `message`, `child`, `entity_id` |
+| [Essen-Erinnerung](../blueprints/automation/kitaplus/essen_erinnerung.yaml) | abends für morgen und auf Wunsch morgens als „letzte Chance“ für heute, **solange KitaPlus noch Bestellungen annimmt**; holt vorher frische Daten, meldet die verpasste Frist nur auf Wunsch | `message`, `child`, `day`, `status`, `entity_id` |
 | [Schließtag](../blueprints/automation/kitaplus/schliesstag.yaml) | am Vorabend ein Hinweis, am Morgen des Schließtags optional eine Aktion (zum Beispiel Wecker aus) | `message`, `reason`, `when` |
 | [Neue Mitteilung](../blueprints/automation/kitaplus/neue_mitteilung.yaml) | bei jedem neuen Beitrag am Schwarzen Brett oder neuer Nachricht, optional nur mit Stichwörtern | `title`, `source`, `source_label`, `message` |
 | [Rückmeldung](../blueprints/automation/kitaplus/rueckmeldung_erinnerung.yaml) | sofort, wenn eine Rückmeldung nötig wird, und auf Wunsch täglich; mit Titel und Frist | `count`, `titles`, `message` |
 | [Guthaben](../blueprints/automation/kitaplus/guthaben_niedrig.yaml) | wenn das Verpflegungs-Guthaben unter einen Betrag fällt, auf Wunsch täglich bis zum Aufladen | `balance`, `threshold`, `message` |
 | [Sitzung läuft ab](../blueprints/automation/kitaplus/sitzung_laeuft_ab.yaml) | 1, 3 oder 7 Tage, bevor die gespeicherte Anmeldung abläuft | `days`, `message` |
 | [Tagesbriefing](../blueprints/automation/kitaplus/tagesbriefing.yaml) | eine Zusammenfassung zur Uhrzeit: Schließtage, Essen, Rückmeldungen, Guthaben | `message`, `lines` |
+
+## Bestellfristen berücksichtigen
+Jede Kita setzt ihre eigene Frist (zum Beispiel „bis 9:00 Uhr am selben Tag“). Die Blueprints kennen die Uhrzeit nicht, sondern
+verlassen sich auf den **Bestellstatus**, den KitaPlus liefert (*Offen* = noch bestellbar, *Frist verpasst* = zu spät, siehe
+[README](../README.md#bestellfristen)). Deshalb:
+- Stelle die Uhrzeit der Erinnerung **deutlich vor** deiner Frist ein (Frist: KitaPlus-App → *Verpflegung → Hilfe → Bestellfristen*).
+- Bei Kitas mit Frist am selben Tag wähle unter „Letzte Chance“ die Sensoren *Bestellstatus heute* und eine Uhrzeit vor der Frist.
+- Lass „Vor der Erinnerung frische Daten holen“ **eingeschaltet**. Sonst kann der Status bis zu ein Abfrageintervall alt sein.
+- Ist die Frist verpasst, wird nicht zum Bestellen aufgefordert (auf Wunsch gibt es stattdessen eine Meldung).
 
 ## Eigene Aktion nutzen: Beispiel
 Statt der Mitteilung die Küchenlampe blinken lassen und zusätzlich eine Sprachausgabe:

@@ -10,6 +10,7 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 - Diagnose-Sensor „Sitzung gültig bis“ (standardmäßig aus), Geräte mit Modell und Link.
 - Übersetzte Fehlermeldungen, Icons über `icons.json`, Beschreibungen zu allen Eingabefeldern.
 - Dokumentation: Entfernen, Datenaktualisierung, Anwendungsfälle, Fehlerbehebung.
+- **Bestellstatus** pro Kind für heute und morgen (Bestellt, Offen, Frist verpasst, Kein Essen). Er übernimmt nur die Angabe von KitaPlus, ob noch bestellt werden kann, denn jede Kita setzt ihre eigene Bestellfrist. Blueprint und Dashboard fordern nach verpasster Frist nicht mehr zum Bestellen auf.
 - **7 Blueprints** (Essen-Erinnerung, Schließtag, Neue Mitteilung, Rückmeldung, Guthaben, Sitzung läuft ab, Tagesbriefing), per Knopf im README importierbar.
 - **Dashboard-Vorlagen** (Heute, Kalender, Mitteilungen, Diagnose) auf Deutsch und Englisch, nur eingebaute Karten, plus Einzelkarten.
 - Die Sensoren „Heute/Morgen geschlossen“ nennen den Grund im Attribut `reason`; Kacheln zeigen „Geschlossen/Geöffnet“ und „Nicht bestellt“ statt Ein/Aus.

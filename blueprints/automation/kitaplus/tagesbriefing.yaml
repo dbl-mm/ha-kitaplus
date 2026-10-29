@@ -74,6 +74,27 @@ blueprint:
               filter:
                 - integration: kitaplus
                   domain: sensor
+        status_today:
+          name: Sensoren „Bestellstatus heute“ (pro Kind)
+          description: Weist darauf hin, wenn heute noch bestellt werden kann oder die Frist verpasst ist.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: sensor
+                  device_class: enum
+        status_tomorrow:
+          name: Sensoren „Bestellstatus morgen“ (pro Kind)
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: sensor
+                  device_class: enum
     more:
       name: Rückmeldungen und Guthaben
       icon: mdi:email-alert-outline
@@ -107,6 +128,8 @@ variables:
   closed_tomorrow: !input closed_tomorrow
   meal_today: !input meal_today
   meal_tomorrow: !input meal_tomorrow
+  status_today: !input status_today
+  status_tomorrow: !input status_tomorrow
   pending: !input pending
   balance: !input balance
   lines: >-
@@ -124,6 +147,12 @@ variables:
     {% endfor %}
     {% for e in meal_tomorrow if states(e) not in ['unknown', 'unavailable'] %}
       {% set ns.out = ns.out + [(device_attr(e, 'name') or 'Kind') ~ ' morgen: ' ~ states(e)] %}
+    {% endfor %}
+    {% for e in status_today if states(e) in ['open', 'missed'] %}
+      {% set ns.out = ns.out + [(device_attr(e, 'name') or 'Kind') ~ ' heute: ' ~ ('noch nichts bestellt, Bestellen ist noch möglich' if states(e) == 'open' else 'nichts bestellt, die Bestellfrist ist vorbei')] %}
+    {% endfor %}
+    {% for e in status_tomorrow if states(e) in ['open', 'missed'] %}
+      {% set ns.out = ns.out + [(device_attr(e, 'name') or 'Kind') ~ ' morgen: ' ~ ('noch nichts bestellt, Bestellen ist noch möglich' if states(e) == 'open' else 'nichts bestellt, die Bestellfrist ist vorbei')] %}
     {% endfor %}
     {% for e in pending if states(e) | int(0) > 0 %}
       {% set ns.out = ns.out + [states(e) ~ ' Rückmeldung(en) offen'] %}

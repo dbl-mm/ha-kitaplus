@@ -1,35 +1,38 @@
 blueprint:
-  name: "KitaPlus: Erinnerung, wenn morgen kein Essen bestellt ist"
+  name: "KitaPlus: Erinnerung ans Essen-Bestellen (mit Bestellfrist)"
   description: |
-    Erinnert dich zur gewählten Uhrzeit, wenn die Kita **morgen Essen anbietet, aber für dein Kind nichts bestellt ist**.
-    *(English: reminds you when meals are offered tomorrow but none is ordered.)*
+    Erinnert dich ans Bestellen, **solange KitaPlus noch Bestellungen annimmt**: am Abend für morgen und auf Wunsch am
+    Morgen als „letzte Chance“ für heute. *(English: reminds you to order meals while KitaPlus still accepts orders.)*
 
-    Es werden nur Tage gemeldet, an denen wirklich Essen angeboten wird. Mehrere Kinder sind möglich,
-    pro Kind kommt eine eigene Nachricht.
+    **Zu den Bestellfristen:** Jede Kita legt ihre Frist selbst fest (zum Beispiel „bis 9:00 Uhr am selben Tag“). Die
+    Integration kennt die Uhrzeit nicht, sondern übernimmt nur die Angabe von KitaPlus, ob eine Mahlzeit **noch bestellbar**
+    ist (Bestellstatus „Offen“) oder die **Frist verpasst** wurde. Die genaue Frist deiner Kita findest du in der
+    KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*. Stelle die Uhrzeiten unten **deutlich vor** dieser Frist ein.
 
-    **Voraussetzung:** die KitaPlus-Integration mit aktivierter Verpflegung (der Sensor
-    „Morgen nicht bestellt“ ist pro Kind vorhanden).
+    Damit nicht mit veralteten Daten gearbeitet wird, holt der Blueprint vor jeder Erinnerung einmal frische Daten von
+    KitaPlus (abschaltbar unter „Erweitert“). Ist die Frist schon vorbei, wird **nicht** zum Bestellen aufgefordert.
 
-    In der Aktion stehen die Variablen `message`, `child` und `entity_id` zur Verfügung.
+    In der Aktion stehen `message`, `child`, `day` (`today` oder `tomorrow`), `status` (`open` oder `missed`) und
+    `entity_id` zur Verfügung.
   domain: automation
   author: dbl-mm
   source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/essen_erinnerung.yaml
   homeassistant:
     min_version: 2025.8.0
   input:
-    sensors:
-      name: Sensoren „Morgen nicht bestellt“
+    status_tomorrow:
+      name: Sensoren „Bestellstatus morgen“
       description: Ein Sensor pro Kind. Mehrere sind erlaubt.
       selector:
         entity:
           multiple: true
           filter:
             - integration: kitaplus
-              domain: binary_sensor
-              device_class: problem
+              domain: sensor
+              device_class: enum
     reminder_time:
-      name: Uhrzeit der Erinnerung
-      description: Am besten früh genug, damit die Bestellfrist noch nicht abgelaufen ist.
+      name: Uhrzeit der Erinnerung am Abend (für morgen)
+      description: Muss vor der Bestellfrist deiner Kita liegen.
       default: "18:00:00"
       selector:
         time:
@@ -46,19 +49,48 @@ blueprint:
             message: "{{ message }}"
       selector:
         action:
+    last_chance:
+      name: Letzte Chance am selben Tag (optional)
+      icon: mdi:alarm-light-outline
+      collapsed: true
+      description: |
+        Für Kitas, bei denen man bis zu einer Uhrzeit **am selben Tag** noch bestellen kann. Wähle die Sensoren
+        „Bestellstatus heute“ und eine Uhrzeit vor der Frist. Ohne Sensoren passiert am Morgen nichts.
+      input:
+        status_today:
+          name: Sensoren „Bestellstatus heute“
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: kitaplus
+                  domain: sensor
+                  device_class: enum
+        last_chance_time:
+          name: Uhrzeit der letzten Chance
+          default: "07:30:00"
+          selector:
+            time:
     advanced:
       name: Erweitert
       icon: mdi:cog
       collapsed: true
       input:
-        only_if_orderable:
-          name: Nur erinnern, wenn noch bestellt werden kann
-          description: Unterdrückt die Erinnerung, wenn die Bestellfrist schon vorbei ist.
+        refresh_first:
+          name: Vor der Erinnerung frische Daten von KitaPlus holen
+          description: Empfohlen. Sonst können die Daten bis zu einem Abfrageintervall alt sein.
           default: true
           selector:
             boolean:
+        report_missed:
+          name: Auch melden, wenn die Bestellfrist schon verpasst ist
+          description: Dann kommt eine Nachricht, dass nichts bestellt ist und nichts mehr bestellt werden kann.
+          default: false
+          selector:
+            boolean:
         closed_tomorrow:
-          name: Nicht erinnern, wenn die Kita morgen geschlossen ist
+          name: Abends nicht erinnern, wenn die Kita morgen geschlossen ist
           description: Optional. Sensor „Morgen geschlossen“ wählen. Leer lassen, um immer zu erinnern.
           default: []
           selector:
@@ -72,34 +104,57 @@ mode: single
 max_exceeded: silent
 
 variables:
-  sensors: !input sensors
-  only_if_orderable: !input only_if_orderable
+  status_tomorrow: !input status_tomorrow
+  status_today: !input status_today
+  refresh_first: !input refresh_first
+  report_missed: !input report_missed
   closed_tomorrow: !input closed_tomorrow
 
 triggers:
   - trigger: time
     at: !input reminder_time
+    id: evening
+  - trigger: time
+    at: !input last_chance_time
+    id: morning
 
 conditions:
-  # Optional: stay quiet when the Kita is closed tomorrow (nothing can be ordered then).
+  # In the evening, stay quiet when the Kita is closed tomorrow (optional input).
   - condition: template
-    alias: Kita ist morgen nicht geschlossen
-    value_template: "{{ closed_tomorrow | select('is_state', 'on') | list | count == 0 }}"
+    alias: Kita ist morgen nicht geschlossen (nur abends relevant)
+    value_template: "{{ trigger.id != 'evening' or closed_tomorrow | select('is_state', 'on') | list | count == 0 }}"
 
 actions:
+  - variables:
+      day: "{{ 'tomorrow' if trigger.id == 'evening' else 'today' }}"
+      sensors: "{{ status_tomorrow if trigger.id == 'evening' else status_today }}"
+  # KitaPlus may have closed the order window since the last update, so ask for current data first.
+  - if:
+      - condition: template
+        alias: Frische Daten gewünscht und mindestens ein Sensor gewählt
+        value_template: "{{ refresh_first and sensors | count > 0 }}"
+    then:
+      - action: homeassistant.update_entity
+        target:
+          entity_id: "{{ sensors[0] }}"
   - repeat:
       for_each: "{{ sensors }}"
       sequence:
+        - variables:
+            entity_id: "{{ repeat.item }}"
+            status: "{{ states(repeat.item) }}"
+            child: "{{ device_attr(repeat.item, 'name') or state_attr(repeat.item, 'friendly_name') }}"
+            when_text: "{{ 'morgen' if day == 'tomorrow' else 'heute' }}"
+            message: >-
+              {% if status == 'open' %}
+              Für {{ when_text }} ist für {{ child }} noch kein Essen bestellt. Bestellen ist noch möglich.
+              {% else %}
+              Für {{ when_text }} ist für {{ child }} nichts bestellt, und die Bestellfrist ist vorbei.
+              {% endif %}
         - if:
             - condition: template
-              alias: Essen angeboten, aber nichts bestellt
-              value_template: >-
-                {{ is_state(repeat.item, 'on')
-                   and (not only_if_orderable or state_attr(repeat.item, 'can_still_order')) }}
+              alias: Noch bestellbar, oder Frist verpasst und das soll gemeldet werden
+              value_template: "{{ status == 'open' or (report_missed and status == 'missed') }}"
           then:
-            - variables:
-                entity_id: "{{ repeat.item }}"
-                child: "{{ device_attr(repeat.item, 'name') or state_attr(repeat.item, 'friendly_name') }}"
-                message: "Für morgen ist für {{ child }} noch kein Essen bestellt."
             - alias: Deine Aktion
               sequence: !input notify_action

@@ -92,6 +92,24 @@
       },
       "session_valid_until": {
         "name": "Session valid until"
+      },
+      "order_status_today": {
+        "name": "Order status today",
+        "state": {
+          "ordered": "Ordered",
+          "open": "Open",
+          "missed": "Deadline missed",
+          "not_offered": "No meal"
+        }
+      },
+      "order_status_tomorrow": {
+        "name": "Order status tomorrow",
+        "state": {
+          "ordered": "Ordered",
+          "open": "Open",
+          "missed": "Deadline missed",
+          "not_offered": "No meal"
+        }
       }
     },
     "calendar": {

@@ -4,16 +4,39 @@ cards:
 - type: conditional
   conditions:
   - condition: state
-    entity: binary_sensor.kind_nothing_ordered_tomorrow
-    state: 'on'
+    entity: sensor.kind_order_status_today
+    state: open
   card:
-    type: tile
-    entity: binary_sensor.kind_nothing_ordered_tomorrow
-    name: Order tomorrow's meal
-    icon: mdi:silverware-fork-knife
-    color: red
-    state_content:
-    - state
+    type: vertical-stack
+    cards:
+    - type: tile
+      entity: sensor.kind_order_status_today
+      name: Order today's meal while you still can
+      icon: mdi:cart-arrow-down
+      color: red
+      state_content:
+      - state
+    - type: markdown
+      content: Your Kita sets the order deadline. You can find it in the KitaPlus app under *Verpflegung → Hilfe
+        → Bestellfristen*.
+- type: conditional
+  conditions:
+  - condition: state
+    entity: sensor.kind_order_status_tomorrow
+    state: open
+  card:
+    type: vertical-stack
+    cards:
+    - type: tile
+      entity: sensor.kind_order_status_tomorrow
+      name: Order tomorrow's meal
+      icon: mdi:cart-arrow-down
+      color: red
+      state_content:
+      - state
+    - type: markdown
+      content: Your Kita sets the order deadline. You can find it in the KitaPlus app under *Verpflegung → Hilfe
+        → Bestellfristen*.
 - type: conditional
   conditions:
   - condition: numeric_state
@@ -35,8 +58,11 @@ cards:
 - type: conditional
   conditions:
   - condition: state
-    entity: binary_sensor.kind_nothing_ordered_tomorrow
-    state_not: 'on'
+    entity: sensor.kind_order_status_today
+    state_not: open
+  - condition: state
+    entity: sensor.kind_order_status_tomorrow
+    state_not: open
   - condition: numeric_state
     entity: sensor.kitaplus_pending_replies
     below: 1

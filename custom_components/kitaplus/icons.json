@@ -18,6 +18,24 @@
       },
       "session_valid_until": {
         "default": "mdi:clock-check-outline"
+      },
+      "order_status_today": {
+        "default": "mdi:cart-outline",
+        "state": {
+          "ordered": "mdi:cart-check",
+          "open": "mdi:cart-arrow-down",
+          "missed": "mdi:cart-off",
+          "not_offered": "mdi:minus-circle-outline"
+        }
+      },
+      "order_status_tomorrow": {
+        "default": "mdi:cart-outline",
+        "state": {
+          "ordered": "mdi:cart-check",
+          "open": "mdi:cart-arrow-down",
+          "missed": "mdi:cart-off",
+          "not_offered": "mdi:minus-circle-outline"
+        }
       }
     },
     "binary_sensor": {

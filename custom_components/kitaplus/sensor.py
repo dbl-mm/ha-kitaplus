@@ -21,7 +21,7 @@ from . import KitaPlusConfigEntry
 from .api.models import BoardPost, Child, MealEntry, Message
 from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
-from .helpers import meals_on, pending_replies
+from .helpers import ORDER_STATES, meals_on, order_status, pending_replies
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
@@ -72,6 +72,9 @@ async def async_setup_entry(
             if child["id"] in coordinator.data.meals:
                 for offset in (0, 1):
                     found[f"meal-{child['id']}-{offset}"] = partial(MealSensor, coordinator, child, offset)
+                    found[f"status-{child['id']}-{offset}"] = partial(
+                        OrderStatusSensor, coordinator, child, offset
+                    )
         for account in coordinator.data.accounts:
             if "id" in account and account.get("istAktiv", True):
                 found[f"balance-{account['id']}"] = partial(BalanceSensor, coordinator, account["id"])
@@ -214,3 +217,27 @@ class SessionSensor(KitaPlusEntity, SensorEntity):
     def native_value(self) -> datetime | None:
         tokens = self.coordinator.client.tokens
         return datetime.fromtimestamp(tokens.refresh_expires, UTC) if tokens else None
+
+
+class OrderStatusSensor(KitaPlusChildEntity, SensorEntity):
+    """Ordered, open, deadline missed or no meal, for today or tomorrow.
+
+    KitaPlus decides per meal whether it can still be ordered (each Kita sets its own deadline), and the
+    integration only repeats that decision. So the status is as fresh as the last update.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ORDER_STATES
+    _follows_the_day = True
+
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child, offset: int) -> None:
+        super().__init__(coordinator, child)
+        self._offset = offset
+        key = "order_status_tomorrow" if offset else "order_status_today"
+        self._attr_translation_key = key
+        self._attr_unique_id = f"{self._entry_id}_{self._child_id}_{key}"
+
+    @property
+    def native_value(self) -> str:
+        day = dt_util.now().date() + timedelta(days=self._offset)
+        return order_status(meals_on(self.coordinator.data.meals.get(self._child_id, []), day))

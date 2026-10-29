@@ -45,6 +45,8 @@ SLUGS: dict[str, dict[str, str]] = {
         "closed_today": "heute_geschlossen",
         "closed_tomorrow": "morgen_geschlossen",
         "no_order": "morgen_nicht_bestellt",
+        "status_today": "bestellstatus_heute",
+        "status_tomorrow": "bestellstatus_morgen",
     },
     "en": {
         "board": "bulletin_board",
@@ -60,6 +62,8 @@ SLUGS: dict[str, dict[str, str]] = {
         "closed_today": "closed_today",
         "closed_tomorrow": "closed_tomorrow",
         "no_order": "nothing_ordered_tomorrow",
+        "status_today": "order_status_today",
+        "status_tomorrow": "order_status_tomorrow",
     },
 }
 
@@ -74,7 +78,10 @@ TEXT: dict[str, dict[str, str]] = {
         "today": "Heute",
         "tomorrow": "Morgen",
         "todo": "Zu erledigen",
-        "order_meal": "Essen für morgen bestellen",
+        "order_meal_tomorrow": "Essen für morgen bestellen",
+        "order_meal_today": "Essen für heute noch bestellen",
+        "order_status": "Bestellung morgen",
+        "deadline_hint": "Die Bestellfrist legt deine Kita fest. Du findest sie in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*.",
         "open_replies": "Rückmeldungen offen",
         "all_done": "Nichts zu tun",
         "all_done_text": "✓ Alles bestellt, keine Rückmeldung offen.",
@@ -108,7 +115,10 @@ TEXT: dict[str, dict[str, str]] = {
         "today": "Today",
         "tomorrow": "Tomorrow",
         "todo": "To do",
-        "order_meal": "Order tomorrow's meal",
+        "order_meal_tomorrow": "Order tomorrow's meal",
+        "order_meal_today": "Order today's meal while you still can",
+        "order_status": "Order for tomorrow",
+        "deadline_hint": "Your Kita sets the order deadline. You can find it in the KitaPlus app under *Verpflegung → Hilfe → Bestellfristen*.",
         "open_replies": "Replies needed",
         "all_done": "Nothing to do",
         "all_done_text": "✓ Everything is ordered, no reply is needed.",
@@ -205,21 +215,33 @@ def status_cards(t: dict[str, str], ids: Ids) -> list[dict]:
 
 
 def todo_cards(t: dict[str, str], ids_for: list[Ids], account: Ids) -> list[dict]:
-    """Only what needs attention; a calm 'nothing to do' card when everything is fine."""
+    """Only what needs attention; a calm 'nothing to do' card when everything is fine.
+
+    A reminder to order only appears while KitaPlus still accepts the order (status "open"). A missed deadline
+    is not shown here, because there is nothing left to do about it.
+    """
     cards: list[dict] = []
     calm: list[dict] = []
     for ids in ids_for:
-        sensor = ids.of_child("binary_sensor", "no_order")
-        cards.append(
-            {
-                "type": "conditional",
-                "conditions": [{"condition": "state", "entity": sensor, "state": "on"}],
-                "card": tile(
-                    sensor, t["order_meal"], "mdi:silverware-fork-knife", color="red", content=["state"]
-                ),
-            }
-        )
-        calm.append({"condition": "state", "entity": sensor, "state_not": "on"})
+        for key, name_key in (
+            ("status_today", "order_meal_today"),
+            ("status_tomorrow", "order_meal_tomorrow"),
+        ):
+            sensor = ids.of_child("sensor", key)
+            cards.append(
+                {
+                    "type": "conditional",
+                    "conditions": [{"condition": "state", "entity": sensor, "state": "open"}],
+                    "card": {
+                        "type": "vertical-stack",
+                        "cards": [
+                            tile(sensor, t[name_key], "mdi:cart-arrow-down", color="red", content=["state"]),
+                            {"type": "markdown", "content": t["deadline_hint"]},
+                        ],
+                    },
+                }
+            )
+            calm.append({"condition": "state", "entity": sensor, "state_not": "open"})
     pending = account.account("sensor", "pending")
     messages_template = (
         "{% for m in state_attr('" + pending + "', 'messages') or [] %}\n"
@@ -347,6 +369,7 @@ def diagnostics_cards(t: dict[str, str], account: Ids, ids_for: list[Ids]) -> li
     ]
     for ids in ids_for:
         values += [ids.of_child("sensor", "meal_today"), ids.of_child("sensor", "meal_tomorrow")]
+        values += [ids.of_child("sensor", "status_today"), ids.of_child("sensor", "status_tomorrow")]
         values.append(ids.of_child("binary_sensor", "no_order"))
     return [
         heading(t["connection"], "mdi:cloud-check-outline"),

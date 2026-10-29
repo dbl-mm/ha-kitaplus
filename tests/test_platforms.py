@@ -9,7 +9,7 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.kitaplus.calendar import _parse, _to_event
 
-from .common import make_entry, setup_integration
+from .common import make_entry, meal_day, setup_integration
 from .conftest import load
 
 
@@ -198,3 +198,70 @@ async def test_closed_sensor_tells_the_reason_for_notifications(hass, stack, fre
     await setup_integration(hass, stack, async_get_events=[closure])
     assert hass.states.get("binary_sensor.kitaplus_closed_tomorrow").attributes["reason"] == "Brückentag"
     assert hass.states.get("binary_sensor.kitaplus_closed_today").attributes["reason"] is None
+
+
+STATUS_TODAY = "sensor.vorname_1_order_status_today"
+STATUS_TOMORROW = "sensor.vorname_1_order_status_tomorrow"
+
+
+async def test_order_status_has_four_clear_states(hass, stack, freezer) -> None:
+    at(freezer, "2026-06-14T10:00:00")
+    meals = [
+        meal_day("2026-06-14", ordered=True, orderable=False),  # today: ordered
+        meal_day("2026-06-15", ordered=False, orderable=True),  # tomorrow: nothing ordered, still possible
+    ]
+    await setup_integration(hass, stack, async_get_meals=meals)
+    assert hass.states.get(STATUS_TODAY).state == "ordered"
+    assert hass.states.get(STATUS_TOMORROW).state == "open"
+    assert hass.states.get(STATUS_TOMORROW).attributes["options"] == [
+        "ordered",
+        "open",
+        "missed",
+        "not_offered",
+    ]
+
+
+async def test_order_status_tells_a_missed_deadline_from_an_open_order(hass, stack, freezer) -> None:
+    at(freezer, "2026-06-14T10:00:00")
+    meals = [meal_day("2026-06-14", ordered=False, orderable=False)]  # KitaPlus no longer accepts an order
+    await setup_integration(hass, stack, async_get_meals=meals)
+    assert hass.states.get(STATUS_TODAY).state == "missed"
+    assert hass.states.get(STATUS_TOMORROW).state == "not_offered"  # nothing offered on the 15th
+
+
+async def test_order_status_follows_the_deadline_of_the_next_poll(hass, stack, freezer) -> None:
+    """KitaPlus flips `istBestellbar` when the deadline passes; the status follows with the next update."""
+    at(freezer, "2026-06-14T08:00:00")
+    entry = await setup_integration(
+        hass, stack, async_get_meals=[meal_day("2026-06-14", ordered=False, orderable=True)]
+    )
+    assert hass.states.get(STATUS_TODAY).state == "open"
+    from unittest.mock import patch
+
+    from .common import CLIENT
+
+    stack.enter_context(
+        patch(
+            f"{CLIENT}.async_get_meals", return_value=[meal_day("2026-06-14", ordered=False, orderable=False)]
+        )
+    )
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(STATUS_TODAY).state == "missed"
+
+
+async def test_order_status_moves_to_the_next_day_at_midnight(hass, stack, freezer) -> None:
+    at(freezer, "2026-06-14T23:59:00")
+    meals = [
+        meal_day("2026-06-14", ordered=True, orderable=False),
+        meal_day("2026-06-15", ordered=False, orderable=True),
+    ]
+    await setup_integration(hass, stack, async_get_meals=meals)
+    assert (hass.states.get(STATUS_TODAY).state, hass.states.get(STATUS_TOMORROW).state) == (
+        "ordered",
+        "open",
+    )
+    freezer.tick(timedelta(minutes=2))
+    async_fire_time_changed(hass, dt_util.now() + timedelta(seconds=10))
+    await hass.async_block_till_done()
+    assert hass.states.get(STATUS_TODAY).state == "open"  # the 15th is "today" now, still not ordered
