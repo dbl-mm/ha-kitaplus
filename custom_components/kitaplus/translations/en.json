@@ -116,6 +116,12 @@
       },
       "upcoming": {
         "name": "Upcoming dates"
+      },
+      "menu_today": {
+        "name": "Menu today"
+      },
+      "menu_tomorrow": {
+        "name": "Menu tomorrow"
       }
     },
     "calendar": {
@@ -173,14 +179,18 @@
           "order_deadline_days": "Order deadline: days before the meal",
           "order_deadline_time": "Order deadline: time",
           "order_deadline_workdays": "Count only weekdays (Monday to Friday)",
-          "reminder_lead_minutes": "Reminder before the deadline (minutes)"
+          "reminder_lead_minutes": "Reminder before the deadline (minutes)",
+          "menu_from_pdf": "Experimental: read the dishes from the menu plan PDF",
+          "menu_keyword": "Menu plan: word in the attachment name"
         },
         "data_description": {
           "scan_interval": "How often Home Assistant asks KitaPlus for new data. Shorter than 15 minutes is not allowed.",
           "order_deadline_days": "Your Kita sets this. Example: \"1 day before the meal at 11:00\" means 1 here and 11:00 below. 0 means on the day itself. Leave it empty if you do not know it. You find it in the KitaPlus app under Verpflegung → Hilfe → Bestellfristen.",
           "order_deadline_time": "The time of day at which ordering closes, for example 11:00.",
           "order_deadline_workdays": "Switch on if your Kita does not count Saturdays and Sundays (a Monday meal then closes on Friday).",
-          "reminder_lead_minutes": "How long before the deadline the event kitaplus_order_deadline is fired, if the day is still not ordered. 0 turns it off."
+          "reminder_lead_minutes": "How long before the deadline the event kitaplus_order_deadline is fired, if the day is still not ordered. 0 turns it off.",
+          "menu_from_pdf": "Reads the dishes from a PDF on the bulletin board (for example \"Menu 02.11.-06.11.\"). Works only for plans with a recognisable layout (a date, then Mo., Di., … with the dish). If the layout is not recognised nothing is shown. Without guarantee.",
+          "menu_keyword": "Only attachments whose name contains this word are read. Default: Menü."
         }
       }
     }

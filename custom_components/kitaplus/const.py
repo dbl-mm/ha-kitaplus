@@ -35,6 +35,10 @@ CONF_DEADLINE_DAYS = "order_deadline_days"
 CONF_DEADLINE_TIME = "order_deadline_time"
 CONF_DEADLINE_WORKDAYS = "order_deadline_workdays"
 CONF_LEAD_MINUTES = "reminder_lead_minutes"
+# Experimental: read the dishes from the weekly menu plan PDF (see menu.py).
+CONF_MENU_PDF = "menu_from_pdf"
+CONF_MENU_KEYWORD = "menu_keyword"
+DEFAULT_MENU_KEYWORD = "Menü"
 DEFAULT_DEADLINE_TIME = "11:00:00"
 DEFAULT_LEAD_MINUTES = 120
 MAX_DEADLINE_DAYS = 14

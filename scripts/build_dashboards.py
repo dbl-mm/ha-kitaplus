@@ -51,6 +51,8 @@ SLUGS: dict[str, dict[str, str]] = {
         "status_tomorrow": "bestellstatus_morgen",
         "next_deadline": "nachste_bestellfrist",
         "upcoming": "nachste_termine",
+        "menu_today": "speiseplan_heute",
+        "menu_tomorrow": "speiseplan_morgen",
     },
     "en": {
         "board": "bulletin_board",
@@ -70,6 +72,8 @@ SLUGS: dict[str, dict[str, str]] = {
         "status_tomorrow": "order_status_tomorrow",
         "next_deadline": "next_order_deadline",
         "upcoming": "upcoming_dates",
+        "menu_today": "menu_today",
+        "menu_tomorrow": "menu_tomorrow",
     },
 }
 
@@ -138,6 +142,9 @@ TEXT: dict[str, dict[str, Any]] = {
             "<br>3. <b>{{ 'ki' ~ 'nd' }}</b> durch denselben Namen in Kleinbuchstaben ersetzen, zum Beispiel finn."
             "<br>4. Speichern. Fertig."
         ),
+        "vegetarian": "vegetarisch",
+        "check_plan": "bitte im Menüplan prüfen",
+        "from_plan": "Gericht laut Menüplan-PDF, ohne Gewähr.",
         "todo_kid": "Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.",
         "nodata_title": "Keine aktuellen Daten",
         "nodata_sub": "KitaPlus ist gerade nicht erreichbar, oder die Entitäten des Kindes fehlen (Namen prüfen unter Einstellungen → Entitäten).",
@@ -225,6 +232,9 @@ TEXT: dict[str, dict[str, Any]] = {
             "<br>3. Change <b>{{ 'ki' ~ 'nd' }}</b> to the same name in lower case, for example finn."
             "<br>4. Save. Done."
         ),
+        "vegetarian": "vegetarian",
+        "check_plan": "please check the menu plan",
+        "from_plan": "Dish from the menu plan PDF, without guarantee.",
         "todo_kid": "No data yet. Set up the template first, the instructions are at the top.",
         "nodata_title": "No current data",
         "nodata_sub": "KitaPlus cannot be reached right now, or the child's entities are missing (check the names under Settings → Entities).",
@@ -400,15 +410,21 @@ KID = """
 {% if '@@NAME@@' == 'KI' ~ 'ND' -%}
 @@TODO_KID@@
 {%- else -%}
-{% for ent, label in [('@@TODAY_ENTITY@@', '@@ROW_TODAY@@'), ('@@TOMORROW_ENTITY@@', '@@ROW_TOMORROW@@')] %}
+{%- set ns = namespace(from_plan=false) -%}
+{% for ent, label, dish_ent in [('@@TODAY_ENTITY@@', '@@ROW_TODAY@@', '@@MENU_TODAY@@'), ('@@TOMORROW_ENTITY@@', '@@ROW_TOMORROW@@', '@@MENU_TOMORROW@@')] %}
 {%- set st = states(ent) -%}
-{%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
+{%- set dish = clean(states(dish_ent)) | trim if states(dish_ent) not in ['unknown', 'unavailable', 'none', ''] else '' -%}
+{%- set meal = dish or (clean(state_attr(ent, 'meal')) | trim) -%}
+{%- set ns.from_plan = ns.from_plan or (dish != '' and st != 'not_offered') -%}
 
 **{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
 {% if st != 'not_offered' and meal -%}
-{{ meal | truncate(@@TITLE@@, True, '…') }}
+{{ meal | truncate(@@TITLE@@, True, '…') }}{{ ' · @@VEGETARIAN@@' if dish and is_state_attr(dish_ent, 'vegetarian', true) else '' }}{{ ' · @@CHECK@@' if dish and is_state_attr(dish_ent, 'uncertain', true) else '' }}
 {% endif %}
 {% endfor %}
+{%- if ns.from_plan %}
+<small>@@FROM_PLAN@@</small>
+{% endif %}
 {%- set dlstate = states('@@DEADLINE_ENTITY@@') -%}
 {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
 {%- set dl = as_datetime(dlstate) | as_local -%}
@@ -606,6 +622,11 @@ def kid_card(t: dict[str, Any], ids: Ids, name: str) -> dict:
         TOMORROW=q(t["tomorrow"]),
         NEXT_DEADLINE=t["next_deadline"],
         TODO_KID=t["todo_kid"],
+        MENU_TODAY=ids.account("sensor", "menu_today"),
+        MENU_TOMORROW=ids.account("sensor", "menu_tomorrow"),
+        VEGETARIAN=t["vegetarian"],
+        CHECK=t["check_plan"],
+        FROM_PLAN=t["from_plan"],
     )
     return markdown(content)
 
@@ -777,7 +798,7 @@ HEADERS = {
         "# Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor.\n"
         "# Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben\n"
         "# (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.\n"
-        "# Links zu angehängten Dateien (zum Beispiel Menüplan) brauchen KitaPlus ab 0.3.3.\n"
+        "# Links zu angehängten Dateien (zum Beispiel Menüplan) brauchen KitaPlus ab 0.3.3, Gerichte aus dem Menüplan ab 0.4.0.\n"
         "# Diese Datei wird erzeugt (scripts/build_dashboards.py), bitte nicht in der Vorlage selbst ändern.\n"
     ),
     "en": (
@@ -785,7 +806,7 @@ HEADERS = {
         "# Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Raw configuration editor.\n"
         "# Replace KIND with your child's first name (display) and kind with the same name in lower case\n"
         "# (that is how the entities are named, see Settings → Entities). Several children: see the README here.\n"
-        "# Links to attached files (for example the meal plan) need KitaPlus 0.3.3 or newer.\n"
+        "# Links to attached files (for example the meal plan) need KitaPlus 0.3.3, dishes from the menu plan 0.4.0 or newer.\n"
         "# This file is generated (scripts/build_dashboards.py), please do not edit the template itself.\n"
     ),
 }

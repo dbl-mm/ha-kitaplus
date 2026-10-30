@@ -12,7 +12,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.template import Template
 from homeassistant.util import slugify as ha_slugify
 
-from .common import setup_integration
+from .common import make_entry, setup_integration
 
 ROOT = Path(__file__).parent.parent
 spec = importlib.util.spec_from_file_location("build_dashboards", ROOT / "scripts" / "build_dashboards.py")
@@ -133,7 +133,7 @@ def known_ids(hass: HomeAssistant) -> set[str]:
 @pytest.mark.parametrize("language", LANGUAGES)
 async def test_every_entity_the_dashboards_use_exists(hass: HomeAssistant, stack, language) -> None:
     hass.config.language = language
-    await setup_integration(hass, stack)
+    await setup_integration(hass, stack, make_entry({"menu_from_pdf": True}))  # the dishes need the option
     existing = known_ids(hass)
     assert f"sensor.kitaplus_{gen.SLUGS[language]['messages']}" in existing, "the language was applied"
 
@@ -532,3 +532,29 @@ async def test_the_child_card_of_an_unfinished_template_explains_instead_of_show
     assert t["todo_kid"] not in out and t["state_words"]["unknown"] in out, (
         "a real child is not told to set up"
     )
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_the_child_card_shows_the_dish_from_the_menu_plan_with_a_note(
+    hass: HomeAssistant, language
+) -> None:
+    t = gen.TEXT[language]
+    ids = gen.Ids(language, "kind")
+    set_states(
+        hass, language, today=("ordered", {"meal": "Mittagessen"}), tomorrow=("open", {"meal": "Mittagessen"})
+    )
+    hass.states.async_set(
+        ids.account("sensor", "menu_today"), "Nudeln", {"vegetarian": True, "uncertain": False}
+    )
+    hass.states.async_set(
+        ids.account("sensor", "menu_tomorrow"), "Ge?ügel", {"vegetarian": False, "uncertain": True}
+    )
+    content = card_content("kid", gen.PLACEHOLDER_NAME, language).replace("KIND", "Mia")
+    out = Template(content, hass).async_render(parse_result=False)
+    assert "Nudeln" in out and t["vegetarian"] in out and "Mittagessen" not in out
+    assert "Ge" in out and t["check_plan"] in out, "an uncertain dish asks to check the plan"
+    assert t["from_plan"] in out
+    hass.states.async_set(ids.account("sensor", "menu_today"), "unknown")
+    hass.states.async_set(ids.account("sensor", "menu_tomorrow"), "unknown")
+    out = Template(content, hass).async_render(parse_result=False)
+    assert "Mittagessen" in out and t["from_plan"] not in out, "without a plan the card is as before"

@@ -16,6 +16,8 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/dbl-mm/ha-kitaplus/issues",
   "quality_scale": "platinum",
-  "requirements": [],
-  "version": "0.3.6"
+  "requirements": [
+    "pypdf==6.21.4"
+  ],
+  "version": "0.4.0"
 }

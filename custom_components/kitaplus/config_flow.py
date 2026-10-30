@@ -50,12 +50,15 @@ from .const import (
     CONF_DEADLINE_WORKDAYS,
     CONF_EMAIL,
     CONF_LEAD_MINUTES,
+    CONF_MENU_KEYWORD,
+    CONF_MENU_PDF,
     CONF_PASSWORD,
     CONF_REFRESH_EXPIRES,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
     DEFAULT_DEADLINE_TIME,
     DEFAULT_LEAD_MINUTES,
+    DEFAULT_MENU_KEYWORD,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     LOGIN_COOLDOWN_MINUTES,
@@ -320,6 +323,10 @@ class KitaPlusOptionsFlow(OptionsFlowWithReload):
                     ): NumberSelector(
                         NumberSelectorConfig(min=0, max=1440, step=15, mode=NumberSelectorMode.BOX)
                     ),
+                    vol.Optional(CONF_MENU_PDF, default=current.get(CONF_MENU_PDF, False)): BooleanSelector(),
+                    vol.Optional(
+                        CONF_MENU_KEYWORD, default=current.get(CONF_MENU_KEYWORD, DEFAULT_MENU_KEYWORD)
+                    ): str,
                 }
             ),
         )

@@ -81,6 +81,8 @@ Felder der Einrichtung:
 ### Optionen
 **Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren:**
 
+- **Experimentell: Gerichte aus dem Menüplan-PDF lesen** (Standard: aus) — siehe [Gerichte aus dem Menüplan](#gerichte-aus-dem-menüplan-experimentell).
+- **Menüplan: Suchbegriff** (Standard: Menü) — Nur Anhänge, deren Name, Titel oder Text dieses Wort enthält, werden gelesen.
 - **Abfrageintervall** (Standard: 30 Minuten) — Wie oft Home Assistant bei KitaPlus nachfragt (15 bis 240 Minuten). Weniger als 15 ist nicht erlaubt, um die Server zu schonen.
 
 ### Neu konfigurieren
@@ -221,6 +223,16 @@ Ein bewusst ruhiges Dashboard im neuen Sections-Layout, nur mit eingebauten Kart
 **Kalender**. Dazu einzelne Karten zum Einfügen in dein eigenes Dashboard. Einbau in zwei Minuten:
 [dashboards/README.md](dashboards/README.md). Die Gestaltungsregeln stehen in [docs/dashboards.md](docs/dashboards.md). Wenn du es
 von einem Designer gestalten lassen möchtest: [Briefing für Designer](docs/designer-briefing.md).
+
+## Gerichte aus dem Menüplan (experimentell)
+
+Viele Kitas veröffentlichen den Speiseplan nur als PDF am Schwarzen Brett. Die Bestelldaten von KitaPlus nennen dagegen nur „Mittagessen“. Mit der Option **Gerichte aus dem Menüplan-PDF lesen** (*Konfigurieren*) liest die Integration das Gericht jedes Tages aus dieser PDF. Sie ist **standardmäßig aus**.
+
+- **Was entsteht:** Die Sensoren **Speiseplan heute** und **Speiseplan morgen** (Gericht, dazu die Attribute `vegetarian` und `uncertain`). Die Essen-Karte im Dashboard zeigt das Gericht statt „Mittagessen“, mit dem Hinweis „laut Menüplan-PDF, ohne Gewähr“.
+- **Was gelesen wird:** PDFs mit Textinhalt und einem erkennbaren Aufbau: ein Datumsbereich in der Überschrift („02.-06. November“), danach je Tag ein Block mit „Mo.“, „Di.“ usw. und dem Gericht, auf Wunsch mit „( veg. )“ für vegetarisch. Fotos oder Scans werden nicht gelesen.
+- **Vorsicht statt Raten:** Erkennt die Integration den Aufbau nicht, zeigt sie nichts an. Kann ein Zeichen nicht sicher gelesen werden (bei manchen PDFs fehlt zum Beispiel das „fl“ in „Geflügel“), steht ein Fragezeichen im Namen und die Karte bittet, den Plan zu prüfen.
+- **Allergene** werden **nicht** gelesen oder angezeigt. Verlasse dich dafür immer auf die Original-PDF (Link im Dashboard unter „Anhang“).
+- Die PDF wird nur geladen, wenn ein neuer Anhang erscheint, und nur im Arbeitsspeicher verarbeitet. Dafür braucht die Integration die kleine Bibliothek `pypdf`, die Home Assistant beim Start nachlädt.
 
 ## Anhänge (zum Beispiel der Menüplan)
 

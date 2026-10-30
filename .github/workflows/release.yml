@@ -19,7 +19,7 @@ jobs:
             exit 1
           fi
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-      - run: uv venv --python 3.13 && uv pip install pytest-homeassistant-custom-component aioresponses
+      - run: uv venv --python 3.13 && uv pip install pytest-homeassistant-custom-component aioresponses pypdf==6.21.4
       - run: .venv/bin/python -m pytest -q
       - name: Build zip
         run: cd custom_components/kitaplus && zip -qr ../../kitaplus.zip . -x "*__pycache__*" "*.pyc" "*.DS_Store"

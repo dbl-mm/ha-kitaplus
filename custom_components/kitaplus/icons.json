@@ -42,6 +42,12 @@
       },
       "upcoming": {
         "default": "mdi:calendar-clock"
+      },
+      "menu_today": {
+        "default": "mdi:food"
+      },
+      "menu_tomorrow": {
+        "default": "mdi:food-variant"
       }
     },
     "binary_sensor": {

@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
 from .api.models import Attachment, BoardPost, Child, MealEntry, Message, UpcomingEntry
+from .const import CONF_MENU_PDF
 from .coordinator import KitaPlusCoordinator, KitaPlusData
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
 from .helpers import (
@@ -30,6 +31,7 @@ from .helpers import (
     pending_replies,
     upcoming_entries,
 )
+from .menu import MenuDay
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
@@ -98,6 +100,9 @@ async def async_setup_entry(
             "session": lambda: SessionSensor(coordinator),
             "upcoming": lambda: UpcomingSensor(coordinator),
         }
+        if coordinator.config_entry.options.get(CONF_MENU_PDF):  # experimental, see menu.py
+            found["menu-0"] = lambda: MenuSensor(coordinator, 0)
+            found["menu-1"] = lambda: MenuSensor(coordinator, 1)
         for child in coordinator.data.children:
             if child["id"] in coordinator.data.meals:
                 for offset in (0, 1):
@@ -245,6 +250,36 @@ class MealSensor(_ChildDaySensor):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {"offered": self._meals()}
+
+
+class MenuSensor(KitaPlusEntity, SensorEntity):
+    """The dish of today or tomorrow, read from the weekly menu plan PDF (experimental, off by default)."""
+
+    _follows_the_day = True
+
+    def __init__(self, coordinator: KitaPlusCoordinator, offset: int) -> None:
+        super().__init__(coordinator)
+        self._offset = offset
+        key = "menu_tomorrow" if offset else "menu_today"
+        self._attr_translation_key = key
+        self._attr_unique_id = f"{self._entry_id}_{key}"
+
+    def _entry(self) -> MenuDay | None:
+        return self.coordinator.data.menu.get(dt_util.now().date() + timedelta(days=self._offset))
+
+    @property
+    def native_value(self) -> str | None:
+        entry = self._entry()
+        return entry.dish if entry else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        entry = self._entry()
+        return {
+            "vegetarian": entry.vegetarian if entry else None,
+            "uncertain": entry.uncertain if entry else None,  # a character could not be read with certainty
+            "source": "menu_pdf",
+        }
 
 
 class SessionSensor(KitaPlusEntity, SensorEntity):

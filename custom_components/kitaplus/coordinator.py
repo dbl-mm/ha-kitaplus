@@ -27,11 +27,14 @@ from .const import (
     CONF_DEADLINE_WORKDAYS,
     CONF_EMAIL,
     CONF_LEAD_MINUTES,
+    CONF_MENU_KEYWORD,
+    CONF_MENU_PDF,
     CONF_REFRESH_EXPIRES,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
     DEFAULT_DEADLINE_TIME,
     DEFAULT_LEAD_MINUTES,
+    DEFAULT_MENU_KEYWORD,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     EVENT_NEW_BOARD_POST,
@@ -39,6 +42,7 @@ from .const import (
     EVENT_ORDER_DEADLINE,
 )
 from .helpers import DeadlineRule, OpenOrder, open_orders, plain_text
+from .menu import MenuDay, extract_text, parse_menu
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -49,6 +53,7 @@ _LOGGER = logging.getLogger(__name__)
 TimerKey = tuple[str, int, date]  # ("deadline" or "remind", child id, day)
 
 CHILDREN_REFRESH = timedelta(hours=24)
+MENU_MAX_BYTES = 5 * 1024 * 1024
 MEAL_DAYS_AHEAD = 14
 
 
@@ -62,6 +67,7 @@ class KitaPlusData:
     accounts: list[Account] = field(default_factory=list)
     events: list[Event] = field(default_factory=list)
     meals: dict[int, list[Day]] = field(default_factory=dict)  # child id -> days
+    menu: dict[date, MenuDay] = field(default_factory=dict)  # dishes from the menu plan PDF (experimental)
 
 
 class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
@@ -88,6 +94,8 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
         self._children_at: datetime | None = None
         self._seen_board: set[int] | None = None
         self._seen_messages: set[int] | None = None
+        self._menu: dict[date, MenuDay] = {}
+        self._menu_file: int | None = None  # the attachment that was read (or could not be) last
 
     def _read_deadline_rule(self) -> DeadlineRule | None:
         """The Kita's order deadline from the options, or None while it is not set."""
@@ -214,11 +222,53 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
                 translation_placeholders={"error": str(err)},
             ) from err
 
+        data.menu = await self._async_update_menu(data.board)
         ir.async_delete_issue(self.hass, DOMAIN, self._issue_id)
         self._remove_stale_devices(data)
         self._schedule_deadlines(data)
         self._fire_events(data)
         return data
+
+    def _menu_file_of(self, board: list[BoardPost]) -> tuple[int, int] | None:
+        """(attachment id, year) of the newest PDF that belongs to a menu plan post, if there is one."""
+        keyword = str(self.config_entry.options.get(CONF_MENU_KEYWORD) or DEFAULT_MENU_KEYWORD).casefold()
+        for post in board:
+            for attachment in post.get("anhaenge") or []:
+                if attachment.get("id") is None or str(attachment.get("endung", "")).lower() != "pdf":
+                    continue
+                if attachment.get("istDateiVorhanden") is False:
+                    continue
+                label = f"{attachment.get('name') or ''} {post.get('titel') or ''} {post.get('text') or ''}"
+                if keyword in label.casefold():
+                    year = int(str(post.get("datum") or "")[:4] or dt_util.now().year)
+                    return int(attachment["id"]), year
+        return None
+
+    async def _async_update_menu(self, board: list[BoardPost]) -> dict[date, MenuDay]:
+        """Read the dishes when a new menu plan PDF appears. A problem never fails the update."""
+        if not self.config_entry.options.get(CONF_MENU_PDF):
+            self._menu, self._menu_file = {}, None
+            return {}
+        found = self._menu_file_of(board)
+        if found is not None and found[0] != self._menu_file:
+            file_id, year = found
+            try:
+                pdf, _, _ = await self.client.async_get_file("board", file_id, MENU_MAX_BYTES)
+            except KitaPlusError as err:
+                _LOGGER.debug("Menu plan %s could not be fetched, trying again next time: %s", file_id, err)
+            else:
+                self._menu_file = file_id  # read once; a PDF that fails to read is not tried again
+                try:
+                    days = parse_menu(await self.hass.async_add_executor_job(extract_text, pdf), year)
+                except ValueError:
+                    days = []
+                if days:
+                    self._menu.update({entry.day: entry for entry in days})
+                else:
+                    _LOGGER.warning("The menu plan PDF was not recognised, so no dishes are shown")
+        cutoff = dt_util.now().date() - timedelta(days=7)
+        self._menu = {day: entry for day, entry in self._menu.items() if day >= cutoff}
+        return dict(self._menu)
 
     def _save_tokens(self, tokens: Tokens) -> None:
         """Persist at once: a rotated refresh token must survive a failed poll or a restart."""

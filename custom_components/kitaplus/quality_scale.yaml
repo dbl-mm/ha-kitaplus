@@ -23,7 +23,7 @@ rules:
     comment: tests/test_config_flow.py and tests/test_gold.py cover every branch including error recovery.
   dependency-transparency:
     status: exempt
-    comment: No external dependencies (requirements is empty). The API client lives in api/ and uses aiohttp from Home Assistant.
+    comment: One external library, pypdf (pure Python, pinned exactly), only for the optional, experimental menu plan reader in menu.py. The API client lives in api/ and uses aiohttp from Home Assistant.
   docs-actions:
     status: exempt
     comment: No actions in this version.

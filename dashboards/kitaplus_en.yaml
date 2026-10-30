@@ -1,8 +1,8 @@
-# KitaPlus dashboard (template) · version 0.3.6 · needs KitaPlus 0.3.1 or newer
+# KitaPlus dashboard (template) · version 0.4.0 · needs KitaPlus 0.3.1 or newer
 # Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Raw configuration editor.
 # Replace KIND with your child's first name (display) and kind with the same name in lower case
 # (that is how the entities are named, see Settings → Entities). Several children: see the README here.
-# Links to attached files (for example the meal plan) need KitaPlus 0.3.3 or newer.
+# Links to attached files (for example the meal plan) need KitaPlus 0.3.3, dishes from the menu plan 0.4.0 or newer.
 # This file is generated (scripts/build_dashboards.py), please do not edit the template itself.
 title: Kita
 views:
@@ -115,15 +115,21 @@ views:
         {% if 'KIND' == 'KI' ~ 'ND' -%}
         No data yet. Set up the template first, the instructions are at the top.
         {%- else -%}
-        {% for ent, label in [('sensor.kind_order_status_today', 'Today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow')] %}
+        {%- set ns = namespace(from_plan=false) -%}
+        {% for ent, label, dish_ent in [('sensor.kind_order_status_today', 'Today', 'sensor.kitaplus_menu_today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow', 'sensor.kitaplus_menu_tomorrow')] %}
         {%- set st = states(ent) -%}
-        {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
+        {%- set dish = clean(states(dish_ent)) | trim if states(dish_ent) not in ['unknown', 'unavailable', 'none', ''] else '' -%}
+        {%- set meal = dish or (clean(state_attr(ent, 'meal')) | trim) -%}
+        {%- set ns.from_plan = ns.from_plan or (dish != '' and st != 'not_offered') -%}
 
         **{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
         {% if st != 'not_offered' and meal -%}
-        {{ meal | truncate(80, True, '…') }}
+        {{ meal | truncate(80, True, '…') }}{{ ' · vegetarian' if dish and is_state_attr(dish_ent, 'vegetarian', true) else '' }}{{ ' · please check the menu plan' if dish and is_state_attr(dish_ent, 'uncertain', true) else '' }}
         {% endif %}
         {% endfor %}
+        {%- if ns.from_plan %}
+        <small>Dish from the menu plan PDF, without guarantee.</small>
+        {% endif %}
         {%- set dlstate = states('sensor.kind_next_order_deadline') -%}
         {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
         {%- set dl = as_datetime(dlstate) | as_local -%}
@@ -330,15 +336,21 @@ views:
         {% if 'KIND' == 'KI' ~ 'ND' -%}
         No data yet. Set up the template first, the instructions are at the top.
         {%- else -%}
-        {% for ent, label in [('sensor.kind_order_status_today', 'Today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow')] %}
+        {%- set ns = namespace(from_plan=false) -%}
+        {% for ent, label, dish_ent in [('sensor.kind_order_status_today', 'Today', 'sensor.kitaplus_menu_today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow', 'sensor.kitaplus_menu_tomorrow')] %}
         {%- set st = states(ent) -%}
-        {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
+        {%- set dish = clean(states(dish_ent)) | trim if states(dish_ent) not in ['unknown', 'unavailable', 'none', ''] else '' -%}
+        {%- set meal = dish or (clean(state_attr(ent, 'meal')) | trim) -%}
+        {%- set ns.from_plan = ns.from_plan or (dish != '' and st != 'not_offered') -%}
 
         **{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
         {% if st != 'not_offered' and meal -%}
-        {{ meal | truncate(80, True, '…') }}
+        {{ meal | truncate(80, True, '…') }}{{ ' · vegetarian' if dish and is_state_attr(dish_ent, 'vegetarian', true) else '' }}{{ ' · please check the menu plan' if dish and is_state_attr(dish_ent, 'uncertain', true) else '' }}
         {% endif %}
         {% endfor %}
+        {%- if ns.from_plan %}
+        <small>Dish from the menu plan PDF, without guarantee.</small>
+        {% endif %}
         {%- set dlstate = states('sensor.kind_next_order_deadline') -%}
         {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
         {%- set dl = as_datetime(dlstate) | as_local -%}

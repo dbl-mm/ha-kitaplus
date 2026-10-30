@@ -1,8 +1,8 @@
-# KitaPlus-Dashboard (Vorlage) · Version 0.3.6 · benötigt KitaPlus ab 0.3.1
+# KitaPlus-Dashboard (Vorlage) · Version 0.4.0 · benötigt KitaPlus ab 0.3.1
 # Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor.
 # Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben
 # (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.
-# Links zu angehängten Dateien (zum Beispiel Menüplan) brauchen KitaPlus ab 0.3.3.
+# Links zu angehängten Dateien (zum Beispiel Menüplan) brauchen KitaPlus ab 0.3.3, Gerichte aus dem Menüplan ab 0.4.0.
 # Diese Datei wird erzeugt (scripts/build_dashboards.py), bitte nicht in der Vorlage selbst ändern.
 title: Kita
 views:
@@ -115,15 +115,21 @@ views:
         {% if 'KIND' == 'KI' ~ 'ND' -%}
         Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.
         {%- else -%}
-        {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
+        {%- set ns = namespace(from_plan=false) -%}
+        {% for ent, label, dish_ent in [('sensor.kind_bestellstatus_heute', 'Heute', 'sensor.kitaplus_speiseplan_heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen', 'sensor.kitaplus_speiseplan_morgen')] %}
         {%- set st = states(ent) -%}
-        {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
+        {%- set dish = clean(states(dish_ent)) | trim if states(dish_ent) not in ['unknown', 'unavailable', 'none', ''] else '' -%}
+        {%- set meal = dish or (clean(state_attr(ent, 'meal')) | trim) -%}
+        {%- set ns.from_plan = ns.from_plan or (dish != '' and st != 'not_offered') -%}
 
         **{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
         {% if st != 'not_offered' and meal -%}
-        {{ meal | truncate(80, True, '…') }}
+        {{ meal | truncate(80, True, '…') }}{{ ' · vegetarisch' if dish and is_state_attr(dish_ent, 'vegetarian', true) else '' }}{{ ' · bitte im Menüplan prüfen' if dish and is_state_attr(dish_ent, 'uncertain', true) else '' }}
         {% endif %}
         {% endfor %}
+        {%- if ns.from_plan %}
+        <small>Gericht laut Menüplan-PDF, ohne Gewähr.</small>
+        {% endif %}
         {%- set dlstate = states('sensor.kind_nachste_bestellfrist') -%}
         {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
         {%- set dl = as_datetime(dlstate) | as_local -%}
@@ -330,15 +336,21 @@ views:
         {% if 'KIND' == 'KI' ~ 'ND' -%}
         Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.
         {%- else -%}
-        {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
+        {%- set ns = namespace(from_plan=false) -%}
+        {% for ent, label, dish_ent in [('sensor.kind_bestellstatus_heute', 'Heute', 'sensor.kitaplus_speiseplan_heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen', 'sensor.kitaplus_speiseplan_morgen')] %}
         {%- set st = states(ent) -%}
-        {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
+        {%- set dish = clean(states(dish_ent)) | trim if states(dish_ent) not in ['unknown', 'unavailable', 'none', ''] else '' -%}
+        {%- set meal = dish or (clean(state_attr(ent, 'meal')) | trim) -%}
+        {%- set ns.from_plan = ns.from_plan or (dish != '' and st != 'not_offered') -%}
 
         **{{ label }}** · {{ icons[st] if st in icons else '?' }} **{{ words[st] if st in words else st }}**
         {% if st != 'not_offered' and meal -%}
-        {{ meal | truncate(80, True, '…') }}
+        {{ meal | truncate(80, True, '…') }}{{ ' · vegetarisch' if dish and is_state_attr(dish_ent, 'vegetarian', true) else '' }}{{ ' · bitte im Menüplan prüfen' if dish and is_state_attr(dish_ent, 'uncertain', true) else '' }}
         {% endif %}
         {% endfor %}
+        {%- if ns.from_plan %}
+        <small>Gericht laut Menüplan-PDF, ohne Gewähr.</small>
+        {% endif %}
         {%- set dlstate = states('sensor.kind_nachste_bestellfrist') -%}
         {%- if dlstate not in ['unknown', 'unavailable', 'none', ''] -%}
         {%- set dl = as_datetime(dlstate) | as_local -%}

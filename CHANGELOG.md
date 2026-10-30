@@ -2,6 +2,10 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [0.4.0]
+### Neu (experimentell)
+- **Gerichte aus dem Menüplan-PDF:** Neue Option „Gerichte aus dem Menüplan-PDF lesen“ (standardmäßig aus) mit Suchbegriff. Die Integration liest bei einem neuen Anhang am Schwarzen Brett Tag und Gericht aus der PDF (nur Textinhalt, erkennbarer Aufbau). Neue Sensoren **Speiseplan heute** und **Speiseplan morgen**, das Dashboard zeigt das Gericht statt „Mittagessen“ mit dem Hinweis „ohne Gewähr“. Unbekannte Zeichen werden markiert statt geraten, Allergene werden nicht gelesen. Braucht `pypdf`.
+
 ## [0.3.6]
 ### Geändert
 - **Dashboard-Vorlage erklärt sich selbst:** Wer `KIND` und `kind` noch nicht ersetzt hat, sieht statt „Keine aktuellen Daten“ eine Anleitung („Noch nicht eingerichtet“, vier Schritte) und in der Kinderkarte „Noch keine Daten“ statt „Unbekannt“. Hat man den Namen eingetragen, verschwindet beides.
