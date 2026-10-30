@@ -332,10 +332,13 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
     def _fire_new(
         self, event: str, seen: set[int] | None, items: Sequence[tuple[int | None, str | None]]
     ) -> set[int]:
-        """Fire one event per item whose id was not seen before; return all ids seen so far."""
+        """Fire one event per item whose id was not seen before; return all ids seen so far.
+
+        Ids stay known when an answer is shorter for a moment, so an item that comes back is not "new" again.
+        """
         current = {item_id for item_id, _ in items if item_id is not None}
         if seen is not None:
             for item_id, title in items:
                 if item_id is not None and item_id not in seen:
                     self.hass.bus.async_fire(event, {"id": item_id, "title": title})
-        return current
+        return current | (seen or set())

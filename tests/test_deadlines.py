@@ -399,3 +399,29 @@ async def test_timers_of_days_that_are_no_longer_open_are_removed(hass, stack, f
     )
     await coordinator.async_refresh()
     assert coordinator._timers == {}, "ordered meanwhile: neither a reminder nor a deadline update is needed"
+
+
+async def test_the_next_deadline_is_worked_out_once_per_read_and_moves_on_with_the_clock(
+    hass: HomeAssistant, stack, freezer
+) -> None:
+    await clock(hass, freezer, f"{THURSDAY}T08:00:00")
+    meals = [
+        meal_day("2026-10-29", ordered=False, orderable=True),
+        meal_day("2026-10-30", ordered=False, orderable=True),
+    ]
+    entry = await setup_integration(hass, stack, make_entry(RULE_OPTIONS), async_get_meals=meals)
+    coordinator = entry.runtime_data
+    first = hass.states.get(DEADLINE)
+    assert first.attributes["day"] == "2026-10-30" and first.state.startswith(
+        "2026-10-29T"
+    )  # Thursday is over
+
+    with patch.object(coordinator, "next_open_order", wraps=coordinator.next_open_order) as spy:
+        entity = next(e for e in hass.data["entity_components"]["sensor"].entities if e.entity_id == DEADLINE)
+        entity.async_write_ha_state()  # same minute and same data as at setup: nothing new to work out
+        assert spy.call_count == 0
+        freezer.move_to(local(f"{THURSDAY}T08:05:00"))
+        entity.async_write_ha_state()  # a new minute: state and attributes are read, the work is done once
+        assert spy.call_count == 1
+        entity.async_write_ha_state()
+        assert spy.call_count == 1

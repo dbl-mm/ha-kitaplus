@@ -182,6 +182,22 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="too_many_attempts", description_placeholders=self._placeholders())
         return None
 
+    async def _async_sign_in(self) -> tuple[ConfigFlowResult | None, str | None]:
+        """One sign-in attempt for the first step of a flow.
+
+        Returns (the result to show next, None), or (None, error key) when the form is shown again.
+        """
+        if stop := self._cooling_down():
+            return stop, None
+        data, error = await self._async_try_login(None)
+        if error == "two_factor":
+            return await self.async_step_two_factor(), None
+        if data:
+            return await self._async_finish(data), None
+        if stop := self._stop_or_none(error):
+            return stop, None
+        return None, error
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -192,15 +208,9 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
                 e.data.get(CONF_EMAIL, "").lower() == self._account for e in self._async_current_entries()
             ):
                 return self.async_abort(reason="already_configured")  # no request to KitaPlus needed
-            if stop := self._cooling_down():
-                return stop
-            data, error = await self._async_try_login(None)
-            if error == "two_factor":
-                return await self.async_step_two_factor()
-            if data:
-                return await self._async_finish(data)
-            if stop := self._stop_or_none(error):
-                return stop
+            result, error = await self._async_sign_in()
+            if result:
+                return result
             errors["base"] = error or "unknown"
         return self.async_show_form(
             step_id="user",
@@ -237,15 +247,9 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             self._password = user_input[CONF_PASSWORD]
-            if stop := self._cooling_down():
-                return stop
-            data, error = await self._async_try_login(None)
-            if error == "two_factor":
-                return await self.async_step_two_factor()
-            if data:
-                return await self._async_finish(data)
-            if stop := self._stop_or_none(error):
-                return stop
+            result, error = await self._async_sign_in()
+            if result:
+                return result
             errors["base"] = error or "unknown"
         return self.async_show_form(
             step_id="reauth_confirm",
@@ -263,15 +267,9 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
             self._email = user_input[CONF_EMAIL].strip()
             self._account = self._email.lower()
             self._password = user_input[CONF_PASSWORD]
-            if stop := self._cooling_down():
-                return stop
-            data, error = await self._async_try_login(None)
-            if error == "two_factor":
-                return await self.async_step_two_factor()
-            if data:
-                return await self._async_finish(data)
-            if stop := self._stop_or_none(error):
-                return stop
+            result, error = await self._async_sign_in()
+            if result:
+                return result
             errors["base"] = error or "unknown"
         self._email = self._email or entry.data[CONF_EMAIL]
         return self.async_show_form(

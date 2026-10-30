@@ -1,7 +1,5 @@
 """Constants for the KitaPlus integration."""
 
-from datetime import timedelta
-
 DOMAIN = "kitaplus"
 
 API_BASE_URL = "https://eappbroker.kitaplus.de"
@@ -19,7 +17,6 @@ CONF_SCAN_INTERVAL = "scan_interval"
 DEFAULT_SCAN_INTERVAL = 30
 MIN_SCAN_INTERVAL = 15
 MAX_SCAN_INTERVAL = 240
-UPDATE_INTERVAL = timedelta(minutes=DEFAULT_SCAN_INTERVAL)
 
 EVENT_NEW_BOARD_POST = f"{DOMAIN}_new_board_post"
 EVENT_NEW_MESSAGE = f"{DOMAIN}_new_message"

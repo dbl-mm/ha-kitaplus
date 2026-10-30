@@ -2,6 +2,12 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [0.3.4]
+### Geändert
+- README neu gegliedert: Schnellstart, Vorschaubilder gleich am Anfang, Funktionen als Liste, Blueprints als Liste mit Import-Knöpfen gleicher Größe; Logo und Bilder mit absoluten Adressen, damit sie auch in HACS erscheinen.
+- Korrektur: Ein Beitrag oder eine Nachricht, die nach einer kurz verkürzten KitaPlus-Antwort wiederkam, löste die Ereignisse `kitaplus_new_board_post` und `kitaplus_new_message` ein zweites Mal aus.
+- Intern verschlankt: gemeinsamer Anmeldeschritt im Einrichtungsablauf, gemeinsame Basis der Essens-Sensoren, Sensoren „Offene Rückmeldungen“ und „Nächste Bestellfrist“ rechnen nicht mehr doppelt.
+
 ## [0.3.3]
 ### Neu
 - **Anhänge öffnen:** Dateien an Beiträgen und Nachrichten (zum Beispiel ein Menüplan als PDF) lassen sich in Home Assistant öffnen. Der Sensor nennt sie im Attribut `attachments` (Name und Adresse, höchstens 3), das Dashboard zeigt beim neuesten Beitrag „Anhang: …“ als Link, der in einem neuen Tab öffnet. Die Adresse wird von Home Assistant **signiert und läuft ab**; abrufbar sind nur Dateien, die gerade an einem Beitrag oder einer Nachricht hängen. PDF und Bilder werden angezeigt, alles andere nur als Download. Dateipfade und Einrichtungs-IDs aus der KitaPlus-Antwort werden nicht gespeichert.

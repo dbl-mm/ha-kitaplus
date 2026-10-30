@@ -79,8 +79,7 @@ class _EventCalendar(CalendarEntity):
 
 
 class AppointmentsCalendar(KitaPlusEntity, _EventCalendar):
-    _attr_translation_key = "appointments"
-    _closures = False
+    """Appointments, or (closures=True) closure days and public holidays."""
 
     def __init__(self, coordinator: KitaPlusCoordinator, closures: bool) -> None:
         super().__init__(coordinator)

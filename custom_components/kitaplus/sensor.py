@@ -13,15 +13,23 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
 from .api.models import Attachment, BoardPost, Child, MealEntry, Message, UpcomingEntry
-from .coordinator import KitaPlusCoordinator
+from .coordinator import KitaPlusCoordinator, KitaPlusData
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
-from .helpers import ORDER_STATES, deadline_for, meals_on, order_status, pending_replies, upcoming_entries
+from .helpers import (
+    ORDER_STATES,
+    OpenOrder,
+    deadline_for,
+    meals_on,
+    order_status,
+    pending_replies,
+    upcoming_entries,
+)
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
@@ -180,32 +188,45 @@ class PendingRepliesSensor(KitaPlusEntity, SensorEntity):
     def __init__(self, coordinator: KitaPlusCoordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._entry_id}_pending_replies"
+        self._pending = pending_replies(coordinator.data.messages)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._pending = pending_replies(self.coordinator.data.messages)  # once per update, not per read
+        super()._handle_coordinator_update()
 
     @property
     def native_value(self) -> int:
-        return len(pending_replies(self.coordinator.data.messages))
+        return len(self._pending)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"messages": pending_replies(self.coordinator.data.messages)}
+        return {"messages": self._pending}
 
 
-class MealSensor(KitaPlusChildEntity, SensorEntity):
-    """Ordered meal for today or tomorrow."""
+class _ChildDaySensor(KitaPlusChildEntity, SensorEntity):
+    """A sensor about the meals of one child for today (offset 0) or tomorrow (offset 1)."""
 
     _follows_the_day = True
-    _unrecorded_attributes = frozenset({"offered"})
+    _key = ""  # "meal" or "order_status"
 
     def __init__(self, coordinator: KitaPlusCoordinator, child: Child, offset: int) -> None:
         super().__init__(coordinator, child)
         self._offset = offset
-        key = "meal_tomorrow" if offset else "meal_today"
+        key = f"{self._key}_{'tomorrow' if offset else 'today'}"
         self._attr_translation_key = key
         self._attr_unique_id = f"{self._entry_id}_{self._child_id}_{key}"
 
     def _meals(self) -> list[MealEntry]:
         day = dt_util.now().date() + timedelta(days=self._offset)
         return meals_on(self.coordinator.data.meals.get(self._child_id, []), day)
+
+
+class MealSensor(_ChildDaySensor):
+    """Ordered meal for today or tomorrow."""
+
+    _key = "meal"
+    _unrecorded_attributes = frozenset({"offered"})
 
     @property
     def native_value(self) -> str | None:
@@ -242,7 +263,7 @@ class SessionSensor(KitaPlusEntity, SensorEntity):
         return datetime.fromtimestamp(tokens.refresh_expires, UTC) if tokens else None
 
 
-class OrderStatusSensor(KitaPlusChildEntity, SensorEntity):
+class OrderStatusSensor(_ChildDaySensor):
     """Ordered, open, deadline missed or no meal, for today or tomorrow.
 
     KitaPlus decides per meal whether it can still be ordered (each Kita sets its own deadline), and the
@@ -251,18 +272,7 @@ class OrderStatusSensor(KitaPlusChildEntity, SensorEntity):
 
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ORDER_STATES
-    _follows_the_day = True
-
-    def __init__(self, coordinator: KitaPlusCoordinator, child: Child, offset: int) -> None:
-        super().__init__(coordinator, child)
-        self._offset = offset
-        key = "order_status_tomorrow" if offset else "order_status_today"
-        self._attr_translation_key = key
-        self._attr_unique_id = f"{self._entry_id}_{self._child_id}_{key}"
-
-    def _meals(self) -> list[MealEntry]:
-        day = dt_util.now().date() + timedelta(days=self._offset)
-        return meals_on(self.coordinator.data.meals.get(self._child_id, []), day)
+    _key = "order_status"
 
     @property
     def native_value(self) -> str:
@@ -293,15 +303,24 @@ class NextOrderDeadlineSensor(KitaPlusChildEntity, SensorEntity):
     def __init__(self, coordinator: KitaPlusCoordinator, child: Child) -> None:
         super().__init__(coordinator, child)
         self._attr_unique_id = f"{self._entry_id}_{self._child_id}_next_order_deadline"
+        self._cached: tuple[KitaPlusData, datetime, OpenOrder | None] | None = None
+
+    def _order(self) -> OpenOrder | None:
+        """The next open order; state and attributes are read together, so it is worked out once a minute."""
+        data = self.coordinator.data
+        minute = dt_util.now().replace(second=0, microsecond=0)
+        if self._cached is None or self._cached[0] is not data or self._cached[1] != minute:
+            self._cached = (data, minute, self.coordinator.next_open_order(self._child_id))
+        return self._cached[2]
 
     @property
     def native_value(self) -> datetime | None:
-        order = self.coordinator.next_open_order(self._child_id)
+        order = self._order()
         return order.deadline if order else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        order = self.coordinator.next_open_order(self._child_id)
+        order = self._order()
         return {
             "day": order.day.isoformat() if order else None,
             "rule_set": self.coordinator.deadline_rule is not None,

@@ -8,6 +8,7 @@ from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.kitaplus.calendar import _parse, _to_event
+from custom_components.kitaplus.helpers import pending_replies
 
 from .common import make_entry, meal_day, setup_integration
 from .conftest import load
@@ -342,3 +343,27 @@ def test_attached_files_are_listed_with_name_and_link_only() -> None:
     assert _attachments(None, str) == [] and _attachments([], str) == []
     short = _board_short([{"id": 1, "titel": "t", "anhaenge": files}], lambda i: None)
     assert "secret" not in str(short) and short[0]["attachments"][0]["url"] is None
+
+
+async def test_pending_replies_follow_each_update_and_are_worked_out_once(hass, stack) -> None:
+    from unittest.mock import patch
+
+    answered = [
+        {"id": 7, "istBeantwortet": True, "nachricht": {"titel": "x", "istBestaetigungspflichtig": True}}
+    ]
+    open_one = [
+        {"id": 8, "istBeantwortet": False, "nachricht": {"titel": "y", "istBestaetigungspflichtig": True}}
+    ]
+    entry = await setup_integration(hass, stack, async_get_messages=answered)
+    assert hass.states.get("sensor.kitaplus_pending_replies").state == "0"
+    stack.enter_context(
+        patch(
+            "custom_components.kitaplus.api.client.KitaPlusClient.async_get_messages", return_value=open_one
+        )
+    )
+    with patch("custom_components.kitaplus.sensor.pending_replies", wraps=pending_replies) as spy:
+        await entry.runtime_data.async_refresh()
+        await hass.async_block_till_done()
+        assert spy.call_count == 1
+    state = hass.states.get("sensor.kitaplus_pending_replies")
+    assert state.state == "1" and state.attributes["messages"][0]["id"] == 8

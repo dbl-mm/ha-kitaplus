@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="custom_components/kitaplus/brand/dark_logo@2x.png">
-  <img src="custom_components/kitaplus/brand/logo@2x.png" alt="KitaPlus Logo" width="96" align="left">
-</picture>
+<img src="https://raw.githubusercontent.com/dbl-mm/ha-kitaplus/main/custom_components/kitaplus/brand/logo@2x.png" alt="KitaPlus Logo" width="96" align="left">
 
 # KitaPlus für Home Assistant
 
@@ -15,21 +12,39 @@ Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern
 > - Die Nutzung geschieht **auf eigene Verantwortung**. Prüfe, ob die Nutzungsbedingungen deiner Kita bzw. von kitaplus eine solche Nutzung erlauben.
 > - Die Integration ist **nur lesend**. Es wird nichts bestellt, gebucht, abbestellt oder gemeldet.
 
+**Schnell zu:** [Installation](#installation) · [Einrichtung](#einrichtung-und-anmeldung) · [Bestellfristen](#bestellfristen) · [Blueprints](#blueprints) · [Dashboard](#dashboard-vorlagen) · [Hilfe](#fehlerbehebung) · [Wiki](https://github.com/dbl-mm/ha-kitaplus/wiki)
+
+## So sieht es aus
+
+> Entwurf des Designs (Mockups mit erfundenen Daten). In deinem Home Assistant wirkt es etwas schlichter, weil Farben, Schriften und Rundungen von deinem Theme kommen. Echte Bildschirmfotos folgen.
+
+<p>
+<img src="https://raw.githubusercontent.com/dbl-mm/ha-kitaplus/main/docs/img/heute-nichts-zu-tun.png" alt="Heute: nichts zu tun" width="230">
+<img src="https://raw.githubusercontent.com/dbl-mm/ha-kitaplus/main/docs/img/heute-essen-offen.png" alt="Heute: Essen für ein Kind noch offen" width="230">
+<img src="https://raw.githubusercontent.com/dbl-mm/ha-kitaplus/main/docs/img/heute-frist-verpasst-dunkel.png" alt="Heute: Frist verpasst, dunkles Theme" width="230">
+<img src="https://raw.githubusercontent.com/dbl-mm/ha-kitaplus/main/docs/img/heute-kita-geschlossen.png" alt="Heute: Kita geschlossen" width="230">
+</p>
+
 ## Funktionen
 
-| Bereich | Entities |
-|---|---|
-| Schwarzes Brett | **Schwarzes Brett**: neuester Titel, die letzten 5 Beiträge als Attribut `posts` |
-| Postfach | **Postfach**: Anzahl der Nachrichten, die letzten 5 als Attribut `messages`; **Offene Rückmeldungen**: Nachrichten, die bestätigt werden müssen, mit Frist |
-| Kalender | **Termine**, **Schließtage** (inkl. Feiertage) und pro Kind **Bestelltes Essen**; **Nächste Termine**: die nächsten Termine und Schließtage in einer Liste (Attribut `entries`) |
-| Kita | **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“) |
-| Verpflegung | pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Nächste Bestellfrist**, **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR) |
-| Diagnose | **Sitzung gültig bis** (standardmäßig deaktiviert): bis wann die gespeicherte Anmeldung gilt |
-| Ereignisse | `kitaplus_new_board_post`, `kitaplus_new_message` (mit `id` und `title`; nicht beim ersten Abruf), `kitaplus_order_deadline` (vor der Bestellfrist, siehe unten) |
+- **Schwarzes Brett:** neuester Titel, die letzten 5 Beiträge als Attribut `posts`
+- **Postfach:** Anzahl der Nachrichten, die letzten 5 als Attribut `messages`; **Offene Rückmeldungen**: Nachrichten, die bestätigt werden müssen, mit Frist
+- **Kalender:** **Termine**, **Schließtage** (inkl. Feiertage) und pro Kind **Bestelltes Essen**; **Nächste Termine**: die nächsten Termine und Schließtage in einer Liste (Attribut `entries`)
+- **Kita:** **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“)
+- **Verpflegung:** pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Nächste Bestellfrist**, **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR)
+- **Diagnose:** **Sitzung gültig bis** (standardmäßig deaktiviert): bis wann die gespeicherte Anmeldung gilt
+- **Ereignisse:** `kitaplus_new_board_post`, `kitaplus_new_message` (mit `id` und `title`; nicht beim ersten Abruf), `kitaplus_order_deadline` (vor der Bestellfrist, siehe unten)
 
 Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das Konto. Neue Kinder erscheinen ohne Neustart (spätestens nach 24 Stunden), Kinder, die KitaPlus nicht mehr nennt, werden als Gerät entfernt.
 
 **Unterstützt:** Eltern-Zugänge der kitaplus Eltern-App mit E-Mail und Passwort, auch mit Zwei-Faktor (Authenticator-App oder E-Mail-Code). Getestet wurde mit einem Konto, einer Einrichtung und einem Kind. **Nicht unterstützt:** Konten, die sich nur per Passkey anmelden, sowie jede schreibende Funktion.
+
+## Schnellstart
+
+1. In HACS das Repository `https://github.com/dbl-mm/ha-kitaplus` als **Integration** hinzufügen und **KitaPlus** installieren, dann Home Assistant neu starten.
+2. **Einstellungen → Geräte & Dienste → Integration hinzufügen → KitaPlus**, mit deinem KitaPlus-Zugang anmelden (E-Mail und Passwort, bei Bedarf Zwei-Faktor-Code).
+3. Unter **Konfigurieren** die **Bestellfrist deiner Kita** eintragen, damit „Frist verpasst“ und Erinnerungen stimmen. [Wie das geht](#bestellfristen).
+4. Ein [Blueprint](#blueprints) importieren und das [Dashboard](#dashboard-vorlagen) einfügen.
 
 ## Installation
 
@@ -179,26 +194,33 @@ wird nichts angelegt. Die Entities suchst du aus einer Liste aus. In Home Assist
 
 ### Essen bestellen
 
-| Blueprint | Wofür | Importieren |
-|---|---|---|
-| **Erinnerung kurz vor der Bestellfrist** *(empfohlen)* | Eine Nachricht kurz bevor die Bestellung schließt, aber nur, wenn noch nichts bestellt ist. Du stellst ein, wie viel früher (zum Beispiel 2 Stunden). Dafür trägst du einmal die Frist deiner Kita ein (siehe [Bestellfristen](#bestellfristen)). | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fbestellfrist_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
-| **Erinnerung zu festen Uhrzeiten** | Dasselbe mit festen Uhrzeiten, zum Beispiel jeden Abend um 18:00 für morgen. Nur nötig, wenn du keine Frist eintragen möchtest. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fessen_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
+- **Erinnerung kurz vor der Bestellfrist** *(empfohlen)* — Eine Nachricht kurz bevor die Bestellung schließt, aber nur, wenn noch nichts bestellt ist. Du stellst ein, wie viel früher (zum Beispiel 2 Stunden). Dafür trägst du einmal die Frist deiner Kita ein (siehe [Bestellfristen](#bestellfristen)).
+  <br><a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fbestellfrist_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="240"></a>
+
+- **Erinnerung zu festen Uhrzeiten** — Dasselbe mit festen Uhrzeiten, zum Beispiel jeden Abend um 18:00 für morgen. Nur nötig, wenn du keine Frist eintragen möchtest.
+  <br><a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fessen_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="240"></a>
 
 ### Mitteilungen
 
-| Blueprint | Wofür | Importieren |
-|---|---|---|
-| **Neue Mitteilung** | Eine Nachricht bei jedem neuen Beitrag am Schwarzen Brett oder jeder neuen Nachricht im Postfach, auf Wunsch nur bei bestimmten Stichwörtern. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fneue_mitteilung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
-| **Offene Rückmeldungen** | Erinnert an Nachrichten, die du bestätigen oder beantworten musst, mit Titel und Frist. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Frueckmeldung_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
+- **Neue Mitteilung** — Eine Nachricht bei jedem neuen Beitrag am Schwarzen Brett oder jeder neuen Nachricht im Postfach, auf Wunsch nur bei bestimmten Stichwörtern.
+  <br><a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fneue_mitteilung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="240"></a>
+
+- **Offene Rückmeldungen** — Erinnert an Nachrichten, die du bestätigen oder beantworten musst, mit Titel und Frist.
+  <br><a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Frueckmeldung_erinnerung.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="240"></a>
 
 ### Kita und Konto
 
-| Blueprint | Wofür | Importieren |
-|---|---|---|
-| **Schließtag** | Am Vorabend ein Hinweis, dass die Kita morgen geschlossen ist (mit Grund). Am Morgen kann zusätzlich etwas passieren, zum Beispiel der Wecker ausgehen. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fschliesstag.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
-| **Niedriges Guthaben** | Eine Warnung, wenn das Verpflegungs-Guthaben unter einen Betrag fällt. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fguthaben_niedrig.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
-| **Tagesbriefing** | Eine einzige Nachricht am Morgen mit dem Wichtigsten: Schließtage, Essen, offene Rückmeldungen, Guthaben. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Ftagesbriefing.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
-| **Anmeldung läuft ab** | Ein Hinweis einige Tage, bevor du dich bei KitaPlus neu anmelden musst. | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fsitzung_laeuft_ab.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="280"></a> |
+- **Schließtag** — Am Vorabend ein Hinweis, dass die Kita morgen geschlossen ist (mit Grund). Am Morgen kann zusätzlich etwas passieren, zum Beispiel der Wecker ausgehen.
+  <br><a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fschliesstag.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="240"></a>
+
+- **Niedriges Guthaben** — Eine Warnung, wenn das Verpflegungs-Guthaben unter einen Betrag fällt.
+  <br><a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fguthaben_niedrig.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="240"></a>
+
+- **Tagesbriefing** — Eine einzige Nachricht am Morgen mit dem Wichtigsten: Schließtage, Essen, offene Rückmeldungen, Guthaben.
+  <br><a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Ftagesbriefing.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="240"></a>
+
+- **Anmeldung läuft ab** — Ein Hinweis einige Tage, bevor du dich bei KitaPlus neu anmelden musst.
+  <br><a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdbl-mm%2Fha-kitaplus%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fkitaplus%2Fsitzung_laeuft_ab.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Blueprint in Home Assistant importieren" width="240"></a>
 
 Mehr dazu, die verfügbaren Variablen und ein Beispiel: [docs/blueprints.md](docs/blueprints.md). Funktioniert der Knopf bei dir nicht
 (zum Beispiel ohne [My Home Assistant](https://my.home-assistant.io/)): *Einstellungen → Automatisierungen & Szenen → Blueprints →
@@ -211,17 +233,6 @@ Ein bewusst ruhiges Dashboard im neuen Sections-Layout, nur mit eingebauten Kart
 **Kalender**. Dazu einzelne Karten zum Einfügen in dein eigenes Dashboard. Einbau in zwei Minuten:
 [dashboards/README.md](dashboards/README.md). Die Gestaltungsregeln stehen in [docs/dashboards.md](docs/dashboards.md). Wenn du es
 von einem Designer gestalten lassen möchtest: [Briefing für Designer](docs/designer-briefing.md).
-
-## So sieht es aus
-
-> Entwurf des Designs (Mockups mit erfundenen Daten). In deinem Home Assistant wirkt es etwas schlichter, weil Farben, Schriften und Rundungen von deinem Theme kommen. Echte Bildschirmfotos folgen.
-
-<p>
-<img src="docs/img/heute-nichts-zu-tun.png" alt="Heute: nichts zu tun" width="230">
-<img src="docs/img/heute-essen-offen.png" alt="Heute: Essen für ein Kind noch offen" width="230">
-<img src="docs/img/heute-frist-verpasst-dunkel.png" alt="Heute: Frist verpasst, dunkles Theme" width="230">
-<img src="docs/img/heute-kita-geschlossen.png" alt="Heute: Kita geschlossen" width="230">
-</p>
 
 ## Anhänge (zum Beispiel der Menüplan)
 

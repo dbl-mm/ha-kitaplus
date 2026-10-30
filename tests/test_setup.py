@@ -181,6 +181,25 @@ async def test_new_posts_and_messages_fire_events_but_never_on_the_first_poll(ha
     assert [e.data["title"] for e in new_messages] == ["Neu"]
 
 
+async def test_an_item_that_drops_out_of_one_answer_and_returns_is_not_new_again(hass: HomeAssistant) -> None:
+    from contextlib import ExitStack
+
+    from pytest_homeassistant_custom_component.common import async_capture_events
+
+    from .common import setup_integration
+
+    posts = load("schwarzesbrett")["data"]
+    new_posts = async_capture_events(hass, "kitaplus_new_board_post")
+    with ExitStack() as stack:
+        entry = await setup_integration(hass, stack, async_get_board=posts)
+        stack.enter_context(patch(f"{CLIENT}.async_get_board", return_value=posts[1:]))  # a shorter answer
+        await entry.runtime_data.async_refresh()
+        stack.enter_context(patch(f"{CLIENT}.async_get_board", return_value=posts))  # and the full one again
+        await entry.runtime_data.async_refresh()
+        await hass.async_block_till_done()
+    assert not new_posts
+
+
 async def test_a_rotated_refresh_token_is_saved_in_the_entry(hass: HomeAssistant) -> None:
     from custom_components.kitaplus.api.client import Tokens
 
