@@ -1,4 +1,4 @@
-# KitaPlus-Dashboard (Vorlage)
+# KitaPlus-Dashboard (Vorlage) · Version 0.3.5 · benötigt KitaPlus ab 0.3.1
 type: calendar
 entities:
 - calendar.kitaplus_termine

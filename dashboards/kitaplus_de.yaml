@@ -1,7 +1,8 @@
-# KitaPlus-Dashboard (Vorlage)
+# KitaPlus-Dashboard (Vorlage) · Version 0.3.5 · benötigt KitaPlus ab 0.3.1
 # Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor.
 # Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben
 # (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.
+# Links zu angehängten Dateien (zum Beispiel Menüplan) brauchen KitaPlus ab 0.3.3.
 # Diese Datei wird erzeugt (scripts/build_dashboards.py), bitte nicht in der Vorlage selbst ändern.
 title: Kita
 views:

@@ -19,6 +19,7 @@ in words next to an icon. Built-in cards only.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import unicodedata
 from pathlib import Path
@@ -732,22 +733,38 @@ def _str(dumper: yaml.SafeDumper, value: str) -> yaml.ScalarNode:
 
 _Dumper.add_representer(str, _str)
 
+
+def _version() -> str:
+    manifest = Path(__file__).resolve().parent.parent / "custom_components" / "kitaplus" / "manifest.json"
+    return str(json.loads(manifest.read_text())["version"])
+
+
+# The oldest integration the template works with: the status card needs the order status and deadline
+# sensors, "Als Nächstes" needs the sensor "Nächste Termine" (0.3.1); attached files appear from 0.3.3.
+MIN_INTEGRATION = "0.3.1"
 HEADERS = {
     "de": (
-        "# KitaPlus-Dashboard (Vorlage)\n"
+        "# KitaPlus-Dashboard (Vorlage) · Version {version} · benötigt KitaPlus ab {minimum}\n"
         "# Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor.\n"
         "# Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben\n"
         "# (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.\n"
+        "# Links zu angehängten Dateien (zum Beispiel Menüplan) brauchen KitaPlus ab 0.3.3.\n"
         "# Diese Datei wird erzeugt (scripts/build_dashboards.py), bitte nicht in der Vorlage selbst ändern.\n"
     ),
     "en": (
-        "# KitaPlus dashboard (template)\n"
+        "# KitaPlus dashboard (template) · version {version} · needs KitaPlus {minimum} or newer\n"
         "# Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Raw configuration editor.\n"
         "# Replace KIND with your child's first name (display) and kind with the same name in lower case\n"
         "# (that is how the entities are named, see Settings → Entities). Several children: see the README here.\n"
+        "# Links to attached files (for example the meal plan) need KitaPlus 0.3.3 or newer.\n"
         "# This file is generated (scripts/build_dashboards.py), please do not edit the template itself.\n"
     ),
 }
+
+
+def header(language: str, *, first_line_only: bool = False) -> str:
+    text = HEADERS[language].format(version=_version(), minimum=MIN_INTEGRATION)
+    return text.split("\n")[0] + "\n" if first_line_only else text
 
 
 def dump(data: Any, header: str = "") -> str:
@@ -762,7 +779,7 @@ def write_all(root: Path) -> list[Path]:
     root.mkdir(parents=True, exist_ok=True)
     for language in TEXT:
         target = root / f"kitaplus_{language}.yaml"
-        target.write_text(dump(build(language), HEADERS[language]))
+        target.write_text(dump(build(language), header(language)))
         written.append(target)
         cards_dir = root / "cards" / language
         cards_dir.mkdir(parents=True, exist_ok=True)
@@ -770,7 +787,7 @@ def write_all(root: Path) -> list[Path]:
             stale.unlink()  # a card that no longer exists must not linger
         for name, card in single_cards(language).items():
             path = cards_dir / f"{name}.yaml"
-            path.write_text(dump(card, HEADERS[language].split("\n")[0] + "\n"))
+            path.write_text(dump(card, header(language, first_line_only=True)))
             written.append(path)
     return written
 
@@ -786,7 +803,7 @@ def main() -> int:
         if not args.language:
             parser.error("--children needs --language")
         names = [n.strip() for n in args.children.split(",") if n.strip()]
-        sys.stdout.write(dump(build(args.language, names), HEADERS[args.language].split("\n")[0] + "\n"))
+        sys.stdout.write(dump(build(args.language, names), header(args.language, first_line_only=True)))
         return 0
     for path in write_all(Path("dashboards")):
         print("wrote", path)

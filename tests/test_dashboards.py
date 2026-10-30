@@ -489,3 +489,15 @@ def test_templates_only_use_the_two_placeholders_the_readme_explains(language) -
 
 
 # ------------------------------------------------------------------------------------- the layout
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_every_dashboard_file_starts_with_its_version_and_the_integration_it_needs(language) -> None:
+    import json
+
+    version = json.loads((ROOT / "custom_components" / "kitaplus" / "manifest.json").read_text())["version"]
+    for name, text in all_files(language).items():
+        first = text.splitlines()[0]
+        assert version in first and gen.MIN_INTEGRATION in first, (
+            f"{name}: stale, run scripts/bump_version.py"
+        )

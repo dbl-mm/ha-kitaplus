@@ -1,4 +1,4 @@
-# KitaPlus dashboard (template)
+# KitaPlus dashboard (template) · version 0.3.5 · needs KitaPlus 0.3.1 or newer
 type: calendar
 entities:
 - calendar.kitaplus_appointments

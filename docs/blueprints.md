@@ -3,6 +3,8 @@
 Acht fertige Automationen für den Alltag. In Home Assistant heißen sie „KitaPlus: …“. Sie liegen im Ordner [`blueprints/automation/kitaplus/`](../blueprints/automation/kitaplus)
 und werden **nicht** automatisch installiert, Home Assistant legt sie erst an, wenn du sie importierst.
 
+**Version:** Am Ende der Beschreibung jedes Blueprints steht „Version X · benötigt KitaPlus ab Y · Home Assistant ab Z“. So siehst du, ob eine neuere Fassung existiert (dann „Neu importieren“) und welche Version der Integration du mindestens brauchst.
+
 **Importieren:** Auf den Knopf im [README](../README.md#blueprints) klicken (öffnet deine Home-Assistant-Instanz), oder
 *Einstellungen → Automatisierungen & Szenen → Blueprints → Blueprint importieren* und die Adresse der Datei einfügen.
 Über „Neu importieren“ holst du später eine neuere Fassung. Danach wie üblich: *Automatisierung erstellen → Blueprint wählen*.

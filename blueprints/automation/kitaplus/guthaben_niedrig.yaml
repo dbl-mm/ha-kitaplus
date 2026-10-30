@@ -5,6 +5,8 @@ blueprint:
     bis aufgeladen ist. *(English: warns when the meal account balance drops below a threshold.)*
 
     In der Aktion stehen `balance` (aktuelles Guthaben), `threshold` und `message` zur Verfügung.
+
+    *Version 0.3.5 · benötigt KitaPlus ab 0.2.0 · Home Assistant ab 2025.8*
   domain: automation
   author: dbl-mm
   source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/guthaben_niedrig.yaml

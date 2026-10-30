@@ -2,6 +2,11 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [0.3.5]
+### Geändert
+- Blueprints und Dashboard-Vorlagen nennen ihre **Version** und die **mindestens nötige Version der Integration** (Blueprints am Ende der Beschreibung, Dashboards im ersten Kommentar). `bump_version.py` schreibt die Angaben, Tests prüfen sie.
+- README für die HACS-Ansicht angepasst: Logo und Vorschaubilder als einfache Markdown-Bilder (HACS zeigt weder `<picture>` noch relative Pfade), Import-Knöpfe der Blueprints als Textlinks.
+
 ## [0.3.4]
 ### Geändert
 - README neu gegliedert: Schnellstart, Vorschaubilder gleich am Anfang, Funktionen als Liste, Blueprints als Liste mit Import-Knöpfen gleicher Größe; Logo und Bilder mit absoluten Adressen, damit sie auch in HACS erscheinen.

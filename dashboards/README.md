@@ -16,6 +16,8 @@ Gebaut im Sections-Layout, nur mit **eingebauten Karten** (nichts zusätzlich in
 > **Voraussetzung:** die aktuelle Integration (Bestellstatus und Bestellfrist gibt es ab 0.2.0 bzw. 0.3.0). Zeigt eine Karte
 > „Entität nicht gefunden“, ist meist die Integration noch alt: in HACS aktualisieren und Home Assistant neu starten.
 
+> **Version:** Jede Datei beginnt mit einem Kommentar „Version X · benötigt KitaPlus ab Y“. Ist X höher als bei deiner eingefügten Fassung, lohnt sich ein erneutes Einfügen, nachdem du die Integration aktualisiert hast.
+
 ## Vorschau
 
 > Entwurf des Designs (Mockups mit erfundenen Daten). In deinem Home Assistant wirkt es etwas schlichter, weil Farben, Schriften und Rundungen von deinem Theme kommen. Echte Bildschirmfotos folgen.

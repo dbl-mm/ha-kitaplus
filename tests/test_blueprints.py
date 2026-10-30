@@ -591,7 +591,7 @@ def test_every_blueprint_has_a_working_import_button_in_the_readme() -> None:
     readme = (BLUEPRINT_DIR.parent.parent.parent / "README.md").read_text()
     import re
 
-    links = re.findall(r'href="(https://my\.home-assistant\.io/redirect/blueprint_import/\?[^"]+)"', readme)
+    links = re.findall(r"\((https://my\.home-assistant\.io/redirect/blueprint_import/\?[^)\s]+)\)", readme)
     targets = {parse_qs(urlparse(link).query)["blueprint_url"][0] for link in links}
     assert targets == {SOURCE + path.name for path in blueprint_files()}, (
         "one button per blueprint, none stale"
@@ -727,3 +727,24 @@ def test_blueprint_names_in_home_assistant_match_the_readme_and_the_docs() -> No
         short = name.removeprefix("KitaPlus: ")
         assert f"**{short}**" in readme, f"README does not use the name {short!r}"
         assert f"**{short}**" in docs, f"docs/blueprints.md does not use the name {short!r}"
+
+
+def test_every_blueprint_states_its_version_and_the_integration_it_needs() -> None:
+    """The stamp at the end of each description follows the release; scripts/bump_version.py writes it."""
+    import importlib.util
+    import json
+
+    root = BLUEPRINT_DIR.parent.parent.parent
+    spec = importlib.util.spec_from_file_location("bump_version", root / "scripts" / "bump_version.py")
+    bump = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bump)
+    version = json.loads((root / "custom_components" / "kitaplus" / "manifest.json").read_text())["version"]
+    names = {path.name for path in blueprint_files()}
+    assert set(bump.MINIMUM) == names, "every blueprint has a minimum integration version"
+    for path in blueprint_files():
+        description = load_yaml(str(path))["blueprint"]["description"].rstrip()
+        stamp = bump.stamp_text(path.name, version).strip()
+        assert description.endswith(stamp), f"{path.name}: stale stamp, run scripts/bump_version.py {version}"
+        assert load_yaml(str(path))["blueprint"]["homeassistant"]["min_version"].startswith(
+            bump.HOME_ASSISTANT
+        )
