@@ -131,7 +131,7 @@ class BoardSensor(KitaPlusEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"posts": _board_short(self.coordinator.data.board, self._file_link)}
+        return {"posts": _board_short(self.coordinator.data.board, partial(self._file_link, "board"))}
 
 
 class MessagesSensor(KitaPlusEntity, SensorEntity):
@@ -151,7 +151,9 @@ class MessagesSensor(KitaPlusEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"messages": _messages_short(self.coordinator.data.messages, self._file_link)}
+        return {
+            "messages": _messages_short(self.coordinator.data.messages, partial(self._file_link, "message"))
+        }
 
 
 class BalanceSensor(KitaPlusEntity, SensorEntity):

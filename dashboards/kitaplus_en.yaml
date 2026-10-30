@@ -1,4 +1,4 @@
-# KitaPlus dashboard (template) · version 0.3.5 · needs KitaPlus 0.3.1 or newer
+# KitaPlus dashboard (template) · version 0.3.6 · needs KitaPlus 0.3.1 or newer
 # Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Raw configuration editor.
 # Replace KIND with your child's first name (display) and kind with the same name in lower case
 # (that is how the entities are named, see Settings → Entities). Several children: see the README here.
@@ -50,7 +50,9 @@ views:
         {%- set msgs = state_attr(pending, 'messages') or [] -%}
         {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
         {%- set total = ns.opens | count + pend -%}
-        {%- if ns.missed | count > 0 -%}
+        {%- if kids | selectattr('n', 'eq', 'KI' ~ 'ND') | list | count > 0 -%}
+        <ha-alert alert-type="info" title="Not set up yet">This is only the template, so there is no real data here yet. To set it up:<br>1. Edit the dashboard (pencil), then ⋮ → Raw configuration editor.<br>2. With find and replace, change <b>{{ 'KI' ~ 'ND' }}</b> to your child's first name, for example Finn.<br>3. Change <b>{{ 'ki' ~ 'nd' }}</b> to the same name in lower case, for example finn.<br>4. Save. Done.</ha-alert>
+        {%- elif ns.missed | count > 0 -%}
         <ha-alert alert-type="warning" title="Not ordered">{{ ('The meal for ' ~ ns.missed[0] ~ ' is not ordered.' if ns.missed | count == 1 else 'Not ordered: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} The deadline has passed.</ha-alert>
         {%- elif total > 0 -%}
         {%- set first = ns.opens[0] if ns.opens else none -%}
@@ -73,7 +75,7 @@ views:
 
         {{ reason ~ '. ' if reason else '' }}{{ 'Tomorrow it is closed as well.' if is_state('binary_sensor.kitaplus_closed_tomorrow', 'on') else 'Tomorrow it is open again.' }}
         {%- elif ns.nodata > 0 or states(pending) in ['unavailable', 'unknown'] -%}
-        <ha-alert alert-type="warning" title="No current data">KitaPlus cannot be reached right now.</ha-alert>
+        <ha-alert alert-type="warning" title="No current data">KitaPlus cannot be reached right now, or the child's entities are missing (check the names under Settings → Entities).</ha-alert>
         {%- else -%}
         <ha-alert alert-type="info" title="Nothing to do today">{{ 'Meals for today and tomorrow are ordered. No reply needed.' if ns.ordered > 0 else 'There is nothing to order. No reply needed.' }}</ha-alert>
         {%- endif -%}
@@ -110,6 +112,9 @@ views:
         {%- set words = {'ordered': 'Ordered', 'open': 'Open', 'missed': 'Deadline missed', 'not_offered': 'No meal', 'unavailable': 'Unavailable', 'unknown': 'Unknown'} -%}
         {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
         ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Meals for KIND
+        {% if 'KIND' == 'KI' ~ 'ND' -%}
+        No data yet. Set up the template first, the instructions are at the top.
+        {%- else -%}
         {% for ent, label in [('sensor.kind_order_status_today', 'Today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow')] %}
         {%- set st = states(ent) -%}
         {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
@@ -125,6 +130,7 @@ views:
         {%- set dayl = 'today' if dl.date() == now().date() else ('tomorrow' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
 
         <small>Next order deadline: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+        {%- endif -%}
         {%- endif -%}
   - type: grid
     cards:
@@ -259,7 +265,9 @@ views:
         {%- set msgs = state_attr(pending, 'messages') or [] -%}
         {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
         {%- set total = ns.opens | count + pend -%}
-        {%- if ns.missed | count > 0 -%}
+        {%- if kids | selectattr('n', 'eq', 'KI' ~ 'ND') | list | count > 0 -%}
+        <ha-alert alert-type="info" title="Not set up yet">This is only the template, so there is no real data here yet. To set it up:<br>1. Edit the dashboard (pencil), then ⋮ → Raw configuration editor.<br>2. With find and replace, change <b>{{ 'KI' ~ 'ND' }}</b> to your child's first name, for example Finn.<br>3. Change <b>{{ 'ki' ~ 'nd' }}</b> to the same name in lower case, for example finn.<br>4. Save. Done.</ha-alert>
+        {%- elif ns.missed | count > 0 -%}
         <ha-alert alert-type="warning" title="Not ordered">{{ ('The meal for ' ~ ns.missed[0] ~ ' is not ordered.' if ns.missed | count == 1 else 'Not ordered: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} The deadline has passed.</ha-alert>
         {%- elif total > 0 -%}
         {%- set first = ns.opens[0] if ns.opens else none -%}
@@ -282,7 +290,7 @@ views:
 
         {{ reason ~ '. ' if reason else '' }}{{ 'Tomorrow it is closed as well.' if is_state('binary_sensor.kitaplus_closed_tomorrow', 'on') else 'Tomorrow it is open again.' }}
         {%- elif ns.nodata > 0 or states(pending) in ['unavailable', 'unknown'] -%}
-        <ha-alert alert-type="warning" title="No current data">KitaPlus cannot be reached right now.</ha-alert>
+        <ha-alert alert-type="warning" title="No current data">KitaPlus cannot be reached right now, or the child's entities are missing (check the names under Settings → Entities).</ha-alert>
         {%- else -%}
         <ha-alert alert-type="info" title="Nothing to do today">{{ 'Meals for today and tomorrow are ordered. No reply needed.' if ns.ordered > 0 else 'There is nothing to order. No reply needed.' }}</ha-alert>
         {%- endif -%}
@@ -319,6 +327,9 @@ views:
         {%- set words = {'ordered': 'Ordered', 'open': 'Open', 'missed': 'Deadline missed', 'not_offered': 'No meal', 'unavailable': 'Unavailable', 'unknown': 'Unknown'} -%}
         {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
         ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Meals for KIND
+        {% if 'KIND' == 'KI' ~ 'ND' -%}
+        No data yet. Set up the template first, the instructions are at the top.
+        {%- else -%}
         {% for ent, label in [('sensor.kind_order_status_today', 'Today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow')] %}
         {%- set st = states(ent) -%}
         {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
@@ -334,6 +345,7 @@ views:
         {%- set dayl = 'today' if dl.date() == now().date() else ('tomorrow' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
 
         <small>Next order deadline: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+        {%- endif -%}
         {%- endif -%}
   - type: grid
     cards:

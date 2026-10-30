@@ -11,6 +11,7 @@ passes it on through a Home Assistant web address. Three rules keep that safe:
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 import time
 from datetime import timedelta
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
 
     from .coordinator import KitaPlusCoordinator, KitaPlusData
 
+_LOGGER = logging.getLogger(__name__)
 URL_BASE = "/api/kitaplus/attachment"
 # Shown inline in the browser. Everything else is offered as a download, never opened.
 INLINE_TYPES = {"application/pdf", "image/png", "image/jpeg", "image/webp", "image/gif"}
@@ -40,22 +42,24 @@ MAX_CACHE_BYTES = 20 * 1024 * 1024
 _SAFE_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 
 
-def attachment_ids(data: KitaPlusData) -> set[int]:
-    """Ids of the files that belong to a post or message in the latest data."""
-    ids: set[int] = set()
+def attachment_ids(data: KitaPlusData) -> set[tuple[str, int]]:
+    """(source, id) of the files that belong to a post or message in the latest data."""
+    ids: set[tuple[str, int]] = set()
     for post in data.board:
-        ids.update(int(a["id"]) for a in post.get("anhaenge") or [] if a.get("id") is not None)
+        ids.update(("board", int(a["id"])) for a in post.get("anhaenge") or [] if a.get("id") is not None)
     for message in data.messages:
         note = message.get("nachricht") or {}
-        ids.update(int(a["id"]) for a in note.get("anhaenge") or [] if a.get("id") is not None)
+        ids.update(("message", int(a["id"])) for a in note.get("anhaenge") or [] if a.get("id") is not None)
     return ids
 
 
-def signed_link(hass: HomeAssistant, entry_id: str, attachment_id: int, lifetime: timedelta) -> str | None:
+def signed_link(
+    hass: HomeAssistant, entry_id: str, source: str, attachment_id: int, lifetime: timedelta
+) -> str | None:
     """A signed, expiring address for one file, or None when Home Assistant cannot sign (no content user)."""
     try:
         path: str = async_sign_path(
-            hass, f"{URL_BASE}/{entry_id}/{attachment_id}", lifetime, use_content_user=True
+            hass, f"{URL_BASE}/{entry_id}/{source}/{attachment_id}", lifetime, use_content_user=True
         )
     except (ValueError, RuntimeError):
         return None
@@ -63,14 +67,14 @@ def signed_link(hass: HomeAssistant, entry_id: str, attachment_id: int, lifetime
 
 
 class KitaPlusAttachmentView(HomeAssistantView):
-    """GET /api/kitaplus/attachment/<entry id>/<file id>, signed by Home Assistant."""
+    """GET /api/kitaplus/attachment/<entry id>/<board|message>/<file id>, signed by Home Assistant."""
 
-    url = URL_BASE + "/{entry_id}/{attachment_id:[0-9]+}"
+    url = URL_BASE + "/{entry_id}/{source:board|message}/{attachment_id:[0-9]+}"
     name = "api:kitaplus:attachment"
     requires_auth = True
 
     def __init__(self) -> None:
-        self._cache: dict[tuple[str, int], tuple[float, bytes, str, str]] = {}
+        self._cache: dict[tuple[str, str], tuple[float, bytes, str, str]] = {}
         self._fetching = (
             asyncio.Lock()
         )  # one download at a time: at most one big file is held besides the cache
@@ -79,7 +83,7 @@ class KitaPlusAttachmentView(HomeAssistantView):
         """Drop cached files of one entry (or all), for example when the entry is unloaded."""
         self._cache = {k: v for k, v in self._cache.items() if entry_id is not None and k[0] != entry_id}
 
-    def _remember(self, key: tuple[str, int], content: bytes, content_type: str, filename: str) -> None:
+    def _remember(self, key: tuple[str, str], content: bytes, content_type: str, filename: str) -> None:
         now = time.monotonic()
         self._cache = {k: v for k, v in self._cache.items() if v[0] >= now}  # expired files go first
         if len(content) > MAX_CACHE_BYTES:
@@ -88,27 +92,28 @@ class KitaPlusAttachmentView(HomeAssistantView):
             del self._cache[min(self._cache, key=lambda k: self._cache[k][0])]  # the oldest goes
         self._cache[key] = (now + CACHE_SECONDS, content, content_type, filename)
 
-    async def get(self, request: web.Request, entry_id: str, attachment_id: str) -> web.Response:
+    async def get(self, request: web.Request, entry_id: str, source: str, attachment_id: str) -> web.Response:
         hass: HomeAssistant = request.app["hass"]
         entry = hass.config_entries.async_get_entry(entry_id)
         if entry is None or entry.domain != DOMAIN or not hasattr(entry, "runtime_data"):
             return web.Response(status=HTTPStatus.NOT_FOUND)
         coordinator: KitaPlusCoordinator = entry.runtime_data
         file_id = int(attachment_id)
-        if file_id not in attachment_ids(coordinator.data):
+        if (source, file_id) not in attachment_ids(coordinator.data):
             return web.Response(status=HTTPStatus.NOT_FOUND)
 
-        key = (entry_id, file_id)
+        key = (entry_id, f"{source}-{file_id}")
         async with self._fetching:
             cached = self._cache.get(key)
             if cached is None or cached[0] < time.monotonic():
                 try:
                     content, content_type, filename = await coordinator.client.async_get_file(
-                        file_id, MAX_BYTES
+                        source, file_id, MAX_BYTES
                     )
-                except KitaPlusError:
+                except KitaPlusError as err:
+                    _LOGGER.warning("KitaPlus did not deliver %s file %s: %s", source, file_id, err)
                     return web.Response(
-                        status=HTTPStatus.BAD_GATEWAY, text="KitaPlus did not deliver the file"
+                        status=HTTPStatus.BAD_GATEWAY, text=f"KitaPlus did not deliver the file ({err})"
                     )
                 self._remember(key, content, content_type, filename)
             else:

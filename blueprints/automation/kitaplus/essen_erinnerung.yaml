@@ -18,7 +18,7 @@ blueprint:
     In der Aktion stehen `message`, `child`, `day` (`today` oder `tomorrow`), `status` (`open` oder `missed`) und
     `entity_id` zur Verfügung.
 
-    *Version 0.3.5 · benötigt KitaPlus ab 0.2.0 · Home Assistant ab 2025.8*
+    *Version 0.3.6 · benötigt KitaPlus ab 0.2.0 · Home Assistant ab 2025.8*
   domain: automation
   author: dbl-mm
   source_url: https://github.com/dbl-mm/ha-kitaplus/blob/main/blueprints/automation/kitaplus/essen_erinnerung.yaml

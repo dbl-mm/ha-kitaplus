@@ -1,4 +1,4 @@
-# KitaPlus-Dashboard (Vorlage) · Version 0.3.5 · benötigt KitaPlus ab 0.3.1
+# KitaPlus-Dashboard (Vorlage) · Version 0.3.6 · benötigt KitaPlus ab 0.3.1
 type: markdown
 content: |
   {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
@@ -27,7 +27,9 @@ content: |
   {%- set msgs = state_attr(pending, 'messages') or [] -%}
   {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
   {%- set total = ns.opens | count + pend -%}
-  {%- if ns.missed | count > 0 -%}
+  {%- if kids | selectattr('n', 'eq', 'KI' ~ 'ND') | list | count > 0 -%}
+  <ha-alert alert-type="info" title="Noch nicht eingerichtet">Das ist erst die Vorlage, deshalb siehst du hier noch keine echten Daten. So richtest du sie ein:<br>1. Dashboard bearbeiten (Stift), dann ⋮ → Raw-Konfigurationseditor.<br>2. Mit Suchen und Ersetzen <b>{{ 'KI' ~ 'ND' }}</b> durch den Vornamen deines Kindes ersetzen, zum Beispiel Finn.<br>3. <b>{{ 'ki' ~ 'nd' }}</b> durch denselben Namen in Kleinbuchstaben ersetzen, zum Beispiel finn.<br>4. Speichern. Fertig.</ha-alert>
+  {%- elif ns.missed | count > 0 -%}
   <ha-alert alert-type="warning" title="Nicht bestellt">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Die Frist ist vorbei.</ha-alert>
   {%- elif total > 0 -%}
   {%- set first = ns.opens[0] if ns.opens else none -%}
@@ -50,7 +52,7 @@ content: |
 
   {{ reason ~ '. ' if reason else '' }}{{ 'Morgen ist ebenfalls geschlossen.' if is_state('binary_sensor.kitaplus_morgen_geschlossen', 'on') else 'Morgen ist wieder geöffnet.' }}
   {%- elif ns.nodata > 0 or states(pending) in ['unavailable', 'unknown'] -%}
-  <ha-alert alert-type="warning" title="Keine aktuellen Daten">KitaPlus ist gerade nicht erreichbar.</ha-alert>
+  <ha-alert alert-type="warning" title="Keine aktuellen Daten">KitaPlus ist gerade nicht erreichbar, oder die Entitäten des Kindes fehlen (Namen prüfen unter Einstellungen → Entitäten).</ha-alert>
   {%- else -%}
   <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
   {%- endif -%}

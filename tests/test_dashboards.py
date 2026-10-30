@@ -328,13 +328,17 @@ async def test_kid_card_shows_state_words_icons_meals_and_deadline(hass: HomeAss
         tomorrow=("not_offered", {"meal": "ignored"}),
         deadline="2026-10-29T10:00:00+00:00",
     )
-    out = Template(card_content("kid", gen.PLACEHOLDER_NAME, language), hass).async_render(parse_result=False)
+    out = Template(
+        card_content("kid", gen.PLACEHOLDER_NAME, language).replace("KIND", "Mia"), hass
+    ).async_render(parse_result=False)
     assert t["state_words"]["ordered"] in out and t["state_words"]["not_offered"] in out
     assert "✓" in out and "–" in out
     assert "Nudeln" in out and "ignored" not in out
     assert t["next_deadline"] in out and t["today"] in out
     set_states(hass, language, today=("open", {"meal": ""}), tomorrow="missed", deadline="unavailable")
-    out = Template(card_content("kid", gen.PLACEHOLDER_NAME, language), hass).async_render(parse_result=False)
+    out = Template(
+        card_content("kid", gen.PLACEHOLDER_NAME, language).replace("KIND", "Mia"), hass
+    ).async_render(parse_result=False)
     assert (
         t["state_words"]["open"] in out
         and t["state_words"]["missed"] in out
@@ -501,3 +505,30 @@ def test_every_dashboard_file_starts_with_its_version_and_the_integration_it_nee
         assert version in first and gen.MIN_INTEGRATION in first, (
             f"{name}: stale, run scripts/bump_version.py"
         )
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_a_template_with_the_placeholders_still_in_it_says_what_to_do(
+    hass: HomeAssistant, language
+) -> None:
+    """Replacing KIND and kind is the one thing to do; forgetting it must not look like an outage."""
+    t = gen.TEXT[language]
+    out = hero(hass, language, name=gen.PLACEHOLDER_NAME, **calm(today="unknown", tomorrow="unknown"))
+    assert t["todo_title"] in out and "KIND" in out and t["nodata_title"] not in out
+    out = hero(hass, language, name="Mia", **calm(today="unknown", tomorrow="unknown"))
+    assert t["nodata_title"] in out and t["todo_title"] not in out
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+async def test_the_child_card_of_an_unfinished_template_explains_instead_of_showing_unknown(
+    hass: HomeAssistant, language
+) -> None:
+    t = gen.TEXT[language]
+    set_states(hass, language, today="unknown", tomorrow="unknown")
+    out = Template(card_content("kid", gen.PLACEHOLDER_NAME, language), hass).async_render(parse_result=False)
+    assert t["todo_kid"] in out and t["state_words"]["unknown"] not in out
+    named = card_content("kid", "Mia", language)
+    out = Template(named, hass).async_render(parse_result=False)
+    assert t["todo_kid"] not in out and t["state_words"]["unknown"] in out, (
+        "a real child is not told to set up"
+    )

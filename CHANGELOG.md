@@ -2,6 +2,12 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [0.3.6]
+### Geändert
+- **Dashboard-Vorlage erklärt sich selbst:** Wer `KIND` und `kind` noch nicht ersetzt hat, sieht statt „Keine aktuellen Daten“ eine Anleitung („Noch nicht eingerichtet“, vier Schritte) und in der Kinderkarte „Noch keine Daten“ statt „Unbekannt“. Hat man den Namen eingetragen, verschwindet beides.
+- **Korrektur Anhänge:** Das Öffnen einer angehängten Datei meldete „KitaPlus did not deliver the file“, weil der falsche Abruf benutzt wurde. Beiträge am Schwarzen Brett und Nachrichten holen ihre Dateien jetzt so wie die Eltern-App (`/orga_nachrichten/get_file` und `/nachrichten/get_file`). Die Adresse enthält nun die Quelle (`board` oder `message`), und eine Datei eines Beitrags kann nicht mehr mit der ID einer Nachricht abgerufen werden. Bei einem Fehler nennt die Meldung den Grund und das Protokoll enthält eine Warnung.
+- README: Alle Tabellen sind Listen („Feld — Bedeutung“), weil HACS Tabellen mit ungleichen Spaltenbreiten und zentrierten Köpfen darstellt. In GitHub und im Wiki bleibt der Inhalt gleich.
+
 ## [0.3.5]
 ### Geändert
 - Blueprints und Dashboard-Vorlagen nennen ihre **Version** und die **mindestens nötige Version der Integration** (Blueprints am Ende der Beschreibung, Dashboards im ersten Kommentar). `bump_version.py` schreibt die Angaben, Tests prüfen sie.

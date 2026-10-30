@@ -1,4 +1,4 @@
-# KitaPlus-Dashboard (Vorlage) · Version 0.3.5 · benötigt KitaPlus ab 0.3.1
+# KitaPlus-Dashboard (Vorlage) · Version 0.3.6 · benötigt KitaPlus ab 0.3.1
 type: markdown
 content: |
   {%- set wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] -%}
@@ -15,6 +15,9 @@ content: |
   {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
   {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
   ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
+  {% if 'KIND' == 'KI' ~ 'ND' -%}
+  Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.
+  {%- else -%}
   {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
   {%- set st = states(ent) -%}
   {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
@@ -30,4 +33,5 @@ content: |
   {%- set dayl = 'heute' if dl.date() == now().date() else ('morgen' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
 
   <small>Nächste Bestellfrist: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+  {%- endif -%}
   {%- endif -%}

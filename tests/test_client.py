@@ -310,10 +310,15 @@ async def test_a_file_is_read_from_the_base64_answer(client):
     pdf = base64.b64encode(b"%PDF-1.4 test").decode()
     with aioresponses() as m:
         m.get(
-            f"{API_BASE_URL}/einrichtung/get_datei_content?id=7",
+            f"{API_BASE_URL}/orga_nachrichten/get_file?orgAnhangId=7",
             payload={"success": True, "data": pdf, "type": "Application/PDF", "filename": "plan.pdf"},
         )
-        content, content_type, filename = await client.async_get_file(7, 1000)
+        m.get(
+            f"{API_BASE_URL}/nachrichten/get_file?anhangId=8",
+            payload={"success": True, "data": pdf, "type": "image/png", "filename": "bild.png"},
+        )
+        content, content_type, filename = await client.async_get_file("board", 7, 1000)
+        assert (await client.async_get_file("message", 8, 1000))[1:] == ("image/png", "bild.png")
     assert content == b"%PDF-1.4 test" and content_type == "application/pdf" and filename == "plan.pdf"
 
 
@@ -331,6 +336,6 @@ async def test_a_broken_or_too_large_file_is_refused(client, answer):
         Tokens(jwt=_jwt(time.time() + 3600), refresh_token="r", refresh_expires=time.time() + 100)
     )
     with aioresponses() as m:
-        m.get(f"{API_BASE_URL}/einrichtung/get_datei_content?id=7", payload=answer)
+        m.get(f"{API_BASE_URL}/orga_nachrichten/get_file?orgAnhangId=7", payload=answer)
         with pytest.raises(KitaPlusApiError):
-            await client.async_get_file(7, 1000)
+            await client.async_get_file("board", 7, 1000)

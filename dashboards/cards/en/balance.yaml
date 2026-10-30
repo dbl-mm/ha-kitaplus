@@ -1,4 +1,4 @@
-# KitaPlus dashboard (template) · version 0.3.5 · needs KitaPlus 0.3.1 or newer
+# KitaPlus dashboard (template) · version 0.3.6 · needs KitaPlus 0.3.1 or newer
 type: tile
 entity: sensor.kitaplus_meal_account_balance
 name: Meal account balance

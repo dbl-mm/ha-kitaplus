@@ -65,11 +65,9 @@ Was jede Version ändert, steht im [Changelog](CHANGELOG.md) und in den [GitHub-
 
 Felder der Einrichtung:
 
-| Feld | Bedeutung |
-|---|---|
-| E-Mail-Adresse | Die E-Mail deines KitaPlus-Eltern-Zugangs. Sie wird genau so gesendet, wie du sie eingibst. |
-| Passwort | Dein KitaPlus-Passwort. Es wird nur für die Anmeldung verwendet und **nie gespeichert**. |
-| Code | Nur wenn dein Konto Zwei-Faktor nutzt: der Code aus der Authenticator-App oder der E-Mail. |
+- **E-Mail-Adresse** — Die E-Mail deines KitaPlus-Eltern-Zugangs. Sie wird genau so gesendet, wie du sie eingibst.
+- **Passwort** — Dein KitaPlus-Passwort. Es wird nur für die Anmeldung verwendet und **nie gespeichert**.
+- **Code** — Nur wenn dein Konto Zwei-Faktor nutzt: der Code aus der Authenticator-App oder der E-Mail.
 
 **Passkeys funktionieren nicht.** Wer sich bisher nur per Passkey anmeldet, setzt in der KitaPlus-App zusätzlich ein Passwort.
 
@@ -83,9 +81,7 @@ Felder der Einrichtung:
 ### Optionen
 **Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren:**
 
-| Option | Standard | Bedeutung |
-|---|---|---|
-| Abfrageintervall | 30 Minuten | Wie oft Home Assistant bei KitaPlus nachfragt (15 bis 240 Minuten). Weniger als 15 ist nicht erlaubt, um die Server zu schonen. |
+- **Abfrageintervall** (Standard: 30 Minuten) — Wie oft Home Assistant bei KitaPlus nachfragt (15 bis 240 Minuten). Weniger als 15 ist nicht erlaubt, um die Server zu schonen.
 
 ### Neu konfigurieren
 **⋮ → Neu konfigurieren** erlaubt, sich erneut anzumelden oder die E-Mail-Adresse zu ändern. Es wird nur **dasselbe KitaPlus-Konto** akzeptiert; ein anderes Konto wird abgelehnt und nichts verändert. Es gelten dieselben Schutzregeln wie bei der Einrichtung.
@@ -103,12 +99,12 @@ Jede Kita legt selbst fest, **bis wann** Essen bestellt oder abbestellt werden k
 1. **Was KitaPlus meldet:** Pro Mahlzeit sagt der Server, ob sie **noch bestellbar** ist.
 2. **Was du einträgst (empfohlen):** die Frist deiner Kita, einmal. Dann wird alles auf die Minute genau.
 
-| Bestellstatus | Bedeutung |
-|---|---|
-| **Bestellt** | Es ist etwas bestellt. |
-| **Offen** | Es gibt Essen, nichts ist bestellt, und es kann **noch** bestellt werden. |
-| **Frist verpasst** | Es gibt Essen, nichts ist bestellt, und die Frist ist **vorbei**. Daran lässt sich nichts mehr ändern. |
-| **Kein Essen** | An diesem Tag wird kein Essen angeboten. |
+Die vier Zustände des Bestellstatus:
+
+- **Bestellt** — Es ist etwas bestellt.
+- **Offen** — Es gibt Essen, nichts ist bestellt, und es kann **noch** bestellt werden.
+- **Frist verpasst** — Es gibt Essen, nichts ist bestellt, und die Frist ist **vorbei**. Daran lässt sich nichts mehr ändern.
+- **Kein Essen** — An diesem Tag wird kein Essen angeboten.
 
 ### Die Frist deiner Kita eintragen
 Die Frist steht in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*, zum Beispiel:
@@ -117,12 +113,10 @@ Die Frist steht in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfris
 
 Trage sie unter *Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren* ein:
 
-| Feld | Beispiel (obige Kita) | Bedeutung |
-|---|---|---|
-| Bestellfrist: Tage vor dem Essen | `1` | `0` heißt am Tag selbst. Leer lassen, wenn du sie nicht kennst. |
-| Bestellfrist: Uhrzeit | `11:00` | Zeitpunkt, zu dem die Bestellung schließt. |
-| Nur Werktage zählen | aus | Einschalten, wenn die Kita Samstag und Sonntag nicht mitzählt (Montag schließt dann am Freitag). Ob das bei dir so ist, siehst du im Beispielsatz der App an einem Montag. |
-| Erinnerung vor der Frist (Minuten) | `120` | Wie lange vor der Frist erinnert wird. `0` schaltet die Erinnerung aus. |
+- **Bestellfrist: Tage vor dem Essen** (Beispiel: `1`) — `0` heißt am Tag selbst. Leer lassen, wenn du sie nicht kennst.
+- **Bestellfrist: Uhrzeit** (Beispiel: `11:00`) — Zeitpunkt, zu dem die Bestellung schließt.
+- **Nur Werktage zählen** (Beispiel: aus) — Einschalten, wenn die Kita Samstag und Sonntag nicht mitzählt (Montag schließt dann am Freitag). Ob das bei dir so ist, siehst du im Beispielsatz der App an einem Montag.
+- **Erinnerung vor der Frist (Minuten)** (Beispiel: `120`) — Wie lange vor der Frist erinnert wird. `0` schaltet die Erinnerung aus.
 
 Mit der Frist passiert Folgendes:
 - Der **Bestellstatus** springt **genau zur Frist** auf „Frist verpasst“, auch wenn der letzte Abruf älter ist.
@@ -234,16 +228,16 @@ Ist an einem Beitrag am Schwarzen Brett oder an einer Nachricht eine Datei angeh
 
 ## Fehlerbehebung
 
-| Was du siehst | Bedeutung und Lösung |
-|---|---|
-| Reparatur „Anmeldung abgelehnt“ | KitaPlus hat die gespeicherte Sitzung abgelehnt. Prüfe dein Passwort in der KitaPlus-App und melde dich über **⋮ → Neu konfigurieren** einmal neu an. Nicht mehrfach probieren. |
-| Reparatur „Zugang gesperrt“ | KitaPlus hat das Konto gesperrt. Nur die **Kita-Leitung** kann entsperren. Home Assistant fragt nichts mehr ab. |
-| „Pausiert für 15 Minuten“ | Zu viele Fehlversuche. Das schützt dein Konto. Prüfe die Zugangsdaten in der KitaPlus-App und versuche es danach. |
-| Meldung über Wartungsarbeiten | Kein Passwortproblem. Home Assistant versucht es später automatisch erneut. |
-| „Unerwartetes Antwortformat“ | KitaPlus hat sich vermutlich geändert. Teile die Diagnose-Datei in einem [Issue](https://github.com/dbl-mm/ha-kitaplus/issues). |
-| Entities „nicht verfügbar“ | Der letzte Abruf ist fehlgeschlagen (Internet, Wartung). Schau ins Protokoll; beim nächsten erfolgreichen Abruf sind sie wieder da. |
-| Neues Kind fehlt | Die Kinderliste wird täglich aktualisiert. Zum sofortigen Aktualisieren die Integration neu laden. |
-| Anmeldung mit Passkey nicht möglich | Setze in der KitaPlus-App ein Passwort. |
+Was du siehst und was es bedeutet:
+
+- **Reparatur „Anmeldung abgelehnt“** — KitaPlus hat die gespeicherte Sitzung abgelehnt. Prüfe dein Passwort in der KitaPlus-App und melde dich über **⋮ → Neu konfigurieren** einmal neu an. Nicht mehrfach probieren.
+- **Reparatur „Zugang gesperrt“** — KitaPlus hat das Konto gesperrt. Nur die **Kita-Leitung** kann entsperren. Home Assistant fragt nichts mehr ab.
+- **„Pausiert für 15 Minuten“** — Zu viele Fehlversuche. Das schützt dein Konto. Prüfe die Zugangsdaten in der KitaPlus-App und versuche es danach.
+- **Meldung über Wartungsarbeiten** — Kein Passwortproblem. Home Assistant versucht es später automatisch erneut.
+- **„Unerwartetes Antwortformat“** — KitaPlus hat sich vermutlich geändert. Teile die Diagnose-Datei in einem [Issue](https://github.com/dbl-mm/ha-kitaplus/issues).
+- **Entities „nicht verfügbar“** — Der letzte Abruf ist fehlgeschlagen (Internet, Wartung). Schau ins Protokoll; beim nächsten erfolgreichen Abruf sind sie wieder da.
+- **Neues Kind fehlt** — Die Kinderliste wird täglich aktualisiert. Zum sofortigen Aktualisieren die Integration neu laden.
+- **Anmeldung mit Passkey nicht möglich** — Setze in der KitaPlus-App ein Passwort.
 
 **Diagnose-Datei teilen:** Einstellungen → Geräte & Dienste → KitaPlus → ⋮ → **Diagnose herunterladen**. Namen, Texte, IDs, Token und Bankdaten sind geschwärzt. Prüfe die Datei trotzdem, bevor du sie hochlädst.
 

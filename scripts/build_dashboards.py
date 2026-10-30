@@ -129,8 +129,18 @@ TEXT: dict[str, dict[str, Any]] = {
         "calm_title": "Heute ist nichts zu tun",
         "calm_ordered": "Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.",
         "calm_nothing": "Es gibt nichts zu bestellen. Keine Rückmeldung offen.",
+        "todo_title": "Noch nicht eingerichtet",
+        "todo_sub": (
+            "Das ist erst die Vorlage, deshalb siehst du hier noch keine echten Daten. So richtest du sie ein:"
+            "<br>1. Dashboard bearbeiten (Stift), dann ⋮ → Raw-Konfigurationseditor."
+            "<br>2. Mit Suchen und Ersetzen <b>{{ 'KI' ~ 'ND' }}</b> durch den Vornamen deines Kindes ersetzen, "
+            "zum Beispiel Finn."
+            "<br>3. <b>{{ 'ki' ~ 'nd' }}</b> durch denselben Namen in Kleinbuchstaben ersetzen, zum Beispiel finn."
+            "<br>4. Speichern. Fertig."
+        ),
+        "todo_kid": "Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.",
         "nodata_title": "Keine aktuellen Daten",
-        "nodata_sub": "KitaPlus ist gerade nicht erreichbar.",
+        "nodata_sub": "KitaPlus ist gerade nicht erreichbar, oder die Entitäten des Kindes fehlen (Namen prüfen unter Einstellungen → Entitäten).",
         "meal_for": "Essen für",
         "row_today": "Heute",
         "row_tomorrow": "Morgen",
@@ -206,8 +216,18 @@ TEXT: dict[str, dict[str, Any]] = {
         "calm_title": "Nothing to do today",
         "calm_ordered": "Meals for today and tomorrow are ordered. No reply needed.",
         "calm_nothing": "There is nothing to order. No reply needed.",
+        "todo_title": "Not set up yet",
+        "todo_sub": (
+            "This is only the template, so there is no real data here yet. To set it up:"
+            "<br>1. Edit the dashboard (pencil), then ⋮ → Raw configuration editor."
+            "<br>2. With find and replace, change <b>{{ 'KI' ~ 'ND' }}</b> to your child's first name, "
+            "for example Finn."
+            "<br>3. Change <b>{{ 'ki' ~ 'nd' }}</b> to the same name in lower case, for example finn."
+            "<br>4. Save. Done."
+        ),
+        "todo_kid": "No data yet. Set up the template first, the instructions are at the top.",
         "nodata_title": "No current data",
-        "nodata_sub": "KitaPlus cannot be reached right now.",
+        "nodata_sub": "KitaPlus cannot be reached right now, or the child's entities are missing (check the names under Settings → Entities).",
         "meal_for": "Meals for",
         "row_today": "Today",
         "row_tomorrow": "Tomorrow",
@@ -341,7 +361,9 @@ HERO = """
 {%- set msgs = state_attr(pending, 'messages') or [] -%}
 {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
 {%- set total = ns.opens | count + pend -%}
-{%- if ns.missed | count > 0 -%}
+{%- if kids | selectattr('n', 'eq', 'KI' ~ 'ND') | list | count > 0 -%}
+<ha-alert alert-type="info" title="@@TODO_TITLE@@">@@TODO_SUB@@</ha-alert>
+{%- elif ns.missed | count > 0 -%}
 <ha-alert alert-type="warning" title="@@MISSED_TITLE@@">{{ (@@MISSED_ONE@@ if ns.missed | count == 1 else @@MISSED_MANY@@) | truncate(@@TITLE@@, True, '…') }} @@ASK_KITA@@</ha-alert>
 {%- elif total > 0 -%}
 {%- set first = ns.opens[0] if ns.opens else none -%}
@@ -375,6 +397,9 @@ KID = """
 {%- set words = @@WORDS@@ -%}
 {%- set icons = @@ICONS@@ -%}
 ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> @@MEAL_FOR@@ @@NAME@@
+{% if '@@NAME@@' == 'KI' ~ 'ND' -%}
+@@TODO_KID@@
+{%- else -%}
 {% for ent, label in [('@@TODAY_ENTITY@@', '@@ROW_TODAY@@'), ('@@TOMORROW_ENTITY@@', '@@ROW_TOMORROW@@')] %}
 {%- set st = states(ent) -%}
 {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
@@ -390,6 +415,7 @@ KID = """
 {%- set dayl = @@TODAY@@ if dl.date() == now().date() else (@@TOMORROW@@ if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
 
 <small>@@NEXT_DEADLINE@@: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+{%- endif -%}
 {%- endif -%}
 """
 
@@ -533,6 +559,8 @@ def hero_card(t: dict[str, Any], account: Ids, kids: list[tuple[Ids, str]]) -> d
         CLOSED_TITLE=t["closed_title"],
         TOMORROW_OPEN=t["tomorrow_open"],
         TOMORROW_CLOSED=t["tomorrow_closed"],
+        TODO_TITLE=t["todo_title"],
+        TODO_SUB=t["todo_sub"],
         NODATA_TITLE=t["nodata_title"],
         NODATA_SUB=t["nodata_sub"],
         CALM_TITLE=t["calm_title"],
@@ -577,6 +605,7 @@ def kid_card(t: dict[str, Any], ids: Ids, name: str) -> dict:
         TODAY=q(t["today"]),
         TOMORROW=q(t["tomorrow"]),
         NEXT_DEADLINE=t["next_deadline"],
+        TODO_KID=t["todo_kid"],
     )
     return markdown(content)
 

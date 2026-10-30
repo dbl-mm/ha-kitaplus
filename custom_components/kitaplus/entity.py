@@ -36,10 +36,10 @@ class KitaPlusEntity(CoordinatorEntity[KitaPlusCoordinator]):
             entry_type=DeviceEntryType.SERVICE,
         )
 
-    def _file_link(self, attachment_id: int) -> str | None:
+    def _file_link(self, source: str, attachment_id: int) -> str | None:
         """A signed address for an attached file, valid until the data is certainly refreshed."""
         interval = self.coordinator.update_interval or timedelta(minutes=30)
-        return signed_link(self.hass, self._entry_id, attachment_id, interval + timedelta(minutes=30))
+        return signed_link(self.hass, self._entry_id, source, attachment_id, interval + timedelta(minutes=30))
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()

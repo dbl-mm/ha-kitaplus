@@ -1,4 +1,4 @@
-# KitaPlus-Dashboard (Vorlage) · Version 0.3.5 · benötigt KitaPlus ab 0.3.1
+# KitaPlus-Dashboard (Vorlage) · Version 0.3.6 · benötigt KitaPlus ab 0.3.1
 # Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor.
 # Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben
 # (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.
@@ -50,7 +50,9 @@ views:
         {%- set msgs = state_attr(pending, 'messages') or [] -%}
         {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
         {%- set total = ns.opens | count + pend -%}
-        {%- if ns.missed | count > 0 -%}
+        {%- if kids | selectattr('n', 'eq', 'KI' ~ 'ND') | list | count > 0 -%}
+        <ha-alert alert-type="info" title="Noch nicht eingerichtet">Das ist erst die Vorlage, deshalb siehst du hier noch keine echten Daten. So richtest du sie ein:<br>1. Dashboard bearbeiten (Stift), dann ⋮ → Raw-Konfigurationseditor.<br>2. Mit Suchen und Ersetzen <b>{{ 'KI' ~ 'ND' }}</b> durch den Vornamen deines Kindes ersetzen, zum Beispiel Finn.<br>3. <b>{{ 'ki' ~ 'nd' }}</b> durch denselben Namen in Kleinbuchstaben ersetzen, zum Beispiel finn.<br>4. Speichern. Fertig.</ha-alert>
+        {%- elif ns.missed | count > 0 -%}
         <ha-alert alert-type="warning" title="Nicht bestellt">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Die Frist ist vorbei.</ha-alert>
         {%- elif total > 0 -%}
         {%- set first = ns.opens[0] if ns.opens else none -%}
@@ -73,7 +75,7 @@ views:
 
         {{ reason ~ '. ' if reason else '' }}{{ 'Morgen ist ebenfalls geschlossen.' if is_state('binary_sensor.kitaplus_morgen_geschlossen', 'on') else 'Morgen ist wieder geöffnet.' }}
         {%- elif ns.nodata > 0 or states(pending) in ['unavailable', 'unknown'] -%}
-        <ha-alert alert-type="warning" title="Keine aktuellen Daten">KitaPlus ist gerade nicht erreichbar.</ha-alert>
+        <ha-alert alert-type="warning" title="Keine aktuellen Daten">KitaPlus ist gerade nicht erreichbar, oder die Entitäten des Kindes fehlen (Namen prüfen unter Einstellungen → Entitäten).</ha-alert>
         {%- else -%}
         <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
         {%- endif -%}
@@ -110,6 +112,9 @@ views:
         {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
         {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
         ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
+        {% if 'KIND' == 'KI' ~ 'ND' -%}
+        Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.
+        {%- else -%}
         {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
         {%- set st = states(ent) -%}
         {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
@@ -125,6 +130,7 @@ views:
         {%- set dayl = 'heute' if dl.date() == now().date() else ('morgen' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
 
         <small>Nächste Bestellfrist: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+        {%- endif -%}
         {%- endif -%}
   - type: grid
     cards:
@@ -259,7 +265,9 @@ views:
         {%- set msgs = state_attr(pending, 'messages') or [] -%}
         {%- set title = clean(msgs[0].titel if msgs else '') | trim -%}
         {%- set total = ns.opens | count + pend -%}
-        {%- if ns.missed | count > 0 -%}
+        {%- if kids | selectattr('n', 'eq', 'KI' ~ 'ND') | list | count > 0 -%}
+        <ha-alert alert-type="info" title="Noch nicht eingerichtet">Das ist erst die Vorlage, deshalb siehst du hier noch keine echten Daten. So richtest du sie ein:<br>1. Dashboard bearbeiten (Stift), dann ⋮ → Raw-Konfigurationseditor.<br>2. Mit Suchen und Ersetzen <b>{{ 'KI' ~ 'ND' }}</b> durch den Vornamen deines Kindes ersetzen, zum Beispiel Finn.<br>3. <b>{{ 'ki' ~ 'nd' }}</b> durch denselben Namen in Kleinbuchstaben ersetzen, zum Beispiel finn.<br>4. Speichern. Fertig.</ha-alert>
+        {%- elif ns.missed | count > 0 -%}
         <ha-alert alert-type="warning" title="Nicht bestellt">{{ ('Essen für ' ~ ns.missed[0] ~ ' ist nicht bestellt.' if ns.missed | count == 1 else 'Nicht bestellt: ' ~ ns.missed | join(', ') ~ '.') | truncate(110, True, '…') }} Die Frist ist vorbei.</ha-alert>
         {%- elif total > 0 -%}
         {%- set first = ns.opens[0] if ns.opens else none -%}
@@ -282,7 +290,7 @@ views:
 
         {{ reason ~ '. ' if reason else '' }}{{ 'Morgen ist ebenfalls geschlossen.' if is_state('binary_sensor.kitaplus_morgen_geschlossen', 'on') else 'Morgen ist wieder geöffnet.' }}
         {%- elif ns.nodata > 0 or states(pending) in ['unavailable', 'unknown'] -%}
-        <ha-alert alert-type="warning" title="Keine aktuellen Daten">KitaPlus ist gerade nicht erreichbar.</ha-alert>
+        <ha-alert alert-type="warning" title="Keine aktuellen Daten">KitaPlus ist gerade nicht erreichbar, oder die Entitäten des Kindes fehlen (Namen prüfen unter Einstellungen → Entitäten).</ha-alert>
         {%- else -%}
         <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
         {%- endif -%}
@@ -319,6 +327,9 @@ views:
         {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
         {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
         ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
+        {% if 'KIND' == 'KI' ~ 'ND' -%}
+        Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.
+        {%- else -%}
         {% for ent, label in [('sensor.kind_bestellstatus_heute', 'Heute'), ('sensor.kind_bestellstatus_morgen', 'Morgen')] %}
         {%- set st = states(ent) -%}
         {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
@@ -334,6 +345,7 @@ views:
         {%- set dayl = 'heute' if dl.date() == now().date() else ('morgen' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
 
         <small>Nächste Bestellfrist: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+        {%- endif -%}
         {%- endif -%}
   - type: grid
     cards:

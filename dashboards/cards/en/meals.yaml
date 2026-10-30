@@ -1,4 +1,4 @@
-# KitaPlus dashboard (template) · version 0.3.5 · needs KitaPlus 0.3.1 or newer
+# KitaPlus dashboard (template) · version 0.3.6 · needs KitaPlus 0.3.1 or newer
 type: markdown
 content: |
   {%- set wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] -%}
@@ -15,6 +15,9 @@ content: |
   {%- set words = {'ordered': 'Ordered', 'open': 'Open', 'missed': 'Deadline missed', 'not_offered': 'No meal', 'unavailable': 'Unavailable', 'unknown': 'Unknown'} -%}
   {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
   ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Meals for KIND
+  {% if 'KIND' == 'KI' ~ 'ND' -%}
+  No data yet. Set up the template first, the instructions are at the top.
+  {%- else -%}
   {% for ent, label in [('sensor.kind_order_status_today', 'Today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow')] %}
   {%- set st = states(ent) -%}
   {%- set meal = clean(state_attr(ent, 'meal')) | trim -%}
@@ -30,4 +33,5 @@ content: |
   {%- set dayl = 'today' if dl.date() == now().date() else ('tomorrow' if (dl.date() - now().date()).days == 1 else wd[dl.weekday()] ~ ' ' ~ ('%02d' | format(dl.day)) ~ '.' ~ ('%02d' | format(dl.month)) ~ '.') %}
 
   <small>Next order deadline: <b>{{ dayl }}, {{ dl.strftime('%H:%M') }}</b></small>
+  {%- endif -%}
   {%- endif -%}

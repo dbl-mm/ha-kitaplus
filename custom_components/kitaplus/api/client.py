@@ -221,9 +221,16 @@ class KitaPlusClient:
             for kind in answer["kinder"]
         ]
 
-    async def async_get_file(self, attachment_id: int, max_bytes: int) -> tuple[bytes, str, str]:
-        """An attached file as (content, MIME type, file name); the app answers with JSON and Base64."""
-        data = await self._get("/einrichtung/get_datei_content", id=attachment_id)
+    async def async_get_file(self, source: str, attachment_id: int, max_bytes: int) -> tuple[bytes, str, str]:
+        """A file attached to a bulletin board post ("board") or a message ("message").
+
+        Returns (content, MIME type, file name). The parent app uses these two calls and gets JSON with the
+        file as Base64.
+        """
+        if source == "board":
+            data = await self._get("/orga_nachrichten/get_file", orgAnhangId=attachment_id)
+        else:
+            data = await self._get("/nachrichten/get_file", anhangId=attachment_id)
         encoded = data.get("data")
         if not isinstance(encoded, str) or len(encoded) > max_bytes * 4 // 3 + 4:
             raise KitaPlusApiError("File missing or too large")
