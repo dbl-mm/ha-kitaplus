@@ -18,7 +18,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
-from .api.models import BoardPost, Child, MealEntry, Message, UpcomingEntry
+from .api.models import Attachment, BoardPost, Child, MealEntry, Message, UpcomingEntry
 from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
 from .helpers import ORDER_STATES, deadline_for, meals_on, order_status, pending_replies, upcoming_entries
@@ -31,19 +31,39 @@ _NOTHING_ORDERED = {"de": "Nichts bestellt", "en": "Nothing ordered"}
 _ORDERED = {"de": "Bestellt", "en": "Ordered"}
 
 
-def _board_short(posts: list[BoardPost]) -> list[dict[str, Any]]:
+Linker = Callable[[int], str | None]
+
+
+def _attachments(items: list[Attachment] | None, link: Linker) -> list[dict[str, str | None]]:
+    """Name and signed address of the attached files (at most 3). The address expires, see attachments.py."""
+    out: list[dict[str, str | None]] = []
+    for item in items or []:
+        if not item.get("name") or not item.get("istDateiVorhanden", True):
+            continue
+        file_id = item.get("id")
+        out.append(
+            {
+                "name": " ".join(str(item["name"]).split())[:80],
+                "url": link(int(file_id)) if file_id is not None else None,
+            }
+        )
+    return out[:3]
+
+
+def _board_short(posts: list[BoardPost], link: Linker) -> list[dict[str, Any]]:
     return [
         {
             "id": post.get("id"),
             "datum": post.get("datum"),
             "titel": post.get("titel"),
             "text": (post.get("text") or "")[:_MAX_TEXT],
+            "attachments": _attachments(post.get("anhaenge"), link),
         }
         for post in posts[:_MAX_ITEMS]
     ]
 
 
-def _messages_short(messages: list[Message]) -> list[dict[str, Any]]:
+def _messages_short(messages: list[Message], link: Linker) -> list[dict[str, Any]]:
     out = []
     for msg in messages[:_MAX_ITEMS]:
         note = msg.get("nachricht") or {}
@@ -53,6 +73,7 @@ def _messages_short(messages: list[Message]) -> list[dict[str, Any]]:
                 "datum": note.get("datum") or msg.get("abrufDatum"),
                 "titel": note.get("titel"),
                 "text": (note.get("text") or "")[:_MAX_TEXT],
+                "attachments": _attachments(note.get("anhaenge"), link),
             }
         )
     return out
@@ -102,7 +123,7 @@ class BoardSensor(KitaPlusEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"posts": _board_short(self.coordinator.data.board)}
+        return {"posts": _board_short(self.coordinator.data.board, self._file_link)}
 
 
 class MessagesSensor(KitaPlusEntity, SensorEntity):
@@ -122,7 +143,7 @@ class MessagesSensor(KitaPlusEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"messages": _messages_short(self.coordinator.data.messages)}
+        return {"messages": _messages_short(self.coordinator.data.messages, self._file_link)}
 
 
 class BalanceSensor(KitaPlusEntity, SensorEntity):

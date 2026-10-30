@@ -9,6 +9,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceEntry
 
 from .api.client import KitaPlusClient
+from .attachments import KitaPlusAttachmentView
 from .const import CONF_CLIENT_ID, DOMAIN
 from .coordinator import KitaPlusCoordinator
 
@@ -23,12 +24,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: KitaPlusConfigEntry) -> 
     coordinator = KitaPlusCoordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
+    if f"{DOMAIN}_view" not in hass.data:  # one web address for all entries
+        hass.data[f"{DOMAIN}_view"] = view = KitaPlusAttachmentView()
+        hass.http.register_view(view)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: KitaPlusConfigEntry) -> bool:
     """Unload a config entry."""
+    if (view := hass.data.get(f"{DOMAIN}_view")) is not None:
+        view.forget(entry.entry_id)  # downloaded files are not kept after unloading
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

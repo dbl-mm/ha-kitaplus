@@ -59,11 +59,20 @@ class Day(TypedDict, total=False):
     mahlzeitArten: list[MealType]
 
 
+class Attachment(TypedDict, total=False):
+    """A file attached to a post. Only the name is used; downloading needs the signed-in app."""
+
+    id: int
+    name: str | None
+    istDateiVorhanden: bool
+
+
 class BoardPost(TypedDict, total=False):
     id: int
     datum: str | None
     titel: str | None
     text: str | None
+    anhaenge: list[Attachment]
 
 
 class Note(TypedDict, total=False):
@@ -72,6 +81,7 @@ class Note(TypedDict, total=False):
     text: str | None
     istBestaetigungspflichtig: bool
     rueckmeldefrist: str | None
+    anhaenge: list[Attachment]
 
 
 class Message(TypedDict, total=False):

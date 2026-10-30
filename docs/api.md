@@ -40,5 +40,8 @@ Speiseplan scheint als PDF-Anhang im Schwarzen Brett zu kommen.
 Bestellung-Felder: id, datum, istAbbestellt, bestellDatum, abbestellDatum, bezeichnung, preis, kindId, varianteId.
 Der Speiseplan ist strukturiert (Gericht, Variante, MahlzeitArt) abrufbar, das PDF im Schwarzen Brett muss nicht geparst werden.
 
+## Anhänge
+Beiträge (`anhaenge`) und Nachrichten (`nachricht.anhaenge`) listen Dateien mit `id`, `name`, `endung`, `pfad`, `mimeType` und `istDateiVorhanden`. `pfad` enthält die Einrichtungs-ID und wird nicht gespeichert. Den Inhalt liefert `GET /einrichtung/get_datei_content?id=<Datei-ID>` mit dem Bearer-Token als JSON `{success, data (Base64), type, filename}` (so verwendet es die Eltern-App). Die Integration reicht die Datei über eine signierte Home-Assistant-Adresse weiter (`custom_components/kitaplus/attachments.py`).
+
 ## Sperrschutz
 Das Benutzermodell hat `loginVersuche` und `loginSperrdatum`. Der Client darf bei 401/403 oder falschen Zugangsdaten NIE automatisch erneut einloggen, sondern muss den Reauth-Flow auslösen.

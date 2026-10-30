@@ -27,5 +27,8 @@ content: |
   {%- set body = clean(p.text) | trim -%}
   {% if body %}
   {{ body | truncate(100, True, '…') }}
+  {% endif -%}{%- set files = (p.attachments or [])[:2] -%}
+  {% if files %}
+  Anhang: {% for f in files %}{% set label = clean(f.name) | trim | truncate(80, True, '…') %}{% if f.url and f.url.startswith('/api/kitaplus/') %}<a href="{{ f.url }}" target="_blank" rel="noopener">{{ label }}</a>{% else %}{{ label }}{% endif %}{{ ', ' if not loop.last }}{% endfor %}
   {% endif -%}
   {%- endif -%}

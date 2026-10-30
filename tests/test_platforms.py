@@ -323,3 +323,22 @@ async def test_upcoming_sensor_lists_the_next_entries_and_names_the_first(hass, 
     assert state.state == "unknown" and state.attributes["entries"] == [], (
         "nothing coming up: no state, empty list"
     )
+
+
+def test_attached_files_are_listed_with_name_and_link_only() -> None:
+    from custom_components.kitaplus.sensor import _attachments, _board_short
+
+    files = [
+        {"id": 7, "name": "Menüplan  02.11.", "istDateiVorhanden": True, "pfad": "folder/secret.pdf"},
+        {"id": 8, "name": "Gelöscht", "istDateiVorhanden": False},
+        {"id": 9, "name": None},
+        {"id": 10, "name": "x" * 200},
+        {"name": "Ohne Id"},
+        {"id": 11, "name": "Vierte"},
+    ]
+    result = _attachments(files, lambda i: f"/api/kitaplus/attachment/e/{i}")
+    assert result[0] == {"name": "Menüplan 02.11.", "url": "/api/kitaplus/attachment/e/7"}
+    assert len(result) == 3 and len(result[1]["name"]) == 80 and result[2] == {"name": "Ohne Id", "url": None}
+    assert _attachments(None, str) == [] and _attachments([], str) == []
+    short = _board_short([{"id": 1, "titel": "t", "anhaenge": files}], lambda i: None)
+    assert "secret" not in str(short) and short[0]["attachments"][0]["url"] is None

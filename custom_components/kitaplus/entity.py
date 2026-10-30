@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.core import callback
@@ -11,6 +12,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api.models import Child
+from .attachments import signed_link
 from .const import CONFIGURATION_URL, DOMAIN, MANUFACTURER
 from .coordinator import KitaPlusCoordinator
 
@@ -33,6 +35,11 @@ class KitaPlusEntity(CoordinatorEntity[KitaPlusCoordinator]):
             configuration_url=CONFIGURATION_URL,
             entry_type=DeviceEntryType.SERVICE,
         )
+
+    def _file_link(self, attachment_id: int) -> str | None:
+        """A signed address for an attached file, valid until the data is certainly refreshed."""
+        interval = self.coordinator.update_interval or timedelta(minutes=30)
+        return signed_link(self.hass, self._entry_id, attachment_id, interval + timedelta(minutes=30))
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()

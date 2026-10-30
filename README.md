@@ -1,6 +1,13 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="custom_components/kitaplus/brand/dark_logo@2x.png">
+  <img src="custom_components/kitaplus/brand/logo@2x.png" alt="KitaPlus Logo" width="96" align="left">
+</picture>
+
 # KitaPlus für Home Assistant
 
 Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern.kitaplus.de). Sie zeigt Schwarzes Brett, Postfach, Termine und Schließtage, Speiseplan und Bestellungen sowie den Verpflegungs-Kontostand in Home Assistant an.
+
+<br clear="left">
 
 > **Wichtig, bitte lesen**
 > - Dieses Projekt ist **nicht** von kitaplus und steht in keiner Verbindung zu kitaplus oder deiner Kita.
@@ -215,6 +222,10 @@ von einem Designer gestalten lassen möchtest: [Briefing für Designer](docs/des
 <img src="docs/img/heute-frist-verpasst-dunkel.png" alt="Heute: Frist verpasst, dunkles Theme" width="230">
 <img src="docs/img/heute-kita-geschlossen.png" alt="Heute: Kita geschlossen" width="230">
 </p>
+
+## Anhänge (zum Beispiel der Menüplan)
+
+Ist an einem Beitrag am Schwarzen Brett oder an einer Nachricht eine Datei angehängt (oft der Menüplan als PDF), zeigt das Dashboard beim neuesten Beitrag „Anhang: …“ als Link. Er öffnet die Datei in einem neuen Tab, die Integration holt sie dafür mit deiner Anmeldung bei KitaPlus. Die Links sind von Home Assistant **signiert und laufen ab**, sie sind keine dauerhaften öffentlichen Adressen. Angezeigt werden PDF und Bilder, andere Dateitypen werden nur zum Download angeboten. Die Namen stehen auch im Attribut `attachments` der Sensoren **Schwarzes Brett** und **Postfach**.
 
 ## Fehlerbehebung
 

@@ -301,3 +301,36 @@ async def test_an_error_page_that_is_not_json_is_an_api_error_not_a_crash(client
         )
         with pytest.raises(KitaPlusApiError):
             await client.async_get_board()
+
+
+async def test_a_file_is_read_from_the_base64_answer(client):
+    client.set_tokens(
+        Tokens(jwt=_jwt(time.time() + 3600), refresh_token="r", refresh_expires=time.time() + 100)
+    )
+    pdf = base64.b64encode(b"%PDF-1.4 test").decode()
+    with aioresponses() as m:
+        m.get(
+            f"{API_BASE_URL}/einrichtung/get_datei_content?id=7",
+            payload={"success": True, "data": pdf, "type": "Application/PDF", "filename": "plan.pdf"},
+        )
+        content, content_type, filename = await client.async_get_file(7, 1000)
+    assert content == b"%PDF-1.4 test" and content_type == "application/pdf" and filename == "plan.pdf"
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        {"success": True},  # no content
+        {"success": True, "data": 5},  # not text
+        {"success": True, "data": "!!!not base64!!!"},
+        {"success": True, "data": base64.b64encode(b"x" * 5000).decode()},  # larger than the limit
+    ],
+)
+async def test_a_broken_or_too_large_file_is_refused(client, answer):
+    client.set_tokens(
+        Tokens(jwt=_jwt(time.time() + 3600), refresh_token="r", refresh_expires=time.time() + 100)
+    )
+    with aioresponses() as m:
+        m.get(f"{API_BASE_URL}/einrichtung/get_datei_content?id=7", payload=answer)
+        with pytest.raises(KitaPlusApiError):
+            await client.async_get_file(7, 1000)

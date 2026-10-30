@@ -136,6 +136,7 @@ TEXT: dict[str, dict[str, Any]] = {
         "next_deadline": "Nächste Bestellfrist",
         "board": "Schwarzes Brett",
         "no_post": "Kein Beitrag am Schwarzen Brett.",
+        "attached": "Anhang",
         "untitled": "Ohne Titel",
         "mailbox": "Postfach",
         "messages": "Nachrichten",
@@ -212,6 +213,7 @@ TEXT: dict[str, dict[str, Any]] = {
         "next_deadline": "Next order deadline",
         "board": "Bulletin board",
         "no_post": "No post on the bulletin board.",
+        "attached": "Attachment",
         "untitled": "Untitled",
         "mailbox": "Mailbox",
         "messages": "messages",
@@ -415,6 +417,16 @@ EXCERPT = """
 {% endif -%}
 """
 
+# Attached files (a meal plan is often a PDF) open in a new tab through a signed, expiring Home Assistant address.
+# Only addresses of this integration are linked; anything else is shown as plain text.
+ATTACHMENTS = """
+{%- set files = (p.attachments or [])[:2] -%}
+{% if files %}
+@@ATTACHED@@: {% for f in files %}{% set label = clean(f.name) | trim | truncate(@@TITLE@@, True, '…') %}{% if f.url and f.url.startswith('/api/kitaplus/') %}<a href="{{ f.url }}" target="_blank" rel="noopener">{{ label }}</a>{% else %}{{ label }}{% endif %}{{ ', ' if not loop.last }}{% endfor %}
+{% endif -%}
+"""
+
+
 MAIL = """
 @@HELPERS@@
 {%- set count = states('@@ENTITY@@') | int(0) -%}
@@ -570,6 +582,7 @@ def kid_card(t: dict[str, Any], ids: Ids, name: str) -> dict:
 
 def board_card(t: dict[str, Any], account: Ids, *, wall: bool = False) -> dict:
     excerpt = "" if wall else fill(EXCERPT, LENGTH=str(BOARD_EXCERPT)).strip("\n")
+    excerpt += fill(ATTACHMENTS, ATTACHED=t["attached"], TITLE=str(TITLE_LENGTH)).strip("\n")
     content = fill(
         BOARD,
         HELPERS=helpers(t),

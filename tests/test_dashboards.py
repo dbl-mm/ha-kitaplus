@@ -357,6 +357,24 @@ async def test_board_card_shows_only_the_newest_post_cleaned_up(hass: HomeAssist
     assert "Mi 28.10." in out and "Liebe Eltern, bitte beachten:" in out and "…" in out
 
 
+async def test_board_card_links_attached_files_only_through_this_integration(hass: HomeAssistant) -> None:
+    files = [
+        {"name": "Menüplan 02.11. -06.11", "url": "/api/kitaplus/attachment/abc/7?authSig=x"},
+        {"name": "Fremd", "url": "https://evil.example/x"},
+        {"name": "Ohne Adresse", "url": None},
+    ]
+    post = {"titel": "Mittagessen", "datum": "2026-10-28", "text": "", "attachments": files}
+    set_states(hass, board=("Mittagessen", {"posts": [post]}))
+    out = Template(card_content("board", "Mia"), hass).async_render(parse_result=False)
+    assert 'href="/api/kitaplus/attachment/abc/7?authSig=x"' in out and 'target="_blank"' in out
+    assert "Menüplan 02.11. -06.11</a>" in out and "evil.example" not in out
+    wall = Template(card_content("board", "Mia", wall=True), hass).async_render(parse_result=False)
+    assert "Anhang" in wall
+    set_states(hass, board=("x", {"posts": [{"titel": "x", "datum": "2026-10-28", "text": ""}]}))
+    out = Template(card_content("board", "Mia"), hass).async_render(parse_result=False)
+    assert "Anhang" not in out
+
+
 async def test_board_card_edge_cases(hass: HomeAssistant) -> None:
     set_states(hass, board=("unknown", {"posts": []}))
     out = Template(card_content("board", "Mia"), hass).async_render(parse_result=False)

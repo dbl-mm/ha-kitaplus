@@ -221,6 +221,22 @@ class KitaPlusClient:
             for kind in answer["kinder"]
         ]
 
+    async def async_get_file(self, attachment_id: int, max_bytes: int) -> tuple[bytes, str, str]:
+        """An attached file as (content, MIME type, file name); the app answers with JSON and Base64."""
+        data = await self._get("/einrichtung/get_datei_content", id=attachment_id)
+        encoded = data.get("data")
+        if not isinstance(encoded, str) or len(encoded) > max_bytes * 4 // 3 + 4:
+            raise KitaPlusApiError("File missing or too large")
+        try:
+            content = base64.b64decode(encoded, validate=True)
+        except ValueError as err:
+            raise KitaPlusApiError("File is not valid Base64") from err
+        return (
+            content,
+            str(data.get("type") or "application/octet-stream").lower(),
+            str(data.get("filename") or ""),
+        )
+
     async def async_get_events(self, year: int, month: int) -> list[Event]:
         data = await self._get(
             "/termin/getTermine", month=month, year=year, openEnd=1, page=1, start=0, limit=100
