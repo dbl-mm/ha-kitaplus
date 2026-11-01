@@ -80,20 +80,15 @@ views:
         <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
         {%- endif -%}
       text_only: true
-    - type: tile
-      entity: binary_sensor.kitaplus_heute_geschlossen
-      name: Kita heute
-      icon: mdi:school-outline
-      state_content:
-      - state
-      - reason
-    - type: tile
-      entity: binary_sensor.kitaplus_morgen_geschlossen
-      name: Kita morgen
-      icon: mdi:school-outline
-      state_content:
-      - state
-      - reason
+    - type: markdown
+      content: |
+        {%- set closed = [['binary_sensor.kitaplus_heute_geschlossen', 0, 'Kita heute'], ['binary_sensor.kitaplus_morgen_geschlossen', 1, 'Kita morgen']] -%}
+        {%- for sensor, plus, label in closed -%}
+        {%- set weekend = (now().weekday() + plus) % 7 >= 5 -%}
+        {%- set reason = (state_attr(sensor, 'reason') or '') | string | trim -%}
+        **{{ label }}** · {{ 'Geschlossen' if is_state(sensor, 'on') else ('Wochenende' if weekend else 'Geöffnet') }}{{ ' (' ~ reason ~ ')' if reason and is_state(sensor, 'on') else '' }}
+        {% endfor %}
+      text_only: true
   - type: grid
     cards:
     - type: markdown
@@ -112,6 +107,10 @@ views:
         {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
         {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
         ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
+        {%- set grp = states('sensor.kind_gruppe') -%}
+        {%- set pgs = state_attr('sensor.kind_gruppe', 'project_groups') or [] -%}
+        {%- set labels = ([grp] if grp not in ['unknown', 'unavailable', 'none', ''] else []) + (pgs | list) -%}
+        {% if labels %}<small>{{ labels | join(' · ') }}</small>{% endif %}
         {% if 'KIND' == 'KI' ~ 'ND' -%}
         Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.
         {%- else -%}
@@ -301,20 +300,15 @@ views:
         <ha-alert alert-type="info" title="Heute ist nichts zu tun">{{ 'Essen für heute und morgen ist bestellt. Keine Rückmeldung offen.' if ns.ordered > 0 else 'Es gibt nichts zu bestellen. Keine Rückmeldung offen.' }}</ha-alert>
         {%- endif -%}
       text_only: true
-    - type: tile
-      entity: binary_sensor.kitaplus_heute_geschlossen
-      name: Kita heute
-      icon: mdi:school-outline
-      state_content:
-      - state
-      - reason
-    - type: tile
-      entity: binary_sensor.kitaplus_morgen_geschlossen
-      name: Kita morgen
-      icon: mdi:school-outline
-      state_content:
-      - state
-      - reason
+    - type: markdown
+      content: |
+        {%- set closed = [['binary_sensor.kitaplus_heute_geschlossen', 0, 'Kita heute'], ['binary_sensor.kitaplus_morgen_geschlossen', 1, 'Kita morgen']] -%}
+        {%- for sensor, plus, label in closed -%}
+        {%- set weekend = (now().weekday() + plus) % 7 >= 5 -%}
+        {%- set reason = (state_attr(sensor, 'reason') or '') | string | trim -%}
+        **{{ label }}** · {{ 'Geschlossen' if is_state(sensor, 'on') else ('Wochenende' if weekend else 'Geöffnet') }}{{ ' (' ~ reason ~ ')' if reason and is_state(sensor, 'on') else '' }}
+        {% endfor %}
+      text_only: true
   - type: grid
     cards:
     - type: markdown
@@ -333,6 +327,10 @@ views:
         {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
         {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
         ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
+        {%- set grp = states('sensor.kind_gruppe') -%}
+        {%- set pgs = state_attr('sensor.kind_gruppe', 'project_groups') or [] -%}
+        {%- set labels = ([grp] if grp not in ['unknown', 'unavailable', 'none', ''] else []) + (pgs | list) -%}
+        {% if labels %}<small>{{ labels | join(' · ') }}</small>{% endif %}
         {% if 'KIND' == 'KI' ~ 'ND' -%}
         Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.
         {%- else -%}

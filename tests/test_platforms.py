@@ -367,3 +367,30 @@ async def test_pending_replies_follow_each_update_and_are_worked_out_once(hass, 
         assert spy.call_count == 1
     state = hass.states.get("sensor.kitaplus_pending_replies")
     assert state.state == "1" and state.attributes["messages"][0]["id"] == 8
+
+
+def _children_with_groups() -> list[dict]:
+    kids = load("get_einrichtungen_kinder")["kinder"]
+    return [{**kids[0], "gruppe": "Sterne", "projektgruppen": ["Liste Rot", "Gruppe Blau"]}]
+
+
+async def test_the_group_sensor_shows_the_main_group_and_only_the_chosen_project_groups(
+    hass, stack, freezer
+) -> None:
+    at(freezer, "2026-06-13T10:00:00")
+    await setup_integration(
+        hass,
+        stack,
+        make_entry({"project_groups": ["Gruppe Blau"]}),
+        async_get_children=_children_with_groups(),
+    )
+    state = hass.states.get("sensor.vorname_1_group")
+    assert state.state == "Sterne"
+    assert state.attributes["project_groups"] == ["Gruppe Blau"]
+
+
+async def test_the_group_sensor_without_any_group_is_unknown(hass, stack, freezer) -> None:
+    at(freezer, "2026-06-13T10:00:00")
+    await setup_integration(hass, stack)
+    state = hass.states.get("sensor.vorname_1_group")
+    assert state.state == "unknown" and state.attributes["project_groups"] == []

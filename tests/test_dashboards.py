@@ -468,7 +468,7 @@ def test_phone_is_one_column_and_the_wall_has_three(hass=None) -> None:
 def test_the_phone_order_is_status_kids_then_lists() -> None:
     first = gen.build("de")["views"][0]["sections"]
     assert "ha-alert" in first[0]["cards"][1]["content"]
-    assert [c["type"] for c in first[0]["cards"]] == ["markdown", "markdown", "tile", "tile"]
+    assert [c["type"] for c in first[0]["cards"]] == ["markdown", "markdown", "markdown"]
     assert first[2]["cards"][-1]["type"] == "tile", "the balance comes last"
 
 
@@ -558,3 +558,29 @@ async def test_the_child_card_shows_the_dish_from_the_menu_plan_with_a_note(
     hass.states.async_set(ids.account("sensor", "menu_tomorrow"), "unknown")
     out = Template(content, hass).async_render(parse_result=False)
     assert "Mittagessen" in out and t["from_plan"] not in out, "without a plan the card is as before"
+
+
+@pytest.mark.parametrize(
+    ("moment", "today", "tomorrow"),
+    [
+        ("2026-11-01 12:00:00+01:00", "Wochenende", "Geöffnet"),  # Sunday
+        ("2026-10-30 12:00:00+01:00", "Geöffnet", "Wochenende"),  # Friday
+        ("2026-11-04 12:00:00+01:00", "Geöffnet", "Geöffnet"),  # Wednesday
+    ],
+)
+async def test_the_kita_card_says_weekend_instead_of_open(
+    hass: HomeAssistant, freezer, moment, today, tomorrow
+):
+    freezer.move_to(moment)
+    set_states(hass, **calm())
+    content = gen.single_cards("de")["kita"]["content"]
+    out = " ".join(Template(content, hass).async_render(parse_result=False).split())
+    assert out == f"**Kita heute** · {today} **Kita morgen** · {tomorrow}"
+
+
+async def test_the_kita_card_names_a_closure(hass: HomeAssistant, freezer):
+    freezer.move_to("2026-11-04 12:00:00+01:00")
+    set_states(hass, **calm(closed=("on", {"reason": "Brückentag"})))
+    content = gen.single_cards("de")["kita"]["content"]
+    out = " ".join(Template(content, hass).async_render(parse_result=False).split())
+    assert out.startswith("**Kita heute** · Geschlossen (Brückentag)")

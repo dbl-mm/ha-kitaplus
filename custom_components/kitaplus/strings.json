@@ -122,6 +122,9 @@
       },
       "menu_tomorrow": {
         "name": "Menu tomorrow"
+      },
+      "group": {
+        "name": "Group"
       }
     },
     "calendar": {
@@ -181,7 +184,8 @@
           "order_deadline_workdays": "Count only weekdays (Monday to Friday)",
           "reminder_lead_minutes": "Reminder before the deadline (minutes)",
           "menu_from_pdf": "Experimental: read the dishes from the menu plan PDF",
-          "menu_keyword": "Menu plan: word in the attachment name"
+          "menu_keyword": "Menu plan: word in the attachment name",
+          "project_groups": "Project groups to show"
         },
         "data_description": {
           "scan_interval": "How often Home Assistant asks KitaPlus for new data. Shorter than 15 minutes is not allowed.",
@@ -190,7 +194,8 @@
           "order_deadline_workdays": "Switch on if your Kita does not count Saturdays and Sundays (a Monday meal then closes on Friday).",
           "reminder_lead_minutes": "How long before the deadline the event kitaplus_order_deadline is fired, if the day is still not ordered. 0 turns it off.",
           "menu_from_pdf": "Reads the dishes from a PDF on the bulletin board (for example \"Menu 02.11.-06.11.\"). Works only for plans with a recognisable layout (a date, then Mo., Di., … with the dish). If the layout is not recognised nothing is shown. Without guarantee.",
-          "menu_keyword": "Only attachments whose name contains this word are read. Default: Menü."
+          "menu_keyword": "Only attachments whose name contains this word are read. Default: Menü.",
+          "project_groups": "Pick the project groups (for example a class or age group) that appear next to the main group. The list comes from your child's groups in KitaPlus."
         }
       }
     }

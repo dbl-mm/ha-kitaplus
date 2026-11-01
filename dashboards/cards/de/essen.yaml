@@ -15,6 +15,10 @@ content: |
   {%- set words = {'ordered': 'Bestellt', 'open': 'Offen', 'missed': 'Frist verpasst', 'not_offered': 'Kein Essen', 'unavailable': 'Nicht verfügbar', 'unknown': 'Unbekannt'} -%}
   {%- set icons = {'ordered': '✓', 'open': '○', 'missed': '✕', 'not_offered': '–'} -%}
   ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> Essen für KIND
+  {%- set grp = states('sensor.kind_gruppe') -%}
+  {%- set pgs = state_attr('sensor.kind_gruppe', 'project_groups') or [] -%}
+  {%- set labels = ([grp] if grp not in ['unknown', 'unavailable', 'none', ''] else []) + (pgs | list) -%}
+  {% if labels %}<small>{{ labels | join(' · ') }}</small>{% endif %}
   {% if 'KIND' == 'KI' ~ 'ND' -%}
   Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.
   {%- else -%}

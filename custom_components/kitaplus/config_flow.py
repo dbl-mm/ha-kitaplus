@@ -30,6 +30,8 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
     TimeSelector,
 )
 
@@ -53,6 +55,7 @@ from .const import (
     CONF_MENU_KEYWORD,
     CONF_MENU_PDF,
     CONF_PASSWORD,
+    CONF_PROJECT_GROUPS,
     CONF_REFRESH_EXPIRES,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
@@ -291,6 +294,20 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
 class KitaPlusOptionsFlow(OptionsFlowWithReload):
     """Polling interval and the Kita's order deadline."""
 
+    def _project_group_field(self, current: Mapping[str, Any]) -> dict[Any, Any]:
+        """Pick which project groups to show: the choices come from the children's own groups."""
+        coordinator = getattr(self.config_entry, "runtime_data", None)
+        children = coordinator.data.children if coordinator and coordinator.data else []
+        chosen = list(current.get(CONF_PROJECT_GROUPS) or [])
+        names = sorted({g for child in children for g in child.get("projektgruppen") or []} | set(chosen))
+        if not names:
+            return {}
+        return {
+            vol.Optional(CONF_PROJECT_GROUPS, default=chosen): SelectSelector(
+                SelectSelectorConfig(options=names, multiple=True)
+            )
+        }
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             data = dict(user_input)
@@ -323,6 +340,7 @@ class KitaPlusOptionsFlow(OptionsFlowWithReload):
                     ): NumberSelector(
                         NumberSelectorConfig(min=0, max=1440, step=15, mode=NumberSelectorMode.BOX)
                     ),
+                    **self._project_group_field(current),
                     vol.Optional(CONF_MENU_PDF, default=current.get(CONF_MENU_PDF, False)): BooleanSelector(),
                     vol.Optional(
                         CONF_MENU_KEYWORD, default=current.get(CONF_MENU_KEYWORD, DEFAULT_MENU_KEYWORD)

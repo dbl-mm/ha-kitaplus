@@ -48,6 +48,9 @@
       },
       "menu_tomorrow": {
         "default": "mdi:food-variant"
+      },
+      "group": {
+        "default": "mdi:account-group"
       }
     },
     "binary_sensor": {

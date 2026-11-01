@@ -22,6 +22,8 @@ class Child(TypedDict):
     vorname: str | None
     istVppAktiv: bool
     elternkonto: ParentAccountRef
+    gruppe: str | None  # main group ("Stammgruppe"), for example the name of the class
+    projektgruppen: list[str]  # project groups the child belongs to
 
 
 class Event(TypedDict, total=False):

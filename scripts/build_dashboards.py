@@ -51,6 +51,7 @@ SLUGS: dict[str, dict[str, str]] = {
         "status_tomorrow": "bestellstatus_morgen",
         "next_deadline": "nachste_bestellfrist",
         "upcoming": "nachste_termine",
+        "group": "gruppe",
         "menu_today": "speiseplan_heute",
         "menu_tomorrow": "speiseplan_morgen",
     },
@@ -72,6 +73,7 @@ SLUGS: dict[str, dict[str, str]] = {
         "status_tomorrow": "order_status_tomorrow",
         "next_deadline": "next_order_deadline",
         "upcoming": "upcoming_dates",
+        "group": "group",
         "menu_today": "menu_today",
         "menu_tomorrow": "menu_tomorrow",
     },
@@ -87,6 +89,9 @@ TEXT: dict[str, dict[str, Any]] = {
         "app": "KitaPlus",
         "kita_today": "Kita heute",
         "kita_tomorrow": "Kita morgen",
+        "kita_open": "Geöffnet",
+        "kita_closed": "Geschlossen",
+        "kita_weekend": "Wochenende",
         "weekdays": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
         "weekdays_short": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
         "months": [
@@ -177,6 +182,9 @@ TEXT: dict[str, dict[str, Any]] = {
         "app": "KitaPlus",
         "kita_today": "Kita today",
         "kita_tomorrow": "Kita tomorrow",
+        "kita_open": "Open",
+        "kita_closed": "Closed",
+        "kita_weekend": "Weekend",
         "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         "weekdays_short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         "months": [
@@ -346,6 +354,15 @@ HEADER = """
 # @@APP@@
 """
 
+KITA = """
+{%- set closed = [['@@CLOSED_TODAY@@', 0, '@@TODAY_LABEL@@'], ['@@CLOSED_TOMORROW@@', 1, '@@TOMORROW_LABEL@@']] -%}
+{%- for sensor, plus, label in closed -%}
+{%- set weekend = (now().weekday() + plus) % 7 >= 5 -%}
+{%- set reason = (state_attr(sensor, 'reason') or '') | string | trim -%}
+**{{ label }}** · {{ '@@CLOSED@@' if is_state(sensor, 'on') else ('@@WEEKEND@@' if weekend else '@@OPEN@@') }}{{ ' (' ~ reason ~ ')' if reason and is_state(sensor, 'on') else '' }}
+{% endfor %}
+"""
+
 HEADER_WALL = """
 {%- set wd = @@WEEKDAYS@@ -%}
 {%- set mo = @@MONTHS@@ -%}
@@ -407,6 +424,10 @@ KID = """
 {%- set words = @@WORDS@@ -%}
 {%- set icons = @@ICONS@@ -%}
 ### <ha-icon icon="mdi:silverware-fork-knife"></ha-icon> @@MEAL_FOR@@ @@NAME@@
+{%- set grp = states('@@GROUP_ENTITY@@') -%}
+{%- set pgs = state_attr('@@GROUP_ENTITY@@', 'project_groups') or [] -%}
+{%- set labels = ([grp] if grp not in ['unknown', 'unavailable', 'none', ''] else []) + (pgs | list) -%}
+{% if labels %}<small>{{ labels | join(' · ') }}</small>{% endif %}
 {% if '@@NAME@@' == 'KI' ~ 'ND' -%}
 @@TODO_KID@@
 {%- else -%}
@@ -587,21 +608,18 @@ def hero_card(t: dict[str, Any], account: Ids, kids: list[tuple[Ids, str]]) -> d
 
 
 def kita_cards(t: dict[str, Any], account: Ids) -> list[dict]:
-    """Is the Kita open today and tomorrow? The state in words; the reason (for example a bridge day) follows."""
-    return [
-        tile(
-            account.account("binary_sensor", "closed_today"),
-            t["kita_today"],
-            "mdi:school-outline",
-            content=["state", "reason"],
-        ),
-        tile(
-            account.account("binary_sensor", "closed_tomorrow"),
-            t["kita_tomorrow"],
-            "mdi:school-outline",
-            content=["state", "reason"],
-        ),
-    ]
+    """Is the Kita open today and tomorrow? Saturdays and Sundays say "weekend", not "open"."""
+    content = fill(
+        KITA,
+        CLOSED_TODAY=account.account("binary_sensor", "closed_today"),
+        CLOSED_TOMORROW=account.account("binary_sensor", "closed_tomorrow"),
+        TODAY_LABEL=t["kita_today"],
+        TOMORROW_LABEL=t["kita_tomorrow"],
+        CLOSED=t["kita_closed"],
+        WEEKEND=t["kita_weekend"],
+        OPEN=t["kita_open"],
+    )
+    return [markdown(content, text_only=True)]
 
 
 def kid_card(t: dict[str, Any], ids: Ids, name: str) -> dict:
@@ -612,6 +630,7 @@ def kid_card(t: dict[str, Any], ids: Ids, name: str) -> dict:
         ICONS="{" + ", ".join(f"{q(k)}: {q(v)}" for k, v in ICON.items()) + "}",
         MEAL_FOR=t["meal_for"],
         NAME=name.replace("{", "").replace("%", ""),
+        GROUP_ENTITY=ids.of_child("sensor", "group"),
         TODAY_ENTITY=ids.of_child("sensor", "status_today"),
         TOMORROW_ENTITY=ids.of_child("sensor", "status_tomorrow"),
         ROW_TODAY=t["row_today"],
@@ -759,7 +778,7 @@ def single_cards(language: str) -> dict[str, dict]:
     de = language == "de"
     return {
         "status" if not de else "status": hero_card(t, account, kids),
-        "kita": {"type": "grid", "columns": 2, "square": False, "cards": kita_cards(t, account)},
+        "kita": kita_cards(t, account)[0],
         "essen" if de else "meals": kid_card(t, ids, PLACEHOLDER_NAME),
         "schwarzes_brett" if de else "bulletin_board": board_card(t, account),
         "postfach" if de else "mailbox": mail_card(t, account),

@@ -19,7 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
 from .api.models import Attachment, BoardPost, Child, MealEntry, Message, UpcomingEntry
-from .const import CONF_MENU_PDF
+from .const import CONF_MENU_PDF, CONF_PROJECT_GROUPS
 from .coordinator import KitaPlusCoordinator, KitaPlusData
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
 from .helpers import (
@@ -104,6 +104,7 @@ async def async_setup_entry(
             found["menu-0"] = lambda: MenuSensor(coordinator, 0)
             found["menu-1"] = lambda: MenuSensor(coordinator, 1)
         for child in coordinator.data.children:
+            found[f"group-{child['id']}"] = partial(GroupSensor, coordinator, child)
             if child["id"] in coordinator.data.meals:
                 for offset in (0, 1):
                     found[f"meal-{child['id']}-{offset}"] = partial(MealSensor, coordinator, child, offset)
@@ -250,6 +251,33 @@ class MealSensor(_ChildDaySensor):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {"offered": self._meals()}
+
+
+class GroupSensor(KitaPlusChildEntity, SensorEntity):
+    """The main group of a child (for example the class). Chosen project groups are an attribute."""
+
+    _attr_translation_key = "group"
+
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child) -> None:
+        super().__init__(coordinator, child)
+        self._attr_unique_id = f"{self._entry_id}_{self._child_id}_group"
+
+    def _child(self) -> Child | None:
+        return next((c for c in self.coordinator.data.children if c["id"] == self._child_id), None)
+
+    @property
+    def native_value(self) -> str | None:
+        child = self._child()
+        return child.get("gruppe") if child else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Only the project groups picked in the options (a Kita has many, for example phone lists)."""
+        child = self._child()
+        chosen = self.coordinator.config_entry.options.get(CONF_PROJECT_GROUPS) or []
+        return {
+            "project_groups": [g for g in (child.get("projektgruppen") if child else []) or [] if g in chosen]
+        }
 
 
 class MenuSensor(KitaPlusEntity, SensorEntity):

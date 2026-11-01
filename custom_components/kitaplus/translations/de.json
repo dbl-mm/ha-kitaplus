@@ -122,6 +122,9 @@
       },
       "menu_tomorrow": {
         "name": "Speiseplan morgen"
+      },
+      "group": {
+        "name": "Gruppe"
       }
     },
     "calendar": {
@@ -181,7 +184,8 @@
           "order_deadline_workdays": "Nur Werktage zählen (Montag bis Freitag)",
           "reminder_lead_minutes": "Erinnerung vor der Frist (Minuten)",
           "menu_from_pdf": "Experimentell: Gerichte aus dem Menüplan-PDF lesen",
-          "menu_keyword": "Menüplan: Suchbegriff im Namen des Anhangs"
+          "menu_keyword": "Menüplan: Suchbegriff im Namen des Anhangs",
+          "project_groups": "Projektgruppen anzeigen"
         },
         "data_description": {
           "scan_interval": "Wie oft Home Assistant bei KitaPlus nach neuen Daten fragt. Weniger als 15 Minuten ist nicht erlaubt.",
@@ -190,7 +194,8 @@
           "order_deadline_workdays": "Einschalten, wenn deine Kita Samstag und Sonntag nicht mitzählt (eine Mahlzeit am Montag schließt dann am Freitag).",
           "reminder_lead_minutes": "Wie lange vor der Frist das Ereignis kitaplus_order_deadline ausgelöst wird, falls der Tag noch nicht bestellt ist. 0 schaltet es aus.",
           "menu_from_pdf": "Liest die Gerichte aus einer PDF am Schwarzen Brett (zum Beispiel „Menüplan 02.11.–06.11.“). Funktioniert nur für Pläne mit erkennbarem Aufbau (Datum, dann Mo., Di., … mit Gericht). Erkennt die Integration den Aufbau nicht, zeigt sie nichts an. Angaben ohne Gewähr.",
-          "menu_keyword": "Nur Anhänge, deren Name dieses Wort enthält, werden gelesen. Standard: Menü."
+          "menu_keyword": "Nur Anhänge, deren Name dieses Wort enthält, werden gelesen. Standard: Menü.",
+          "project_groups": "Wähle die Projektgruppen (zum Beispiel Altersgruppe), die neben der Stammgruppe erscheinen. Die Liste kommt aus den Gruppen deines Kindes in KitaPlus."
         }
       }
     }

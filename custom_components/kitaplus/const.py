@@ -36,6 +36,7 @@ CONF_DEADLINE_TIME = "order_deadline_time"
 CONF_DEADLINE_WORKDAYS = "order_deadline_workdays"
 CONF_LEAD_MINUTES = "reminder_lead_minutes"
 # Experimental: read the dishes from the weekly menu plan PDF (see menu.py).
+CONF_PROJECT_GROUPS = "project_groups"
 CONF_MENU_PDF = "menu_from_pdf"
 CONF_MENU_KEYWORD = "menu_keyword"
 DEFAULT_MENU_KEYWORD = "Menü"

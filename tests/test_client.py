@@ -96,6 +96,11 @@ async def test_children_are_reduced_to_the_minimum(client):
                 "istVppAktiv": True,
                 "kindKontakte": [{"telefon": "123", "strasse": "x"}],
                 "elternkonto": {"id": 7, "einrichtung": {}},
+                "kindToGruppes": [{"gruppe": {"name": " Sterne ", "idExtern": 5}}],
+                "kindToProjektgruppen": [
+                    {"projektgruppe": {"name": "Gruppe Blau "}},
+                    {"projektgruppe": {}},
+                ],
             }
         ],
     }
@@ -104,7 +109,16 @@ async def test_children_are_reduced_to_the_minimum(client):
         m.get(f"{API_BASE_URL}/benutzer/get_einrichtungen_kinder", payload=raw)
         await client.async_login("a@b.de", "pw")
         children = await client.async_get_children()
-    assert children == [{"id": 1, "vorname": "Anna", "istVppAktiv": True, "elternkonto": {"id": 7}}]
+    assert children == [
+        {
+            "id": 1,
+            "vorname": "Anna",
+            "istVppAktiv": True,
+            "elternkonto": {"id": 7},
+            "gruppe": "Sterne",
+            "projektgruppen": ["Gruppe Blau"],
+        }
+    ]
 
 
 async def test_restored_session_without_jwt_refreshes_instead_of_crashing(client):

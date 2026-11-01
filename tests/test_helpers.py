@@ -1,6 +1,6 @@
 from datetime import date
 
-from custom_components.kitaplus.helpers import is_closed_on, meals_on, pending_replies
+from custom_components.kitaplus.helpers import closure_on, is_closed_on, meals_on, pending_replies
 
 from .conftest import load
 
@@ -146,3 +146,18 @@ def test_server_messages_are_shown_as_short_plain_text() -> None:
         == "Klick hierhttps://example.com bjetzt/b fett"
     )
     assert len(plain_text("x" * 500)) == 200
+
+
+def test_a_public_holiday_counts_as_closed_and_keeps_its_name():
+    events = [
+        {
+            "istSchliesstag": False,
+            "istFeiertag": True,
+            "name": "Tag der Deutschen Einheit",
+            "startdatum": "2026-10-03T00:00:00",
+            "enddatum": "2026-10-03T23:59:00",
+        }
+    ]
+    assert is_closed_on(events, date(2026, 10, 3))
+    assert not is_closed_on(events, date(2026, 10, 4))
+    assert closure_on(events, date(2026, 10, 3))["name"] == "Tag der Deutschen Einheit"
