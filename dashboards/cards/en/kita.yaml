@@ -1,9 +1,9 @@
 # KitaPlus dashboard (template) · version 0.4.0 · needs KitaPlus 0.3.1 or newer
 type: markdown
 content: |
-  {%- set closed = [['binary_sensor.kitaplus_closed_today', 0, 'Kita today'], ['binary_sensor.kitaplus_closed_tomorrow', 1, 'Kita tomorrow']] -%}
-  {%- for sensor, plus, label in closed -%}
-  {%- set weekend = (now().weekday() + plus) % 7 >= 5 -%}
+  {%- set closed = [['binary_sensor.kitaplus_closed_today', 'Kita today'], ['binary_sensor.kitaplus_closed_tomorrow', 'Kita tomorrow']] -%}
+  {%- for sensor, label in closed -%}
+  {%- set weekend = is_state_attr(sensor, 'weekend', true) -%}
   {%- set reason = (state_attr(sensor, 'reason') or '') | string | trim -%}
   **{{ label }}** · {{ 'Closed' if is_state(sensor, 'on') else ('Weekend' if weekend else 'Open') }}{{ ' (' ~ reason ~ ')' if reason and is_state(sensor, 'on') else '' }}
   {% endfor %}

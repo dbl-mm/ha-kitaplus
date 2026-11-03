@@ -528,6 +528,9 @@ async def test_the_child_card_of_an_unfinished_template_explains_instead_of_show
     out = Template(card_content("kid", gen.PLACEHOLDER_NAME, language), hass).async_render(parse_result=False)
     assert t["todo_kid"] in out and t["state_words"]["unknown"] not in out
     named = card_content("kid", "Mia", language)
+    mia = gen.Ids(language, "mia")
+    for key in ("status_today", "status_tomorrow"):
+        hass.states.async_set(mia.of_child("sensor", key), "unknown")
     out = Template(named, hass).async_render(parse_result=False)
     assert t["todo_kid"] not in out and t["state_words"]["unknown"] in out, (
         "a real child is not told to set up"
@@ -561,18 +564,22 @@ async def test_the_child_card_shows_the_dish_from_the_menu_plan_with_a_note(
 
 
 @pytest.mark.parametrize(
-    ("moment", "today", "tomorrow"),
+    ("weekend_today", "weekend_tomorrow", "today", "tomorrow"),
     [
-        ("2026-11-01 12:00:00+01:00", "Wochenende", "Geöffnet"),  # Sunday
-        ("2026-10-30 12:00:00+01:00", "Geöffnet", "Wochenende"),  # Friday
-        ("2026-11-04 12:00:00+01:00", "Geöffnet", "Geöffnet"),  # Wednesday
+        (True, False, "Wochenende", "Geöffnet"),  # Sunday
+        (False, True, "Geöffnet", "Wochenende"),  # Friday
+        (False, False, "Geöffnet", "Geöffnet"),
     ],
 )
 async def test_the_kita_card_says_weekend_instead_of_open(
-    hass: HomeAssistant, freezer, moment, today, tomorrow
+    hass: HomeAssistant, weekend_today, weekend_tomorrow, today, tomorrow
 ):
-    freezer.move_to(moment)
-    set_states(hass, **calm())
+    set_states(
+        hass,
+        **calm(
+            closed=("off", {"weekend": weekend_today}), closed_tomorrow=("off", {"weekend": weekend_tomorrow})
+        ),
+    )
     content = gen.single_cards("de")["kita"]["content"]
     out = " ".join(Template(content, hass).async_render(parse_result=False).split())
     assert out == f"**Kita heute** · {today} **Kita morgen** · {tomorrow}"
@@ -584,3 +591,10 @@ async def test_the_kita_card_names_a_closure(hass: HomeAssistant, freezer):
     content = gen.single_cards("de")["kita"]["content"]
     out = " ".join(Template(content, hass).async_render(parse_result=False).split())
     assert out.startswith("**Kita heute** · Geschlossen (Brückentag)")
+
+
+async def test_a_child_without_meal_service_gets_a_plain_sentence(hass: HomeAssistant) -> None:
+    ids = gen.Ids("de", "mia")
+    content = gen.kid_card(gen.TEXT["de"], ids, "Mia")["content"]
+    out = " ".join(Template(content, hass).async_render(parse_result=False).split())
+    assert "keine Essensbestellung" in out and "Unbekannt" not in out

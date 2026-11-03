@@ -21,6 +21,8 @@ content: |
   {% if labels %}<small>{{ labels | join(' · ') }}</small>{% endif %}
   {% if 'KIND' == 'KI' ~ 'ND' -%}
   No data yet. Set up the template first, the instructions are at the top.
+  {%- elif states['sensor.kind_order_status_today'] is none and states['sensor.kind_order_status_tomorrow'] is none -%}
+  KitaPlus offers no meal ordering here.
   {%- else -%}
   {%- set ns = namespace(from_plan=false) -%}
   {% for ent, label, dish_ent in [('sensor.kind_order_status_today', 'Today', 'sensor.kitaplus_menu_today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow', 'sensor.kitaplus_menu_tomorrow')] %}

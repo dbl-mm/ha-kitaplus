@@ -3,6 +3,12 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
 ## [0.4.0]
+### Neu
+- **Gruppe pro Kind:** Neuer Sensor **Gruppe** (Stammgruppe, zum Beispiel die Gruppe im Kindergarten). In den Optionen wählst du aus den Gruppen deines Kindes, welche **Projektgruppen** zusätzlich im Attribut `project_groups` und im Dashboard erscheinen.
+- **Wochenende:** Die Sensoren **Heute geschlossen** und **Morgen geschlossen** haben das Attribut `weekend`. Das Dashboard zeigt am Samstag und Sonntag „Wochenende“ statt „Geöffnet“, und bei einem Schließtag oder Feiertag den Grund. Die Sensoren selbst melden weiter nur Schließtage und Feiertage, damit die Blueprints nicht jede Woche einen Hinweis schicken.
+- **Kind ohne Essensversorgung:** Die Essen-Karte nennt es in einem Satz statt „Unbekannt“ zu zeigen.
+- **Englische Dokumentation:** [README.en.md](README.en.md).
+
 ### Neu (experimentell)
 - **Gerichte aus dem Menüplan-PDF:** Neue Option „Gerichte aus dem Menüplan-PDF lesen“ (standardmäßig aus) mit Suchbegriff. Die Integration liest bei einem neuen Anhang am Schwarzen Brett Tag und Gericht aus der PDF (nur Textinhalt, erkennbarer Aufbau). Neue Sensoren **Speiseplan heute** und **Speiseplan morgen**, das Dashboard zeigt das Gericht statt „Mittagessen“ mit dem Hinweis „ohne Gewähr“. Unbekannte Zeichen werden markiert statt geraten, Allergene werden nicht gelesen. Braucht `pypdf`.
 

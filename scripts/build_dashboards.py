@@ -150,6 +150,7 @@ TEXT: dict[str, dict[str, Any]] = {
         "vegetarian": "vegetarisch",
         "check_plan": "bitte im Menüplan prüfen",
         "from_plan": "Gericht laut Menüplan-PDF, ohne Gewähr.",
+        "no_meals": "Hier gibt es keine Essensbestellung in KitaPlus.",
         "todo_kid": "Noch keine Daten. Richte zuerst die Vorlage ein, die Anleitung steht oben.",
         "nodata_title": "Keine aktuellen Daten",
         "nodata_sub": "KitaPlus ist gerade nicht erreichbar, oder die Entitäten des Kindes fehlen (Namen prüfen unter Einstellungen → Entitäten).",
@@ -243,6 +244,7 @@ TEXT: dict[str, dict[str, Any]] = {
         "vegetarian": "vegetarian",
         "check_plan": "please check the menu plan",
         "from_plan": "Dish from the menu plan PDF, without guarantee.",
+        "no_meals": "KitaPlus offers no meal ordering here.",
         "todo_kid": "No data yet. Set up the template first, the instructions are at the top.",
         "nodata_title": "No current data",
         "nodata_sub": "KitaPlus cannot be reached right now, or the child's entities are missing (check the names under Settings → Entities).",
@@ -355,9 +357,9 @@ HEADER = """
 """
 
 KITA = """
-{%- set closed = [['@@CLOSED_TODAY@@', 0, '@@TODAY_LABEL@@'], ['@@CLOSED_TOMORROW@@', 1, '@@TOMORROW_LABEL@@']] -%}
-{%- for sensor, plus, label in closed -%}
-{%- set weekend = (now().weekday() + plus) % 7 >= 5 -%}
+{%- set closed = [['@@CLOSED_TODAY@@', '@@TODAY_LABEL@@'], ['@@CLOSED_TOMORROW@@', '@@TOMORROW_LABEL@@']] -%}
+{%- for sensor, label in closed -%}
+{%- set weekend = is_state_attr(sensor, 'weekend', true) -%}
 {%- set reason = (state_attr(sensor, 'reason') or '') | string | trim -%}
 **{{ label }}** · {{ '@@CLOSED@@' if is_state(sensor, 'on') else ('@@WEEKEND@@' if weekend else '@@OPEN@@') }}{{ ' (' ~ reason ~ ')' if reason and is_state(sensor, 'on') else '' }}
 {% endfor %}
@@ -430,6 +432,8 @@ KID = """
 {% if labels %}<small>{{ labels | join(' · ') }}</small>{% endif %}
 {% if '@@NAME@@' == 'KI' ~ 'ND' -%}
 @@TODO_KID@@
+{%- elif states['@@TODAY_ENTITY@@'] is none and states['@@TOMORROW_ENTITY@@'] is none -%}
+@@NO_MEALS@@
 {%- else -%}
 {%- set ns = namespace(from_plan=false) -%}
 {% for ent, label, dish_ent in [('@@TODAY_ENTITY@@', '@@ROW_TODAY@@', '@@MENU_TODAY@@'), ('@@TOMORROW_ENTITY@@', '@@ROW_TOMORROW@@', '@@MENU_TOMORROW@@')] %}
@@ -641,6 +645,7 @@ def kid_card(t: dict[str, Any], ids: Ids, name: str) -> dict:
         TOMORROW=q(t["tomorrow"]),
         NEXT_DEADLINE=t["next_deadline"],
         TODO_KID=t["todo_kid"],
+        NO_MEALS=t["no_meals"],
         MENU_TODAY=ids.account("sensor", "menu_today"),
         MENU_TOMORROW=ids.account("sensor", "menu_tomorrow"),
         VEGETARIAN=t["vegetarian"],

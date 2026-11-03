@@ -42,9 +42,14 @@ class ClosedSensor(KitaPlusEntity, BinarySensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Why the Kita is closed (the name KitaPlus gives the closure day), for notifications."""
-        event = closure_on(self.coordinator.data.events, self._day())
-        return {"reason": (event.get("name") or None) if event else None}
+        """Why the Kita is closed (the name KitaPlus gives the closure day), for notifications.
+
+        KitaPlus does not list Saturdays and Sundays as closure days, so the state stays off then.
+        `weekend` tells that the day is one (the sensor itself only reports closure days and holidays).
+        """
+        day = self._day()
+        event = closure_on(self.coordinator.data.events, day)
+        return {"reason": (event.get("name") or None) if event else None, "weekend": day.weekday() >= 5}
 
 
 class NoOrderTomorrowSensor(KitaPlusChildEntity, BinarySensorEntity):

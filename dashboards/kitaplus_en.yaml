@@ -82,9 +82,9 @@ views:
       text_only: true
     - type: markdown
       content: |
-        {%- set closed = [['binary_sensor.kitaplus_closed_today', 0, 'Kita today'], ['binary_sensor.kitaplus_closed_tomorrow', 1, 'Kita tomorrow']] -%}
-        {%- for sensor, plus, label in closed -%}
-        {%- set weekend = (now().weekday() + plus) % 7 >= 5 -%}
+        {%- set closed = [['binary_sensor.kitaplus_closed_today', 'Kita today'], ['binary_sensor.kitaplus_closed_tomorrow', 'Kita tomorrow']] -%}
+        {%- for sensor, label in closed -%}
+        {%- set weekend = is_state_attr(sensor, 'weekend', true) -%}
         {%- set reason = (state_attr(sensor, 'reason') or '') | string | trim -%}
         **{{ label }}** · {{ 'Closed' if is_state(sensor, 'on') else ('Weekend' if weekend else 'Open') }}{{ ' (' ~ reason ~ ')' if reason and is_state(sensor, 'on') else '' }}
         {% endfor %}
@@ -113,6 +113,8 @@ views:
         {% if labels %}<small>{{ labels | join(' · ') }}</small>{% endif %}
         {% if 'KIND' == 'KI' ~ 'ND' -%}
         No data yet. Set up the template first, the instructions are at the top.
+        {%- elif states['sensor.kind_order_status_today'] is none and states['sensor.kind_order_status_tomorrow'] is none -%}
+        KitaPlus offers no meal ordering here.
         {%- else -%}
         {%- set ns = namespace(from_plan=false) -%}
         {% for ent, label, dish_ent in [('sensor.kind_order_status_today', 'Today', 'sensor.kitaplus_menu_today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow', 'sensor.kitaplus_menu_tomorrow')] %}
@@ -302,9 +304,9 @@ views:
       text_only: true
     - type: markdown
       content: |
-        {%- set closed = [['binary_sensor.kitaplus_closed_today', 0, 'Kita today'], ['binary_sensor.kitaplus_closed_tomorrow', 1, 'Kita tomorrow']] -%}
-        {%- for sensor, plus, label in closed -%}
-        {%- set weekend = (now().weekday() + plus) % 7 >= 5 -%}
+        {%- set closed = [['binary_sensor.kitaplus_closed_today', 'Kita today'], ['binary_sensor.kitaplus_closed_tomorrow', 'Kita tomorrow']] -%}
+        {%- for sensor, label in closed -%}
+        {%- set weekend = is_state_attr(sensor, 'weekend', true) -%}
         {%- set reason = (state_attr(sensor, 'reason') or '') | string | trim -%}
         **{{ label }}** · {{ 'Closed' if is_state(sensor, 'on') else ('Weekend' if weekend else 'Open') }}{{ ' (' ~ reason ~ ')' if reason and is_state(sensor, 'on') else '' }}
         {% endfor %}
@@ -333,6 +335,8 @@ views:
         {% if labels %}<small>{{ labels | join(' · ') }}</small>{% endif %}
         {% if 'KIND' == 'KI' ~ 'ND' -%}
         No data yet. Set up the template first, the instructions are at the top.
+        {%- elif states['sensor.kind_order_status_today'] is none and states['sensor.kind_order_status_tomorrow'] is none -%}
+        KitaPlus offers no meal ordering here.
         {%- else -%}
         {%- set ns = namespace(from_plan=false) -%}
         {% for ent, label, dish_ent in [('sensor.kind_order_status_today', 'Today', 'sensor.kitaplus_menu_today'), ('sensor.kind_order_status_tomorrow', 'Tomorrow', 'sensor.kitaplus_menu_tomorrow')] %}

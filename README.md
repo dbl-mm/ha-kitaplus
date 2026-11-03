@@ -2,6 +2,8 @@
 
 # KitaPlus für Home Assistant
 
+[English version](README.en.md)
+
 Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern.kitaplus.de). Sie zeigt Schwarzes Brett, Postfach, Termine und Schließtage, Speiseplan und Bestellungen sowie den Verpflegungs-Kontostand in Home Assistant an.
 
 
@@ -24,7 +26,8 @@ Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern
 - **Schwarzes Brett:** neuester Titel, die letzten 5 Beiträge als Attribut `posts`
 - **Postfach:** Anzahl der Nachrichten, die letzten 5 als Attribut `messages`; **Offene Rückmeldungen**: Nachrichten, die bestätigt werden müssen, mit Frist
 - **Kalender:** **Termine**, **Schließtage** (inkl. Feiertage) und pro Kind **Bestelltes Essen**; **Nächste Termine**: die nächsten Termine und Schließtage in einer Liste (Attribut `entries`)
-- **Kita:** **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“)
+- **Kita:** **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“; Attribut `weekend` ist am Samstag und Sonntag wahr, denn KitaPlus meldet das Wochenende nicht als Schließtag, der Zustand bleibt dann aus)
+- **Gruppe:** pro Kind die Stammgruppe als **Gruppe**; Projektgruppen, die du in den Optionen auswählst, stehen im Attribut `project_groups`
 - **Verpflegung:** pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Nächste Bestellfrist**, **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR)
 - **Diagnose:** **Sitzung gültig bis** (standardmäßig deaktiviert): bis wann die gespeicherte Anmeldung gilt
 - **Ereignisse:** `kitaplus_new_board_post`, `kitaplus_new_message` (mit `id` und `title`; nicht beim ersten Abruf), `kitaplus_order_deadline` (vor der Bestellfrist, siehe unten)
@@ -85,6 +88,7 @@ Felder der Einrichtung:
 
 - **Experimentell: Gerichte aus dem Menüplan-PDF lesen** (Standard: aus) — siehe [Gerichte aus dem Menüplan](#gerichte-aus-dem-menüplan-experimentell).
 - **Menüplan: Suchbegriff** (Standard: Menü) — Nur Anhänge, deren Name, Titel oder Text dieses Wort enthält, werden gelesen.
+- **Projektgruppen anzeigen** — Wähle, welche Projektgruppen (zum Beispiel eine Altersgruppe) neben der Stammgruppe erscheinen. Die Liste kommt aus den Gruppen deines Kindes in KitaPlus. Dort stehen oft auch Verteiler und Listen für Eltern, deshalb wird nichts gezeigt, solange du nichts auswählst.
 - **Abfrageintervall** (Standard: 30 Minuten) — Wie oft Home Assistant bei KitaPlus nachfragt (15 bis 240 Minuten). Weniger als 15 ist nicht erlaubt, um die Server zu schonen.
 
 ### Neu konfigurieren
@@ -309,4 +313,4 @@ Jeder Blueprint endet in seiner Beschreibung mit „Version X · benötigt KitaP
 
 ---
 
-*English summary:* Unofficial, read-only Home Assistant integration for the kitaplus parent app. It uses the app's own endpoints, which can change at any time. Sign-in is one attempt per submit, pauses for 15 minutes after two failures, shows KitaPlus' own message, and never stores your password. Use at your own risk.
+*English:* Unofficial, read-only Home Assistant integration for the kitaplus parent app. Full documentation in English: [README.en.md](README.en.md). It uses the app's own endpoints, which can change at any time. Sign-in is one attempt per submit, pauses for 15 minutes after two failures, shows KitaPlus' own message, and never stores your password. Use at your own risk.
