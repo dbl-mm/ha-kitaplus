@@ -35,7 +35,7 @@ Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das
 
 ## Schnellstart
 
-1. In HACS das Repository `https://github.com/dbl-mm/ha-kitaplus` als **Integration** hinzufügen und **KitaPlus** installieren, dann Home Assistant neu starten.
+1. In HACS nach **KitaPlus** suchen und herunterladen, dann Home Assistant neu starten. (Erscheint es noch nicht in der Suche: [Installation](#installation).)
 2. **Einstellungen → Geräte & Dienste → Integration hinzufügen → KitaPlus**, mit deinem KitaPlus-Zugang anmelden (E-Mail und Passwort, bei Bedarf Zwei-Faktor-Code).
 3. Unter **Konfigurieren** die **Bestellfrist deiner Kita** eintragen, damit „Frist verpasst“ und Erinnerungen stimmen. [Wie das geht](#bestellfristen).
 4. Ein [Blueprint](#blueprints) importieren und das [Dashboard](#dashboard-vorlagen) einfügen.
@@ -43,9 +43,11 @@ Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das
 ## Installation
 
 ### HACS (empfohlen)
-1. HACS → ⋮ → **Benutzerdefinierte Repositories** → `https://github.com/dbl-mm/ha-kitaplus`, Kategorie **Integration**.
-2. „KitaPlus“ installieren und Home Assistant neu starten.
+1. In HACS nach **KitaPlus** suchen und herunterladen.
+2. Home Assistant neu starten.
 3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → KitaPlus**.
+
+Findest du KitaPlus in der Suche noch nicht (neue Einträge erscheinen mit Verzögerung), füge es als **benutzerdefiniertes Repository** hinzu: HACS → ⋮ → **Benutzerdefinierte Repositories** → `https://github.com/dbl-mm/ha-kitaplus`, Kategorie **Integration**.
 
 ### Manuell
 Den Ordner `custom_components/kitaplus` nach `<config>/custom_components/kitaplus` kopieren und neu starten.
