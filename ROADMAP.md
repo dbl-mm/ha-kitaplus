@@ -28,8 +28,6 @@ nicht öffentlich, und alles, was schreibt, wird nur mit großer Vorsicht gebaut
 
 ## Von außen abhängig
 
-- **Aufnahme in die HACS-Standardliste:** Der
-  [Pull Request](https://github.com/hacs/default/pull/12968) wartet auf die Prüfung durch das HACS-Team.
 - **Icon in der HACS-Liste:** HACS zeigt für eigene Integrationen noch einen Platzhalter, obwohl der
   `brand/`-Ordner stimmt. Laut HACS-Team behebt der „Marketplace“ ab Home Assistant 2026.11 das
   ([hacs/integration#5402](https://github.com/hacs/integration/issues/5402)). Danach prüfen wir es erneut.
