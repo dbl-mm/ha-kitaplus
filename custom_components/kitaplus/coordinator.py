@@ -346,6 +346,7 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
                 return  # ordered in the meantime, or the deadline has passed
             self._reminded.add(key)
             name = next((c.get("vorname") for c in self.data.children if c["id"] == child_id), None)
+            name = name.strip() if isinstance(name, str) else name
             self.hass.bus.async_fire(
                 EVENT_ORDER_DEADLINE,
                 {

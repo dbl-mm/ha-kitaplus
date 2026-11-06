@@ -845,35 +845,20 @@ def header(language: str, *, first_line_only: bool = False, version: str | None 
     return text.split("\n")[0] + "\n" if first_line_only else text
 
 
-READY_HEADERS = {
-    "de": (
-        "# KitaPlus-Dashboard · Version {version} · erzeugt für {names}\n"
-        "# Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Bearbeiten → ⋮ →\n"
-        "# Raw-Konfigurationseditor, alles löschen und diesen Text einfügen. Es ist nichts zu ersetzen.\n"
-        "# Ein Kind kommt später dazu? Die Aktion kitaplus.dashboard_yaml noch einmal ausführen.\n"
-    ),
-    "en": (
-        "# KitaPlus dashboard · version {version} · generated for {names}\n"
-        "# Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Edit → ⋮ →\n"
-        "# Raw configuration editor, delete everything and paste this text. Nothing needs replacing.\n"
-        "# A child joins later? Run the action kitaplus.dashboard_yaml again.\n"
-    ),
-}
-
-
-def ready_yaml(
+def ready_dashboard(
     language: str,
-    version: str,
     entry_id: str,
     children: list[tuple[int, str]],
     lookup: Lookup,
-) -> str:
-    """A dashboard for these children (id, name) with the entity ids found by `lookup`, ready to paste."""
+) -> dict[str, Any]:
+    """A dashboard for these children (id, name) with the entity ids found by `lookup`.
+
+    It is the dashboard itself, so the whole answer of the action can be pasted into the raw configuration
+    editor.
+    """
     account = RegistryIds(language, entry_id, lookup)
     kids = [(RegistryIds(language, entry_id, lookup, child_id), name) for child_id, name in children]
-    names = ", ".join(name for _, name in children) or "-"
-    head = READY_HEADERS[language].format(version=version, names=names)
-    return dump(build_for(language, account, kids), head)
+    return build_for(language, account, kids)
 
 
 def dump(data: Any, header: str = "") -> str:

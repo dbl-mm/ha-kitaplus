@@ -29,14 +29,14 @@ type KitaPlusConfigEntry = ConfigEntry[KitaPlusCoordinator]
 DASHBOARD_HINT = {
     "de": (
         "KitaPlus ist eingerichtet. Ein fertiges Dashboard für deine Kinder bekommst du so: "
-        "**Entwicklerwerkzeuge → Aktionen → „KitaPlus: Dashboard erzeugen“** ausführen und das `yaml` "
-        "aus der Antwort kopieren. Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → "
+        "**Entwicklerwerkzeuge → Aktionen → „KitaPlus: Dashboard erzeugen“** ausführen und die ganze "
+        "Antwort kopieren. Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → "
         "Raw-Konfigurationseditor. Es ist nichts zu ersetzen. Unter **Konfigurieren** kannst du noch die "
         "Bestellfrist deiner Kita prüfen (sie wird sonst aus KitaPlus gelesen)."
     ),
     "en": (
         "KitaPlus is set up. To get a ready-made dashboard for your children: run "
-        '**Developer tools → Actions → "KitaPlus: Create dashboard"** and copy the `yaml` from the '
+        '**Developer tools → Actions → "KitaPlus: Create dashboard"** and copy the whole '
         "response. Install it under Settings → Dashboards → Add dashboard → Raw configuration editor. "
         "Nothing needs replacing. Under **Configure** you can check your Kita's order deadline (otherwise "
         "it is read from KitaPlus)."

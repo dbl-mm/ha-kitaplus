@@ -226,7 +226,7 @@ A deliberately calm dashboard in the new sections layout, using only built-in ca
 
 **Easiest: let the integration build the dashboard.** It knows your children and the real entity ids and builds a dashboard that needs no replacing:
 1. *Developer tools → Actions → "KitaPlus: Create dashboard"* (`kitaplus.dashboard_yaml`) and **Perform action**.
-2. Copy the `yaml` from the response.
+2. Copy the **whole response** (everything shown on the right). It is the dashboard itself, there is nothing to pick out.
 3. *Settings → Dashboards → Add dashboard → open it → ⋮ → Edit → ⋮ → Raw configuration editor*, delete everything, paste, save.
 
 The action only reads: it creates nothing and sends nothing to KitaPlus. The language of the texts is the one of Home Assistant; the field *Language* lets you choose German or English. If a child joins later, run it again. After the setup Home Assistant shows you a hint about it once.

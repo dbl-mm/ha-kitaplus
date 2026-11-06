@@ -226,7 +226,7 @@ Ein bewusst ruhiges Dashboard im neuen Sections-Layout, nur mit eingebauten Kart
 
 **Am einfachsten: Lass dir das Dashboard erzeugen.** Die Integration kennt deine Kinder und die echten Entity-IDs und baut das Dashboard fertig, ohne dass du etwas ersetzen musst:
 1. *Entwicklerwerkzeuge → Aktionen → „KitaPlus: Dashboard erzeugen“* (`kitaplus.dashboard_yaml`) und **Aktion ausführen**.
-2. Das `yaml` aus der Antwort kopieren.
+2. Die **ganze Antwort** kopieren (alles, was rechts erscheint). Sie ist das Dashboard selbst, du musst nichts herauslösen.
 3. *Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Bearbeiten → ⋮ → Raw-Konfigurationseditor*, alles löschen, einfügen, speichern.
 
 Die Aktion gibt es nur lesend, sie legt nichts an und sendet nichts an KitaPlus. Die Sprache der Texte ist die von Home Assistant, im Feld *Sprache* kannst du Deutsch oder Englisch wählen. Kommt später ein Kind dazu, führst du sie einfach noch einmal aus. Nach der Einrichtung zeigt Home Assistant dir einmal einen Hinweis darauf.

@@ -213,7 +213,7 @@
   "services": {
     "dashboard_yaml": {
       "name": "Create dashboard",
-      "description": "Builds a ready-to-paste dashboard for your children with the real entity ids and returns it as YAML text. Run it in Developer tools → Actions and copy the yaml from the response.",
+      "description": "Builds a ready-to-paste dashboard for your children with the real entity ids. Run it in Developer tools → Actions, copy the whole response and paste it into the raw configuration editor of a new dashboard.",
       "fields": {
         "config_entry": {
           "name": "KitaPlus account",

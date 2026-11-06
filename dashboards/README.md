@@ -52,7 +52,7 @@ Farbwerte, nur Theme-Farben.
 ## Einbau (ca. 2 Minuten)
 **Empfohlen: die Integration erzeugt das Dashboard.** Sie kennt deine Kinder und die echten Entity-IDs (auch wenn du Entities umbenannt hast), du musst nichts ersetzen.
 1. **Entwicklerwerkzeuge → Aktionen → „KitaPlus: Dashboard erzeugen“** (`kitaplus.dashboard_yaml`), **Aktion ausführen**. Bei mehr als einem KitaPlus-Konto das Konto wählen, im Feld *Sprache* ist Deutsch oder Englisch einstellbar (Standard: Sprache von Home Assistant).
-2. Das `yaml` aus der Antwort kopieren.
+2. Die **ganze Antwort** kopieren (alles, was rechts erscheint). Sie ist das Dashboard selbst, du musst nichts herauslösen.
 3. **Einstellungen → Dashboards → Dashboard hinzufügen**, ein leeres Dashboard (von Grund auf) anlegen, Namen „Kita“ vergeben, öffnen.
 4. **⋮ (oben rechts) → Bearbeiten → ⋮ → Raw-Konfigurationseditor**, alles löschen, einfügen, speichern.
 

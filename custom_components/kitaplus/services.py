@@ -9,10 +9,10 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
-from homeassistant.loader import async_get_integration
 
 from . import dashboard
 from .const import ATTR_CONFIG_ENTRY, ATTR_LANGUAGE, DOMAIN, SERVICE_DASHBOARD_YAML
+from .helpers import child_name
 
 if TYPE_CHECKING:
     from . import KitaPlusConfigEntry
@@ -64,20 +64,17 @@ def _lookup(registry: er.EntityRegistry, entry_id: str) -> dashboard.Lookup:
 
 
 async def _async_dashboard_yaml(call: ServiceCall) -> ServiceResponse:
-    """Build the dashboard for the real children with the real entity ids and return it as YAML text."""
+    """Build the dashboard for the real children with the real entity ids.
+
+    The answer is the dashboard itself: copy all of it into the raw configuration editor of a dashboard.
+    """
     hass = call.hass
     entry = _entry(hass, call.data.get(ATTR_CONFIG_ENTRY))
     language = call.data.get(ATTR_LANGUAGE) or ("de" if hass.config.language.startswith("de") else "en")
-    children = [(child["id"], child.get("vorname") or "Kind") for child in entry.runtime_data.data.children]
-    version = (await async_get_integration(hass, DOMAIN)).version
-    text = dashboard.ready_yaml(
-        language,
-        str(version),
-        entry.entry_id,
-        children,
-        _lookup(er.async_get(hass), entry.entry_id),
+    children = [(child["id"], child_name(child)) for child in entry.runtime_data.data.children]
+    result: dict[str, Any] = dashboard.ready_dashboard(
+        language, entry.entry_id, children, _lookup(er.async_get(hass), entry.entry_id)
     )
-    result: dict[str, Any] = {"language": language, "children": [name for _, name in children], "yaml": text}
     return result
 
 

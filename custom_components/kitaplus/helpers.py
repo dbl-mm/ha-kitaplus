@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta, tzinfo
 
-from .api.models import Day, Event, MealEntry, Message, OrderRules, PendingReply, UpcomingEntry
+from .api.models import Child, Day, Event, MealEntry, Message, OrderRules, PendingReply, UpcomingEntry
 
 
 def _d(value: str | None) -> date | None:
@@ -15,6 +15,11 @@ def _d(value: str | None) -> date | None:
         return datetime.fromisoformat(value).date() if value else None
     except ValueError:
         return None
+
+
+def child_name(child: Child) -> str:
+    """The first name as KitaPlus gives it, without stray spaces; "Kind" when there is none."""
+    return (child.get("vorname") or "").strip() or "Kind"
 
 
 def closure_on(events: list[Event], day: date) -> Event | None:

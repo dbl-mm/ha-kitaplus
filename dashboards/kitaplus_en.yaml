@@ -1,4 +1,4 @@
-# KitaPlus dashboard (template) · version 0.4.0b2 · needs KitaPlus 0.3.1 or newer
+# KitaPlus dashboard (template) · version 0.4.0b3 · needs KitaPlus 0.3.1 or newer
 # Install: Settings → Dashboards → Add dashboard → open it → ⋮ → Raw configuration editor.
 # Replace KIND with your child's first name (display) and kind with the same name in lower case
 # (that is how the entities are named, see Settings → Entities). Several children: see the README here.

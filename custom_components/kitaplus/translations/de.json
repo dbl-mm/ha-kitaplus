@@ -213,7 +213,7 @@
   "services": {
     "dashboard_yaml": {
       "name": "Dashboard erzeugen",
-      "description": "Erzeugt ein fertiges Dashboard für deine Kinder mit den echten Entity-IDs und gibt es als YAML-Text zurück. In den Entwicklerwerkzeugen unter Aktionen ausführen und das yaml aus der Antwort kopieren.",
+      "description": "Erzeugt ein fertiges Dashboard für deine Kinder mit den echten Entity-IDs. In den Entwicklerwerkzeugen unter Aktionen ausführen, die ganze Antwort kopieren und im Raw-Konfigurationseditor eines neuen Dashboards einfügen.",
       "fields": {
         "config_entry": {
           "name": "KitaPlus-Konto",

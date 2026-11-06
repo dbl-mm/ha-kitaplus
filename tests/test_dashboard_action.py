@@ -1,5 +1,6 @@
 """The action kitaplus.dashboard_yaml builds a dashboard with the real children and entity ids."""
 
+import json
 import re
 from contextlib import ExitStack
 from unittest.mock import patch
@@ -29,16 +30,21 @@ async def run(hass: HomeAssistant, **data) -> dict:
     return await hass.services.async_call(DOMAIN, "dashboard_yaml", data, blocking=True, return_response=True)
 
 
-async def test_the_dashboard_has_the_real_child_and_only_entities_that_exist(hass, stack) -> None:
+def text_of(result: dict) -> str:
+    """Everything the dashboard says, as one string to search in."""
+    return json.dumps(result, ensure_ascii=False)
+
+
+async def test_the_answer_is_the_dashboard_with_the_real_child_and_only_entities_that_exist(
+    hass, stack
+) -> None:
     await setup_integration(hass, stack)
     result = await run(hass)
-    text = result["yaml"]
-    assert result["children"] == ["vorname-1"]
-    assert yaml.safe_load(text)["views"], "valid YAML with views"
-    assert text.startswith("# KitaPlus-Dashboard") or text.startswith("# KitaPlus dashboard")
-    assert "vorname-1" in text
-    assert "KIND" not in text and "sensor.kind_" not in text, "nothing is left to replace"
-    ids = set(ENTITY_ID.findall(text))
+    assert result["views"] and result["title"], "the answer itself is a dashboard, ready to paste"
+    assert not {"yaml", "children", "language"} & set(result), "nothing around it that would break pasting"
+    assert "vorname-1" in text_of(result)
+    assert "KIND" not in text_of(result) and "sensor.kind_" not in text_of(result), "nothing to replace"
+    ids = set(ENTITY_ID.findall(text_of(result)))
     assert ids, "the dashboard refers to entities"
     registry = er.async_get(hass)
     missing = {i for i in ids if registry.async_get(i) is None}
@@ -46,22 +52,27 @@ async def test_the_dashboard_has_the_real_child_and_only_entities_that_exist(has
     assert "sensor.vorname_1_order_status_today" in ids and "sensor.kitaplus_meal_account_balance" in ids
 
 
+async def test_the_answer_survives_a_round_trip_through_yaml(hass, stack) -> None:
+    """The frontend shows the answer as YAML and the user pastes it back: nothing may get lost."""
+    await setup_integration(hass, stack)
+    result = await run(hass)
+    assert yaml.safe_load(yaml.safe_dump(result, allow_unicode=True)) == result
+
+
 async def test_the_language_changes_the_texts_not_the_entity_ids(hass, stack) -> None:
     await setup_integration(hass, stack)
-    german = (await run(hass, language="de"))["yaml"]
-    english = (await run(hass, language="en"))["yaml"]
-    assert (
-        dashboard.TEXT["de"]["view_calendar"] in german and dashboard.TEXT["en"]["view_calendar"] in english
-    )
-    assert set(ENTITY_ID.findall(german)) == set(ENTITY_ID.findall(english))
-    assert "Version" in german.splitlines()[0] or "version" in english.splitlines()[0]
+    german = await run(hass, language="de")
+    english = await run(hass, language="en")
+    assert german["views"][2]["title"] == dashboard.TEXT["de"]["view_calendar"]
+    assert english["views"][2]["title"] == dashboard.TEXT["en"]["view_calendar"]
+    assert set(ENTITY_ID.findall(text_of(german))) == set(ENTITY_ID.findall(text_of(english)))
 
 
 async def test_the_default_language_follows_home_assistant(hass, stack) -> None:
     await setup_integration(hass, stack)
-    assert (await run(hass))["language"] == "en"
+    assert (await run(hass))["views"][0]["title"] == dashboard.TEXT["en"]["view_today"]
     hass.config.language = "de"
-    assert (await run(hass))["language"] == "de"
+    assert (await run(hass))["views"][0]["title"] == dashboard.TEXT["de"]["view_today"]
 
 
 async def test_a_renamed_entity_is_used_with_its_new_id(hass, stack) -> None:
@@ -69,7 +80,7 @@ async def test_a_renamed_entity_is_used_with_its_new_id(hass, stack) -> None:
     registry = er.async_get(hass)
     registry.async_update_entity("sensor.vorname_1_order_status_today", new_entity_id="sensor.finn_status")
     registry.async_update_entity("sensor.kitaplus_mailbox", new_entity_id="sensor.kita_post")
-    ids = set(ENTITY_ID.findall((await run(hass))["yaml"]))
+    ids = set(ENTITY_ID.findall(text_of(await run(hass))))
     assert "sensor.finn_status" in ids and "sensor.kita_post" in ids
     assert "sensor.vorname_1_order_status_today" not in ids and "sensor.kitaplus_mailbox" not in ids
 
@@ -93,7 +104,7 @@ async def test_with_two_accounts_one_has_to_be_chosen(hass, stack) -> None:
         await run(hass)
     assert err.value.translation_key == "choose_entry"
     result = await run(hass, config_entry=first.entry_id)
-    ids = set(ENTITY_ID.findall(result["yaml"]))
+    ids = set(ENTITY_ID.findall(text_of(result)))
     registry = er.async_get(hass)
     assert ids and all(
         registry.async_get(i).config_entry_id == first.entry_id for i in ids if registry.async_get(i)
@@ -108,12 +119,21 @@ async def test_a_wrong_language_is_rejected(hass, stack) -> None:
         await run(hass, language="fr")
 
 
-async def test_a_nameless_child_is_called_kind(hass, stack) -> None:
+async def test_a_nameless_child_is_called_kind_and_stray_spaces_are_dropped(hass, stack) -> None:
     from .conftest import load
 
     kids = load("get_einrichtungen_kinder")["kinder"]
     await setup_integration(hass, stack, async_get_children=[{**kids[0], "vorname": None}])
-    assert (await run(hass))["children"] == ["Kind"]
+    assert "'Kind'" in text_of(await run(hass)), "the name appears as a quoted text in the cards"
+
+
+async def test_a_name_with_a_trailing_space_is_cleaned(hass, stack) -> None:
+    from .conftest import load
+
+    kids = load("get_einrichtungen_kinder")["kinder"]
+    await setup_integration(hass, stack, async_get_children=[{**kids[0], "vorname": "Finn "}])
+    out = text_of(await run(hass))
+    assert "'Finn'" in out and "'Finn '" not in out
 
 
 def test_ids_fall_back_to_the_usual_names_when_the_registry_does_not_know_one() -> None:
