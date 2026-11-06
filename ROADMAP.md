@@ -6,9 +6,7 @@ nicht öffentlich, und alles, was schreibt, wird nur mit großer Vorsicht gebaut
 
 ## Als Nächstes
 
-- **Dashboard-Assistent.** Die Integration erzeugt das Dashboard-YAML mit den echten Kindern und Entity-IDs,
-  sodass `KIND` und `kind` nicht mehr ersetzt werden müssen (Aktion `kitaplus.dashboard_yaml`). Danach ein Hinweis
-  nach der Einrichtung. Ein automatisches Anlegen des Dashboards nur auf ausdrücklichen Wunsch.
+- **Dashboard automatisch anlegen.** Die Aktion „Dashboard erzeugen“ gibt es schon (nur das YAML zum Kopieren). Ein automatisches Anlegen des Dashboards in Home Assistant nur auf ausdrücklichen Wunsch.
 - **Echte Screenshots** statt der Entwurfsbilder im README und im Wiki.
 
 ## Später

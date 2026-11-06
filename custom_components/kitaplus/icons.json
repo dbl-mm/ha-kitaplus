@@ -69,5 +69,10 @@
         "default": "mdi:silverware-fork-knife"
       }
     }
+  },
+  "services": {
+    "dashboard_yaml": {
+      "service": "mdi:view-dashboard-outline"
+    }
   }
 }

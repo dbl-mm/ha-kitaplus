@@ -40,3 +40,10 @@ DEFAULT_DEADLINE_TIME = "11:00:00"
 DEFAULT_LEAD_MINUTES = 120
 MAX_DEADLINE_DAYS = 14
 EVENT_ORDER_DEADLINE = f"{DOMAIN}_order_deadline"
+
+# Action that builds a dashboard for the real children and entity ids.
+SERVICE_DASHBOARD_YAML = "dashboard_yaml"
+ATTR_CONFIG_ENTRY = "config_entry"
+ATTR_LANGUAGE = "language"
+# Set on a new entry so that the first setup shows the hint about the dashboard once.
+CONF_DASHBOARD_HINT = "show_dashboard_hint"

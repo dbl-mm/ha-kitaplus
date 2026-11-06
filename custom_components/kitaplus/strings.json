@@ -200,6 +200,36 @@
     },
     "api_error": {
       "message": "KitaPlus request failed: {error}"
+    },
+    "no_loaded_entry": {
+      "message": "No set-up KitaPlus account was found. Set up the integration first, or wait until it has finished loading."
+    },
+    "choose_entry": {
+      "message": "There is more than one KitaPlus account. Choose one in the field \"KitaPlus account\"."
+    }
+  },
+  "services": {
+    "dashboard_yaml": {
+      "name": "Create dashboard",
+      "description": "Builds a ready-to-paste dashboard for your children with the real entity ids and returns it as YAML text. Run it in Developer tools → Actions and copy the yaml from the response.",
+      "fields": {
+        "config_entry": {
+          "name": "KitaPlus account",
+          "description": "Only needed if you have more than one KitaPlus account."
+        },
+        "language": {
+          "name": "Language",
+          "description": "Language of the dashboard texts. Default: the language of Home Assistant."
+        }
+      }
+    }
+  },
+  "selector": {
+    "dashboard_language": {
+      "options": {
+        "de": "German",
+        "en": "English"
+      }
     }
   }
 }

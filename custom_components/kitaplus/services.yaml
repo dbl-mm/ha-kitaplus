@@ -1,0 +1,15 @@
+dashboard_yaml:
+  fields:
+    config_entry:
+      required: false
+      selector:
+        config_entry:
+          integration: kitaplus
+    language:
+      required: false
+      selector:
+        select:
+          options:
+            - de
+            - en
+          translation_key: dashboard_language

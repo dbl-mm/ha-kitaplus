@@ -29,6 +29,7 @@ Unofficial Home Assistant integration for the **kitaplus parent app** (eltern.ki
 - **Kita:** **Closed today**, **Closed tomorrow** (attribute `reason` gives the reason, for example "Brückentag", a bridge day)
 - **Meals:** per child **Meal today**, **Meal tomorrow**, **Order status today**, **Order status tomorrow** (Ordered, Open, Deadline missed, No meal), **Next order deadline**, **Nothing ordered tomorrow**; per account **Meal account balance** (EUR)
 - **Diagnostics:** **Session valid until** (disabled by default): how long the stored sign-in is valid
+- **Action:** **KitaPlus: Create dashboard** (`kitaplus.dashboard_yaml`) builds a ready-made dashboard for your children
 - **Events:** `kitaplus_new_board_post`, `kitaplus_new_message` (with `id` and `title`; not on the first fetch), `kitaplus_order_deadline` (before the order deadline, see below)
 
 Every child appears as its own device, plus a "KitaPlus" device for the account. New children appear without a restart (after 24 hours at the latest). Children KitaPlus no longer lists are removed as devices.
@@ -40,7 +41,7 @@ Every child appears as its own device, plus a "KitaPlus" device for the account.
 1. Search for **KitaPlus** in HACS and download it, then restart Home Assistant. (If it does not show up in the search yet: [Installation](#installation).)
 2. **Settings → Devices & services → Add integration → KitaPlus**, sign in with your KitaPlus account (e-mail and password, plus a two-factor code if needed).
 3. Under **Configure**, enter **your Kita's order deadline**, so that "Deadline missed" and the reminders are right. [How to](#order-deadlines).
-4. Import a [blueprint](#blueprints) and add the [dashboard](#dashboard-templates).
+4. Import a [blueprint](#blueprints) and let the integration build the [dashboard](#dashboard-templates) (action "KitaPlus: Create dashboard").
 
 ## Installation
 
@@ -220,7 +221,16 @@ More on this, the available variables and an example: [docs/blueprints.md](docs/
 
 ## Dashboard templates
 
-A deliberately calm dashboard in the new sections layout, using only built-in cards, in German and English: **Heute** (today: one status card that says what matters, Kita, meals per child, board, mailbox, appointments, balance), **Wand** (wall: tablet, three columns) and **Kalender** (calendar). Plus single cards to paste into your own dashboard. Setup in two minutes: [dashboards/README.md](dashboards/README.md). The English file is [`dashboards/kitaplus_en.yaml`](dashboards/kitaplus_en.yaml). The design rules are in [docs/dashboards.md](docs/dashboards.md) (German). If you want a designer to style it: [designer briefing](docs/designer-briefing.md) (German).
+A deliberately calm dashboard in the new sections layout, using only built-in cards, in German and English.
+
+**Easiest: let the integration build the dashboard.** It knows your children and the real entity ids and builds a dashboard that needs no replacing:
+1. *Developer tools → Actions → "KitaPlus: Create dashboard"* (`kitaplus.dashboard_yaml`) and **Perform action**.
+2. Copy the `yaml` from the response.
+3. *Settings → Dashboards → Add dashboard → open it → ⋮ → Edit → ⋮ → Raw configuration editor*, delete everything, paste, save.
+
+The action only reads: it creates nothing and sends nothing to KitaPlus. The language of the texts is the one of Home Assistant; the field *Language* lets you choose German or English. If a child joins later, run it again. After the setup Home Assistant shows you a hint about it once.
+
+Without the action there are templates to adapt yourself: **Heute** (today: one status card that says what matters, Kita, meals per child, board, mailbox, appointments, balance), **Wand** (wall: tablet, three columns) and **Kalender** (calendar). Plus single cards to paste into your own dashboard. Setup in two minutes: [dashboards/README.md](dashboards/README.md). The English file is [`dashboards/kitaplus_en.yaml`](dashboards/kitaplus_en.yaml). The design rules are in [docs/dashboards.md](docs/dashboards.md) (German). If you want a designer to style it: [designer briefing](docs/designer-briefing.md) (German).
 
 ## Attachments (for example the menu plan)
 

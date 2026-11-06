@@ -200,6 +200,36 @@
     },
     "api_error": {
       "message": "Anfrage an KitaPlus fehlgeschlagen: {error}"
+    },
+    "no_loaded_entry": {
+      "message": "Es wurde kein eingerichtetes KitaPlus-Konto gefunden. Richte zuerst die Integration ein oder warte, bis sie geladen ist."
+    },
+    "choose_entry": {
+      "message": "Es gibt mehr als ein KitaPlus-Konto. Wähle eines im Feld „KitaPlus-Konto“."
+    }
+  },
+  "services": {
+    "dashboard_yaml": {
+      "name": "Dashboard erzeugen",
+      "description": "Erzeugt ein fertiges Dashboard für deine Kinder mit den echten Entity-IDs und gibt es als YAML-Text zurück. In den Entwicklerwerkzeugen unter Aktionen ausführen und das yaml aus der Antwort kopieren.",
+      "fields": {
+        "config_entry": {
+          "name": "KitaPlus-Konto",
+          "description": "Nur nötig, wenn du mehr als ein KitaPlus-Konto hast."
+        },
+        "language": {
+          "name": "Sprache",
+          "description": "Sprache der Dashboard-Texte. Standard: die Sprache von Home Assistant."
+        }
+      }
+    }
+  },
+  "selector": {
+    "dashboard_language": {
+      "options": {
+        "de": "Deutsch",
+        "en": "Englisch"
+      }
     }
   }
 }

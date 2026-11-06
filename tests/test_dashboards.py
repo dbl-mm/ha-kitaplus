@@ -1,6 +1,5 @@
 """The dashboard templates are generated, follow the design rules, and match the real entities."""
 
-import importlib.util
 import re
 from contextlib import ExitStack
 from pathlib import Path
@@ -12,12 +11,11 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.template import Template
 from homeassistant.util import slugify as ha_slugify
 
+from custom_components.kitaplus import dashboard as gen
+
 from .common import setup_integration
 
 ROOT = Path(__file__).parent.parent
-spec = importlib.util.spec_from_file_location("build_dashboards", ROOT / "scripts" / "build_dashboards.py")
-gen = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(gen)
 
 LANGUAGES = ("de", "en")
 BUILT_IN_CARDS = {

@@ -45,6 +45,7 @@ from .const import (
     CONF_ACCOUNT_ID,
     CONF_AUTH_CODE,
     CONF_CLIENT_ID,
+    CONF_DASHBOARD_HINT,
     CONF_DEADLINE_DAYS,
     CONF_DEADLINE_TIME,
     CONF_DEADLINE_WORKDAYS,
@@ -155,7 +156,7 @@ class KitaPlusConfigFlow(ConfigFlow, domain=DOMAIN):
         if self.source == SOURCE_USER:
             await self.async_set_unique_id(account)
             self._abort_if_unique_id_configured()
-            return self.async_create_entry(title=self._email, data=data)
+            return self.async_create_entry(title=self._email, data={**data, CONF_DASHBOARD_HINT: True})
         entry = self._get_reauth_entry() if self.source == SOURCE_REAUTH else self._get_reconfigure_entry()
         known = entry.data.get(CONF_ACCOUNT_ID)
         if known is not None and str(known) != account:

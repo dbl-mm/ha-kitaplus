@@ -29,6 +29,7 @@ Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern
 - **Kita:** **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“)
 - **Verpflegung:** pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Nächste Bestellfrist**, **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR)
 - **Diagnose:** **Sitzung gültig bis** (standardmäßig deaktiviert): bis wann die gespeicherte Anmeldung gilt
+- **Aktion:** **KitaPlus: Dashboard erzeugen** (`kitaplus.dashboard_yaml`) baut ein fertiges Dashboard für deine Kinder
 - **Ereignisse:** `kitaplus_new_board_post`, `kitaplus_new_message` (mit `id` und `title`; nicht beim ersten Abruf), `kitaplus_order_deadline` (vor der Bestellfrist, siehe unten)
 
 Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das Konto. Neue Kinder erscheinen ohne Neustart (spätestens nach 24 Stunden), Kinder, die KitaPlus nicht mehr nennt, werden als Gerät entfernt.
@@ -40,7 +41,7 @@ Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das
 1. In HACS nach **KitaPlus** suchen und herunterladen, dann Home Assistant neu starten. (Erscheint es noch nicht in der Suche: [Installation](#installation).)
 2. **Einstellungen → Geräte & Dienste → Integration hinzufügen → KitaPlus**, mit deinem KitaPlus-Zugang anmelden (E-Mail und Passwort, bei Bedarf Zwei-Faktor-Code).
 3. Unter **Konfigurieren** die **Bestellfrist deiner Kita** eintragen, damit „Frist verpasst“ und Erinnerungen stimmen. [Wie das geht](#bestellfristen).
-4. Ein [Blueprint](#blueprints) importieren und das [Dashboard](#dashboard-vorlagen) einfügen.
+4. Ein [Blueprint](#blueprints) importieren und das [Dashboard](#dashboard-vorlagen) erzeugen lassen (Aktion „KitaPlus: Dashboard erzeugen“).
 
 ## Installation
 
@@ -220,7 +221,16 @@ Blueprint importieren* und die Adresse der Datei aus [`blueprints/automation/kit
 
 ## Dashboard-Vorlagen
 
-Ein bewusst ruhiges Dashboard im neuen Sections-Layout, nur mit eingebauten Karten, auf Deutsch und Englisch:
+Ein bewusst ruhiges Dashboard im neuen Sections-Layout, nur mit eingebauten Karten, auf Deutsch und Englisch.
+
+**Am einfachsten: Lass dir das Dashboard erzeugen.** Die Integration kennt deine Kinder und die echten Entity-IDs und baut das Dashboard fertig, ohne dass du etwas ersetzen musst:
+1. *Entwicklerwerkzeuge → Aktionen → „KitaPlus: Dashboard erzeugen“* (`kitaplus.dashboard_yaml`) und **Aktion ausführen**.
+2. Das `yaml` aus der Antwort kopieren.
+3. *Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Bearbeiten → ⋮ → Raw-Konfigurationseditor*, alles löschen, einfügen, speichern.
+
+Die Aktion gibt es nur lesend, sie legt nichts an und sendet nichts an KitaPlus. Die Sprache der Texte ist die von Home Assistant, im Feld *Sprache* kannst du Deutsch oder Englisch wählen. Kommt später ein Kind dazu, führst du sie einfach noch einmal aus. Nach der Einrichtung zeigt Home Assistant dir einmal einen Hinweis darauf.
+
+Ohne die Aktion gibt es die Vorlagen zum Selbst-Anpassen:
 **Heute** (eine Statuskarte, die das Wichtigste sagt; Kita; Essen pro Kind; Brett, Postfach, Termine, Guthaben), **Wand** (Tablet, drei Spalten) und
 **Kalender**. Dazu einzelne Karten zum Einfügen in dein eigenes Dashboard. Einbau in zwei Minuten:
 [dashboards/README.md](dashboards/README.md). Die Gestaltungsregeln stehen in [docs/dashboards.md](docs/dashboards.md). Wenn du es
