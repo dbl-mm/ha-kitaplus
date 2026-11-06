@@ -1,6 +1,6 @@
 """Set the integration version in manifest.json and stamp it into blueprints and dashboards.
 
-Usage: python3 scripts/bump_version.py 0.2.0
+Usage: python3 scripts/bump_version.py 0.2.0   (or 0.2.0b1 for a pre-release)
 The version must match the git tag (v0.2.0), because HACS compares the installed
 version with the latest GitHub release.
 
@@ -19,9 +19,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "custom_components" / "kitaplus" / "manifest.json"
 BLUEPRINTS = ROOT / "blueprints" / "automation" / "kitaplus"
-SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
+SEMVER = re.compile(r"^\d+\.\d+\.\d+(b\d+)?$")  # 0.4.0 or the pre-release 0.4.0b1
 STAMP = re.compile(
-    r"^    \*Version [\d.]+ · benötigt KitaPlus ab [\d.]+ · Home Assistant ab [\d.]+\*\n", re.M
+    r"^    \*Version [\w.]+ · benötigt KitaPlus ab [\d.]+ · Home Assistant ab [\d.]+\*\n", re.M
 )
 
 # The oldest integration version each blueprint works with (entities and events it needs).
