@@ -2,6 +2,7 @@ name: Release
 # Push a tag like v0.2.0 -> tests run, a zip of the integration is built and a GitHub release
 # is created. HACS then offers it as an update in Home Assistant.
 # A tag like v0.4.0b1 makes a pre-release: HACS shows it only to people who switch on "Show beta versions".
+# Older pre-releases are removed after every release, so only the newest one (or none) stays.
 on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+", "v[0-9]+.[0-9]+.[0-9]+b[0-9]+"]
@@ -31,3 +32,19 @@ jobs:
           flags=""
           if [[ "${GITHUB_REF_NAME}" =~ b[0-9]+$ ]]; then flags="--prerelease"; fi
           gh release create "${GITHUB_REF_NAME}" kitaplus.zip --title "${GITHUB_REF_NAME}" --generate-notes ${flags}
+      - name: Remove older pre-releases
+        # A new pre-release replaces the older ones, a stable release removes all of them, so the version
+        # list in HACS only shows what is current. Their tags go with them.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for tag in $(gh release list --json tagName,isPrerelease --jq '.[] | select(.isPrerelease) | .tagName'); do
+            if [ "${tag}" != "${GITHUB_REF_NAME}" ]; then
+              gh release delete "${tag}" --cleanup-tag --yes
+            fi
+          done
+          if [[ ! "${GITHUB_REF_NAME}" =~ b[0-9]+$ ]]; then
+            for tag in $(gh release list --json tagName,isPrerelease --jq '.[] | select(.isPrerelease) | .tagName'); do
+              gh release delete "${tag}" --cleanup-tag --yes
+            done
+          fi
