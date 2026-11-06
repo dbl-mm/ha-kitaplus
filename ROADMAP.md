@@ -1,8 +1,9 @@
 # Roadmap
 
 Was als Nächstes denkbar ist. Die Liste ist eine Absicht, kein Versprechen: Die Schnittstelle von KitaPlus ist
-nicht öffentlich, und alles, was schreibt, wird nur mit großer Vorsicht gebaut. Jeder Punkt hat ein
-[Issue](https://github.com/dbl-mm/ha-kitaplus/issues?q=label%3Aroadmap), dort kannst du mitreden.
+nicht öffentlich, und alles, was schreibt, wird nur mit großer Vorsicht gebaut. Mitreden kannst du in den
+[Diskussionen](https://github.com/dbl-mm/ha-kitaplus/discussions), zu den Punkten unten gibt es dort je einen Beitrag. Fehler und
+konkrete Probleme gehören weiterhin in die [Issues](https://github.com/dbl-mm/ha-kitaplus/issues).
 
 ## Als Nächstes
 
