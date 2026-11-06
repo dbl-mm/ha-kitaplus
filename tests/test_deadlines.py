@@ -13,13 +13,17 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_capture_events, async_fire_time_changed
 
-from custom_components.kitaplus.api.exceptions import KitaPlusConnectionError
+from custom_components.kitaplus.api.exceptions import KitaPlusApiError, KitaPlusConnectionError
 from custom_components.kitaplus.helpers import (
     DeadlineRule,
     deadline_for,
+    holiday_dates,
     meals_on,
     open_orders,
     order_status,
+    parse_deadline_text,
+    rule_from_texts,
+    shifts_to_workday,
 )
 
 from .common import CLIENT, make_entry, meal_day, setup_integration
@@ -64,7 +68,7 @@ def test_deadlines_for_other_rules() -> None:
     assert deadline_for(date(2026, 10, 29), same_day, tz) == datetime(2026, 10, 29, 9, 0, tzinfo=tz)
     # a Monday meal, one day before: Sunday as calendar days, Friday when weekends do not count
     calendar = DeadlineRule(1, time(11, 0))
-    weekdays = DeadlineRule(1, time(11, 0), workdays_only=True)
+    weekdays = DeadlineRule(1, time(11, 0), shift_to_workday=True)
     assert deadline_for(date(2026, 11, 2), calendar, tz).date() == date(2026, 11, 1)
     assert deadline_for(date(2026, 11, 2), weekdays, tz).date() == date(2026, 10, 30)
     assert deadline_for(date(2026, 11, 3), DeadlineRule(2, time(11, 0), True), tz).date() == date(
@@ -425,3 +429,145 @@ async def test_the_next_deadline_is_worked_out_once_per_read_and_moves_on_with_t
         assert spy.call_count == 1
         entity.async_write_ha_state()
         assert spy.call_count == 1
+
+
+# ---------------------------------------------- the rule as KitaPlus words it (real answer, anonymised)
+
+REAL_TEXT = "Bestellfrist (Einzelbestellungen): 1 Tage vor Essenausgabe um 11:00 Uhr."
+REAL_SHIFT = (
+    "Bitte beachten Sie, dass die Bestellfrist und Abbestellfrist auf den vorhergehenden Werktag "
+    "verschoben werden, sofern das Bestellfristdatum ein Samstag, Sonntag oder Feiertag ist."
+)
+
+
+def test_the_deadline_sentence_of_kitaplus_is_read() -> None:
+    assert parse_deadline_text(REAL_TEXT) == (1, time(11, 0))
+    assert parse_deadline_text("... 2 Tage vor Essenausgabe um 9:30 Uhr.") == (2, time(9, 30))
+    assert parse_deadline_text("... 0 Tage vor Essenausgabe um 08:00 Uhr.") == (0, time(8, 0))
+
+
+@pytest.mark.parametrize(
+    "text",
+    [None, "", "Bestellung bis spätestens am selben Tag um 9 Uhr", "1 Tage vor Essenausgabe um 25:00 Uhr"],
+)
+def test_other_wordings_are_not_guessed(text) -> None:
+    assert parse_deadline_text(text) is None
+
+
+def test_the_shift_to_the_previous_workday_is_recognised() -> None:
+    assert shifts_to_workday(REAL_SHIFT) is True
+    assert shifts_to_workday(None) is False
+    assert shifts_to_workday("nichts Besonderes") is False
+
+
+def test_a_rule_is_only_taken_when_every_facility_agrees() -> None:
+    one = {"bestellfristEinzelText": REAL_TEXT, "fristSonstigesText": REAL_SHIFT}
+    assert rule_from_texts([one]) == DeadlineRule(1, time(11, 0), True)
+    assert rule_from_texts([one, dict(one)]) == DeadlineRule(1, time(11, 0), True)
+    other = {"bestellfristEinzelText": "... 0 Tage vor Essenausgabe um 09:00 Uhr."}
+    assert rule_from_texts([one, other]) is None, "two different rules: ask the user instead of guessing"
+    assert rule_from_texts([{"bestellfristEinzelText": "unbekannt"}]) is None
+    assert rule_from_texts([]) is None
+
+
+def test_a_deadline_on_a_weekend_or_holiday_moves_to_the_workday_before() -> None:
+    tz = dt_util.get_default_time_zone()
+    rule = DeadlineRule(1, time(11, 0), shift_to_workday=True)
+    # Monday 09.11.2026: the day before is Sunday, so Friday 06.11. at 11:00
+    assert deadline_for(date(2026, 11, 9), rule, tz) == datetime(2026, 11, 6, 11, 0, tzinfo=tz)
+    # Tuesday 06.10.2026 with Monday 05.10. a holiday: the Friday before
+    holidays = frozenset({date(2026, 10, 5)})
+    assert deadline_for(date(2026, 10, 6), rule, tz, holidays).date() == date(2026, 10, 2)
+    assert deadline_for(date(2026, 10, 6), rule, tz).date() == date(2026, 10, 5), "no holiday known"
+    # without the rule the date stays on the weekend
+    assert deadline_for(date(2026, 11, 9), DeadlineRule(1, time(11, 0)), tz).date() == date(2026, 11, 8)
+    # two days before a Monday is a Saturday: Friday, not Thursday (the days are calendar days)
+    assert deadline_for(date(2026, 11, 9), DeadlineRule(2, time(11, 0), True), tz).date() == date(2026, 11, 6)
+
+
+def test_only_public_holidays_count_not_kita_closure_days() -> None:
+    events = [
+        {"startdatum": "2026-12-25T00:00:00", "enddatum": "2026-12-26T00:00:00", "istFeiertag": True},
+        {"startdatum": "2026-12-24T00:00:00", "enddatum": "2026-12-24T00:00:00", "istSchliesstag": True},
+        {"startdatum": None, "istFeiertag": True},
+    ]
+    assert holiday_dates(events) == {date(2026, 12, 25), date(2026, 12, 26)}
+
+
+# ----------------------------------------------------------------------------- read from KitaPlus itself
+
+KITA_RULES = [{"bestellfristEinzelText": REAL_TEXT, "fristSonstigesText": REAL_SHIFT}]
+
+
+async def test_the_deadline_is_read_from_kitaplus_when_nothing_is_entered(hass, stack, freezer) -> None:
+    await clock(hass, freezer, "2026-10-27T20:00:00")
+    await setup_integration(
+        hass,
+        stack,
+        entry=make_entry({"scan_interval": 240}),
+        async_get_order_rules=KITA_RULES,
+        async_get_meals=[meal_day(THURSDAY, ordered=False, orderable=True)],
+    )
+    state = hass.states.get(DEADLINE)
+    assert dt_util.parse_datetime(state.state) == local("2026-10-28T11:00:00")
+    assert state.attributes["rule_set"] is True and state.attributes["rule_source"] == "kitaplus"
+    await clock(hass, freezer, "2026-10-28T11:00:05")
+    assert hass.states.get(STATUS_TOMORROW).state == "missed"
+
+
+async def test_what_the_user_enters_wins_over_what_kitaplus_says(hass, stack, freezer) -> None:
+    await clock(hass, freezer, "2026-10-27T20:00:00")
+    entry = make_entry({"order_deadline_days": 0, "order_deadline_time": "09:00:00", "scan_interval": 240})
+    await setup_integration(
+        hass,
+        stack,
+        entry=entry,
+        async_get_order_rules=KITA_RULES,
+        async_get_meals=[meal_day(THURSDAY, ordered=False, orderable=True)],
+    )
+    state = hass.states.get(DEADLINE)
+    assert dt_util.parse_datetime(state.state) == local("2026-10-29T09:00:00")
+    assert state.attributes["rule_source"] == "options"
+
+
+async def test_an_unreadable_or_missing_answer_leaves_the_status_to_kitaplus(hass, stack, freezer) -> None:
+    await clock(hass, freezer, "2026-10-28T08:00:00")
+    await setup_integration(
+        hass,
+        stack,
+        entry=make_entry({"scan_interval": 240}),
+        async_get_order_rules=KitaPlusApiError("endpoint changed"),
+        async_get_meals=[meal_day(THURSDAY, ordered=False, orderable=True)],
+    )
+    assert hass.states.get(DEADLINE).state == "unknown"
+    assert hass.states.get(DEADLINE).attributes["rule_source"] is None
+    assert hass.states.get(STATUS_TOMORROW).state == "open", "the integration still works without the rule"
+
+
+async def test_the_deadline_is_read_once_a_day_not_at_every_poll(hass, stack, freezer) -> None:
+    await clock(hass, freezer, "2026-10-27T20:00:00")
+    entry = await setup_integration(
+        hass, stack, entry=make_entry({"scan_interval": 15}), async_get_order_rules=KITA_RULES
+    )
+    calls = stack.enter_context(patch(f"{CLIENT}.async_get_order_rules", return_value=KITA_RULES))
+    await clock(hass, freezer, "2026-10-27T20:16:00")
+    await clock(hass, freezer, "2026-10-27T20:32:00")
+    assert calls.call_count == 0
+    await clock(hass, freezer, "2026-10-28T20:40:00")
+    assert calls.call_count == 1, entry.state
+
+
+async def test_a_deadline_on_a_holiday_moves_back_in_the_sensor(hass, stack, freezer) -> None:
+    await clock(hass, freezer, "2026-12-21T08:00:00")
+    holiday = {"id": 9, "name": "1. Weihnachtstag", "startdatum": "2026-12-25T00:00:00",
+               "enddatum": "2026-12-25T00:00:00", "istFeiertag": True}  # fmt: skip
+    await setup_integration(
+        hass,
+        stack,
+        entry=make_entry({"scan_interval": 240}),
+        async_get_order_rules=KITA_RULES,
+        async_get_events=[holiday],
+        async_get_meals=[meal_day("2026-12-26", ordered=False, orderable=True)],
+    )
+    # Saturday 26.12.: one day before is the holiday Friday 25.12., then Thursday 24.12. at 11:00
+    assert dt_util.parse_datetime(hass.states.get(DEADLINE).state) == local("2026-12-24T11:00:00")

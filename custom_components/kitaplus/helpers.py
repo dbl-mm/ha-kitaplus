@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta, tzinfo
 
-from .api.models import Day, Event, MealEntry, Message, PendingReply, UpcomingEntry
+from .api.models import Day, Event, MealEntry, Message, OrderRules, PendingReply, UpcomingEntry
 
 
 def _d(value: str | None) -> date | None:
@@ -58,25 +58,77 @@ def meals_on(days: list[Day], day: date) -> list[MealEntry]:
 
 @dataclass(frozen=True)
 class DeadlineRule:
-    """A Kita's order deadline, e.g. "1 day before the meal at 11:00" (days_before=1, at=11:00)."""
+    """A Kita's order deadline, e.g. "1 day before the meal at 11:00" (days_before=1, at=11:00).
+
+    With `shift_to_workday` a deadline that falls on a Saturday, Sunday or public holiday moves back to the
+    previous workday. KitaPlus says so in its help text ("auf den vorhergehenden Werktag verschoben").
+    """
 
     days_before: int
     at: time
-    workdays_only: bool = False
+    shift_to_workday: bool = False
 
 
-def deadline_for(day: date, rule: DeadlineRule, tz: tzinfo) -> datetime:
-    """The moment ordering for `day` closes. With `workdays_only`, Saturdays and Sundays are not counted."""
-    target = day
-    if rule.workdays_only:
-        remaining = rule.days_before
-        while remaining > 0:
+def deadline_for(
+    day: date, rule: DeadlineRule, tz: tzinfo, holidays: frozenset[date] = frozenset()
+) -> datetime:
+    """The moment ordering for `day` closes: `days_before` calendar days earlier, moved back if required."""
+    target = day - timedelta(days=rule.days_before)
+    if rule.shift_to_workday:
+        while target.weekday() >= 5 or target in holidays:
             target -= timedelta(days=1)
-            if target.weekday() < 5:
-                remaining -= 1
-    else:
-        target = day - timedelta(days=rule.days_before)
     return datetime.combine(target, rule.at, tzinfo=tz)
+
+
+def holiday_dates(events: list[Event]) -> frozenset[date]:
+    """Public holidays among the appointments. Kita closure days are not holidays and do not count."""
+    found: set[date] = set()
+    for event in events:
+        if not event.get("istFeiertag"):
+            continue
+        start = _d(event.get("startdatum"))
+        end = _d(event.get("enddatum")) or start
+        if start and end:
+            found.update(
+                start + timedelta(days=i)
+                for i in range((min(end, start + timedelta(days=30)) - start).days + 1)
+            )
+    return frozenset(found)
+
+
+_DEADLINE_TEXT = re.compile(
+    r"(\d{1,2})\s*Tag(?:e|en)?\s+vor\s+Essenausgabe\s+um\s+(\d{1,2}):(\d{2})\s*Uhr", re.I
+)
+
+
+def parse_deadline_text(text: str | None) -> tuple[int, time] | None:
+    """Days before and time of day from "... 1 Tage vor Essenausgabe um 11:00 Uhr". Anything else gives None.
+
+    Other wordings are not guessed: without a rule the status relies on what KitaPlus reports per meal.
+    """
+    match = _DEADLINE_TEXT.search(text or "")
+    if match is None:
+        return None
+    days, hour, minute = int(match[1]), int(match[2]), int(match[3])
+    if hour > 23 or minute > 59:
+        return None
+    return days, time(hour, minute)
+
+
+def shifts_to_workday(text: str | None) -> bool:
+    """True if the Kita says a deadline on a weekend or holiday moves to the previous workday."""
+    return bool(re.search(r"vorhergehenden\s+Werktag", text or "", re.I))
+
+
+def rule_from_texts(rules: list[OrderRules]) -> DeadlineRule | None:
+    """The deadline all facilities agree on. Different or unreadable texts give None, nothing is guessed."""
+    found = set()
+    for entry in rules:
+        parsed = parse_deadline_text(entry.get("bestellfristEinzelText"))
+        if parsed is None:
+            return None
+        found.add(DeadlineRule(parsed[0], parsed[1], shifts_to_workday(entry.get("fristSonstigesText"))))
+    return found.pop() if len(found) == 1 else None
 
 
 ORDER_STATES = ["ordered", "open", "missed", "not_offered"]
@@ -112,14 +164,16 @@ class OpenOrder:
     deadline: datetime | None
 
 
-def open_orders(days: list[Day], rule: DeadlineRule | None, now: datetime) -> list[OpenOrder]:
+def open_orders(
+    days: list[Day], rule: DeadlineRule | None, now: datetime, holidays: frozenset[date] = frozenset()
+) -> list[OpenOrder]:
     """Days from today on with meals offered, nothing ordered and ordering still possible, soonest first."""
     found: list[OpenOrder] = []
     for entry in days:
         day = _d(entry.get("datum"))
         if day is None or day < now.date():
             continue
-        deadline = deadline_for(day, rule, now.tzinfo or UTC) if rule else None
+        deadline = deadline_for(day, rule, now.tzinfo or UTC, holidays) if rule else None
         if order_status(meals_on([entry], day), deadline, now) == "open":
             found.append(OpenOrder(day, deadline))
     return sorted(found, key=lambda o: o.day)

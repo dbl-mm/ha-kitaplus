@@ -172,14 +172,14 @@
           "scan_interval": "Interval (minutes)",
           "order_deadline_days": "Order deadline: days before the meal",
           "order_deadline_time": "Order deadline: time",
-          "order_deadline_workdays": "Count only weekdays (Monday to Friday)",
+          "order_deadline_workdays": "Move the deadline off weekends and holidays",
           "reminder_lead_minutes": "Reminder before the deadline (minutes)"
         },
         "data_description": {
           "scan_interval": "How often Home Assistant asks KitaPlus for new data. Shorter than 15 minutes is not allowed.",
-          "order_deadline_days": "Your Kita sets this. Example: \"1 day before the meal at 11:00\" means 1 here and 11:00 below. 0 means on the day itself. Leave it empty if you do not know it. You find it in the KitaPlus app under Verpflegung → Hilfe → Bestellfristen.",
+          "order_deadline_days": "Only fill this in to override KitaPlus. By default the integration reads your Kita's deadline from KitaPlus itself (\"1 day before the meal at 11:00\"), so you can leave this empty. 0 means on the day itself.",
           "order_deadline_time": "The time of day at which ordering closes, for example 11:00.",
-          "order_deadline_workdays": "Switch on if your Kita does not count Saturdays and Sundays (a Monday meal then closes on Friday).",
+          "order_deadline_workdays": "Switch on if your Kita moves a deadline that falls on a Saturday, Sunday or public holiday back to the previous workday (a Monday meal then closes on Friday). KitaPlus says so in its help text; if it does, this is set for you.",
           "reminder_lead_minutes": "How long before the deadline the event kitaplus_order_deadline is fired, if the day is still not ordered. 0 turns it off."
         }
       }

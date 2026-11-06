@@ -101,7 +101,7 @@ Die Integration fragt KitaPlus im eingestellten Intervall ab (Standard alle 30 M
 Jede Kita legt selbst fest, **bis wann** Essen bestellt oder abbestellt werden kann. Bei manchen gilt „1 Tag vor Essenausgabe um 11:00 Uhr“, bei anderen „bis 9:00 Uhr am selben Tag“. KitaPlus verrät die Uhrzeit nur im Hilfetext der App, nicht als Zahl. Die Integration arbeitet deshalb mit **zwei Angaben**:
 
 1. **Was KitaPlus meldet:** Pro Mahlzeit sagt der Server, ob sie **noch bestellbar** ist.
-2. **Was du einträgst (empfohlen):** die Frist deiner Kita, einmal. Dann wird alles auf die Minute genau.
+2. **Die Frist deiner Kita:** Die Integration liest sie selbst aus KitaPlus, einmal am Tag. Dann wird alles auf die Minute genau. Du kannst sie auch selbst eintragen, das hat Vorrang.
 
 Die vier Zustände des Bestellstatus:
 
@@ -110,25 +110,25 @@ Die vier Zustände des Bestellstatus:
 - **Frist verpasst** — Es gibt Essen, nichts ist bestellt, und die Frist ist **vorbei**. Daran lässt sich nichts mehr ändern.
 - **Kein Essen** — An diesem Tag wird kein Essen angeboten.
 
-### Die Frist deiner Kita eintragen
-Die Frist steht in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*, zum Beispiel:
+### Die Frist deiner Kita
+Normalerweise musst du nichts tun: Die Integration liest den Satz aus der KitaPlus-App („… 1 Tage vor Essenausgabe um 11:00 Uhr“) selbst. Ob das geklappt hat, zeigt der Sensor **Nächste Bestellfrist** im Attribut `rule_source` (`kitaplus`). Versteht sie den Satz nicht, steht dort `null`, und du trägst die Frist selbst ein. Sie steht in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*, zum Beispiel:
 
 > Bestellfrist (Einzelbestellungen): **1 Tage vor Essenausgabe um 11:00 Uhr**. Einzelbestellungen für den heutigen Tag (Donnerstag) müssen bis spätestens Mittwoch, 28.10.2026 um 11:00 Uhr vorgenommen worden sein.
 
-Trage sie unter *Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren* ein:
+Zum Überschreiben oder Eintragen: *Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren*.
 
 - **Bestellfrist: Tage vor dem Essen** (Beispiel: `1`) — `0` heißt am Tag selbst. Leer lassen, wenn du sie nicht kennst.
 - **Bestellfrist: Uhrzeit** (Beispiel: `11:00`) — Zeitpunkt, zu dem die Bestellung schließt.
-- **Nur Werktage zählen** (Beispiel: aus) — Einschalten, wenn die Kita Samstag und Sonntag nicht mitzählt (Montag schließt dann am Freitag). Ob das bei dir so ist, siehst du im Beispielsatz der App an einem Montag.
+- **Frist von Wochenende und Feiertag auf den Werktag davor verschieben** (Beispiel: an) — Einschalten, wenn die Kita eine Frist, die auf Samstag, Sonntag oder einen Feiertag fällt, auf den vorhergehenden Werktag verschiebt (Montag schließt dann am Freitag). Steht das im Hilfetext von KitaPlus („… auf den vorhergehenden Werktag verschoben …“), ist es bei dir schon eingestellt.
 - **Erinnerung vor der Frist (Minuten)** (Beispiel: `120`) — Wie lange vor der Frist erinnert wird. `0` schaltet die Erinnerung aus.
 
 Mit der Frist passiert Folgendes:
 - Der **Bestellstatus** springt **genau zur Frist** auf „Frist verpasst“, auch wenn der letzte Abruf älter ist.
 - Der Sensor **Nächste Bestellfrist** zeigt, wann die nächste Bestellung schließt.
 - Die Integration löst **vor der Frist** das Ereignis `kitaplus_order_deadline` aus, aber nur, wenn der Tag noch nicht bestellt ist. Sie holt dafür **vorher frische Daten**. Der Blueprint „Erinnerung kurz vor der Bestellfrist“ macht daraus eine Mitteilung.
-- Öffentliche Feiertage kennt die Integration nicht. Zählt deine Kita sie bei der Frist mit, verlässt sich der Status dann auf die Angabe von KitaPlus.
+- Feiertage kennt die Integration aus den Terminen von KitaPlus (Schließtage der Kita zählen nicht). Verschiebt deine Kita die Frist vom Wochenende oder Feiertag auf den Werktag davor, rechnet die Integration das genauso.
 
-**Ohne eingetragene Frist** gilt nur die Angabe von KitaPlus. Sie ist so aktuell wie der letzte Abruf (Standard alle 30 Minuten). Der Blueprint „Erinnerung zu festen Uhrzeiten“ holt deshalb vor jeder Erinnerung frische Daten, und du stellst seine Uhrzeit **deutlich vor** deiner Frist ein.
+**Ohne bekannte Frist** (nichts eingetragen und der Satz bei KitaPlus nicht lesbar) gilt nur die Angabe von KitaPlus. Sie ist so aktuell wie der letzte Abruf (Standard alle 30 Minuten). Der Blueprint „Erinnerung zu festen Uhrzeiten“ holt deshalb vor jeder Erinnerung frische Daten, und du stellst seine Uhrzeit **deutlich vor** deiner Frist ein.
 
 Nach verpasster Frist fordern Blueprint und Dashboard **nicht** zum Bestellen auf. Die Integration **bestellt oder storniert nie selbst**. Auch künftige Bestell-Funktionen dürfen nur handeln, solange KitaPlus die Mahlzeit als bestellbar meldet, und müssen Erfolg oder Fehler eindeutig zurückmelden.
 

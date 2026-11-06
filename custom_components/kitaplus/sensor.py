@@ -281,7 +281,7 @@ class OrderStatusSensor(_ChildDaySensor):
         now = dt_util.now()
         day = now.date() + timedelta(days=self._offset)
         rule = self.coordinator.deadline_rule
-        deadline = deadline_for(day, rule, now.tzinfo or UTC) if rule else None
+        deadline = deadline_for(day, rule, now.tzinfo or UTC, self.coordinator.holidays()) if rule else None
         return order_status(self._meals(), deadline, now)
 
     @property
@@ -326,6 +326,7 @@ class NextOrderDeadlineSensor(KitaPlusChildEntity, SensorEntity):
         return {
             "day": order.day.isoformat() if order else None,
             "rule_set": self.coordinator.deadline_rule is not None,
+            "rule_source": self.coordinator.deadline_source,
         }
 
 

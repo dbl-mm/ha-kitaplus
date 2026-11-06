@@ -101,7 +101,7 @@ The integration asks KitaPlus at the set interval (every 30 minutes by default).
 Every Kita decides **until when** meals can be ordered or cancelled. Some use "1 day before the meal at 11:00", others "until 9:00 on the same day". KitaPlus only gives the time in the help text of the app, not as a number. The integration therefore works with **two pieces of information**:
 
 1. **What KitaPlus reports:** per meal, the server says whether it can **still be ordered**.
-2. **What you enter (recommended):** your Kita's deadline, once. Then everything is accurate to the minute.
+2. **Your Kita's deadline:** the integration reads it from KitaPlus itself, once a day. Then everything is accurate to the minute. You can also enter it yourself, which takes priority.
 
 The four states of the order status:
 
@@ -110,27 +110,27 @@ The four states of the order status:
 - **Deadline missed**: there is a meal, nothing is ordered, and the deadline is **over**. Nothing can be changed any more.
 - **No meal**: no meal is offered that day.
 
-### Enter your Kita's deadline
-The deadline is in the KitaPlus app under *Verpflegung → Hilfe → Bestellfristen*, for example:
+### Your Kita's deadline
+You normally do not have to do anything: the integration reads the sentence from the KitaPlus app ("… 1 Tage vor Essenausgabe um 11:00 Uhr") itself. The sensor **Next order deadline** shows whether that worked in its attribute `rule_source` (`kitaplus`). If it cannot understand the sentence, it shows `null` and you enter the deadline yourself. It is in the KitaPlus app under *Verpflegung → Hilfe → Bestellfristen*, for example:
 
 > Bestellfrist (Einzelbestellungen): **1 Tage vor Essenausgabe um 11:00 Uhr**. Einzelbestellungen für den heutigen Tag (Donnerstag) müssen bis spätestens Mittwoch, 28.10.2026 um 11:00 Uhr vorgenommen worden sein.
 >
 > (In English: order deadline for single orders: **1 day before the meal at 11:00**. Single orders for today (Thursday) must be placed by Wednesday, 28.10.2026 at 11:00 at the latest.)
 
-Enter it under *Settings → Devices & services → KitaPlus → Configure*:
+To override it or enter it: *Settings → Devices & services → KitaPlus → Configure*.
 
 - **Order deadline: days before the meal** (example: `1`): `0` means on the day itself. Leave empty if you do not know it.
 - **Order deadline: time** (example: `11:00`): the time at which ordering closes.
-- **Count only weekdays (Monday to Friday)** (example: off): switch on if your Kita does not count Saturdays and Sundays (a Monday meal then closes on Friday). You can see whether that applies to you in the example sentence of the app on a Monday.
+- **Move the deadline off weekends and holidays** (example: on): switch on if your Kita moves a deadline that falls on a Saturday, Sunday or public holiday back to the previous workday (a Monday meal then closes on Friday). If the KitaPlus help text says so ("… auf den vorhergehenden Werktag verschoben …"), it is already set for you.
 - **Reminder before the deadline (minutes)** (example: `120`): how long before the deadline the reminder fires. `0` turns it off.
 
 With the deadline entered:
 - The **order status** switches to "Deadline missed" **exactly at the deadline**, even if the last fetch is older.
 - The sensor **Next order deadline** shows when the next order closes.
 - **Before the deadline** the integration fires the event `kitaplus_order_deadline`, but only if the day is not ordered yet. It fetches **fresh data first**. The blueprint "Reminder shortly before the order deadline" turns that into a notification.
-- The integration does not know public holidays. If your Kita counts them for the deadline, the status relies on what KitaPlus reports.
+- Public holidays are taken from the KitaPlus appointments (Kita closure days do not count). If your Kita moves a deadline from a weekend or holiday to the workday before, the integration does the same.
 
-**Without a deadline entered**, only what KitaPlus reports counts. It is as current as the last fetch (every 30 minutes by default). The blueprint "Reminder at fixed times" therefore fetches fresh data before every reminder, and you set its time **well before** your deadline.
+**Without a known deadline** (nothing entered and the KitaPlus sentence not readable), only what KitaPlus reports counts. It is as current as the last fetch (every 30 minutes by default). The blueprint "Reminder at fixed times" therefore fetches fresh data before every reminder, and you set its time **well before** your deadline.
 
 After a missed deadline, blueprints and dashboard do **not** ask you to order. The integration **never orders or cancels by itself**. Future ordering functions may also only act while KitaPlus reports the meal as orderable, and must report success or failure unambiguously.
 

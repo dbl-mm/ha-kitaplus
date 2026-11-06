@@ -1,6 +1,7 @@
 import base64
 import json
 import time
+from pathlib import Path
 
 import aiohttp
 import pytest
@@ -339,3 +340,21 @@ async def test_a_broken_or_too_large_file_is_refused(client, answer):
         m.get(f"{API_BASE_URL}/orga_nachrichten/get_file?orgAnhangId=7", payload=answer)
         with pytest.raises(KitaPlusApiError):
             await client.async_get_file("board", 7, 1000)
+
+
+async def test_order_rules_keep_only_the_two_deadline_texts(client):
+    """The answer also holds help pages with contacts and a balance notice; none of that leaves the client."""
+    raw = json.loads((Path(__file__).parent / "fixtures" / "vpp_einrichtungen_index.json").read_text())
+    with aioresponses() as m:
+        m.post(f"{API_BASE_URL}/app/login_check", payload=_ok())
+        m.get(f"{API_BASE_URL}/vpp/einrichtungen/index", payload=raw)
+        await client.async_login("a@b.de", "pw")
+        rules = await client.async_get_order_rules()
+    assert rules == [
+        {
+            "bestellfristEinzelText": (
+                "Bestellfrist (Einzelbestellungen): 1 Tage vor Essenausgabe um 11:00 Uhr."
+            ),
+            "fristSonstigesText": raw["data"][0]["vppEinrichtungseinstellungen"]["fristSonstigesText"],
+        }
+    ]
