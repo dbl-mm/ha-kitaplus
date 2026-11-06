@@ -2,7 +2,7 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
-## [Unveröffentlicht]
+## [0.4.0]
 ### Neu
 - **Bestellfrist wird automatisch gelesen.** Die Integration holt die Frist der Kita (zum Beispiel „1 Tage vor Essenausgabe um 11:00 Uhr“) selbst aus KitaPlus (`/vpp/einrichtungen/index`), einmal pro Tag. Man muss sie nicht mehr eintragen. Was man unter **Konfigurieren** einträgt, hat weiter Vorrang. Versteht die Integration den Text nicht oder nennen mehrere Einrichtungen verschiedene Fristen, wird nichts geraten, und es gilt wie bisher die Angabe von KitaPlus je Mahlzeit. Aus der Antwort bleiben nur die beiden Fristtexte, Hilfetexte und Kontaktdaten werden sofort verworfen. Der Sensor **Nächste Bestellfrist** nennt im Attribut `rule_source`, woher die Frist stammt (`options` oder `kitaplus`).
 - **Wochenende und Feiertage:** KitaPlus verschiebt eine Frist, die auf einen Samstag, Sonntag oder Feiertag fällt, auf den vorhergehenden Werktag. Die Integration rechnet das jetzt genauso (Feiertage aus den Terminen von KitaPlus, Schließtage der Kita zählen nicht).
