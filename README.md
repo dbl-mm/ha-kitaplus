@@ -87,6 +87,7 @@ Felder der Einrichtung:
 **Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren:**
 
 - **Abfrageintervall** (Standard: 30 Minuten) — Wie oft Home Assistant bei KitaPlus nachfragt (15 bis 240 Minuten). Weniger als 15 ist nicht erlaubt, um die Server zu schonen.
+- **Wochenende als geschlossen zählen** (Standard: aus) — „Heute geschlossen“ und „Morgen geschlossen“ melden normalerweise nur Schließtage und Feiertage aus KitaPlus, am Wochenende also „Geöffnet“. Mit dieser Option melden sie samstags und sonntags „Geschlossen“ (Grund: „Wochenende“). Achtung: Automationen wie der Blueprint „Schließtag“ melden dann auch jedes Wochenende.
 
 ### Neu konfigurieren
 **⋮ → Neu konfigurieren** erlaubt, sich erneut anzumelden oder die E-Mail-Adresse zu ändern. Es wird nur **dasselbe KitaPlus-Konto** akzeptiert; ein anderes Konto wird abgelehnt und nichts verändert. Es gelten dieselben Schutzregeln wie bei der Einrichtung.

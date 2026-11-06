@@ -87,6 +87,7 @@ Fields of the setup:
 **Settings → Devices & services → KitaPlus → Configure:**
 
 - **Polling interval** (default: 30 minutes): how often Home Assistant asks KitaPlus (15 to 240 minutes). Less than 15 is not allowed, to go easy on the servers.
+- **Count weekends as closed** (default: off): "Closed today" and "Closed tomorrow" normally report only closure days and public holidays from KitaPlus, so they say "Open" on a weekend. With this option they say "Closed" on Saturdays and Sundays (reason: "Weekend"). Note: automations such as the "Schließtag" blueprint then also report every weekend.
 
 ### Reconfigure
 **⋮ → Reconfigure** lets you sign in again or change the e-mail address. Only **the same KitaPlus account** is accepted; a different account is rejected and nothing is changed. The same protection rules apply as in the setup.

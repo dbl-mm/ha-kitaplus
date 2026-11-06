@@ -173,6 +173,7 @@
           "order_deadline_days": "Bestellfrist: Tage vor dem Essen",
           "order_deadline_time": "Bestellfrist: Uhrzeit",
           "order_deadline_workdays": "Frist von Wochenende und Feiertag auf den Werktag davor verschieben",
+          "weekend_closed": "Wochenende als geschlossen zählen",
           "reminder_lead_minutes": "Erinnerung vor der Frist (Minuten)"
         },
         "data_description": {
@@ -180,6 +181,7 @@
           "order_deadline_days": "Nur ausfüllen, um die Angabe von KitaPlus zu überschreiben. Standardmäßig liest die Integration die Frist deiner Kita selbst bei KitaPlus aus („1 Tage vor Essenausgabe um 11:00 Uhr“), du kannst das Feld also leer lassen. 0 heißt am Tag selbst.",
           "order_deadline_time": "Die Uhrzeit, zu der die Bestellung schließt, zum Beispiel 11:00.",
           "order_deadline_workdays": "Einschalten, wenn deine Kita eine Frist, die auf Samstag, Sonntag oder einen Feiertag fällt, auf den vorhergehenden Werktag verschiebt (eine Mahlzeit am Montag schließt dann am Freitag). Steht das im Hilfetext von KitaPlus, ist es für dich schon eingestellt.",
+          "weekend_closed": "Einschalten, wenn „Heute geschlossen“ und „Morgen geschlossen“ auch samstags und sonntags „Geschlossen“ melden sollen. Standardmäßig aus: Dann melden sie nur Schließtage und Feiertage aus KitaPlus. Automationen wie der Blueprint „Schließtag“ melden dann auch jedes Wochenende.",
           "reminder_lead_minutes": "Wie lange vor der Frist das Ereignis kitaplus_order_deadline ausgelöst wird, falls der Tag noch nicht bestellt ist. 0 schaltet es aus."
         }
       }

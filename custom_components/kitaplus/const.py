@@ -36,6 +36,9 @@ CONF_DEADLINE_DAYS = "order_deadline_days"
 CONF_DEADLINE_TIME = "order_deadline_time"
 CONF_DEADLINE_WORKDAYS = "order_deadline_workdays"
 CONF_LEAD_MINUTES = "reminder_lead_minutes"
+# Whether Saturdays and Sundays count as "Kita closed" (off by default: only closure days and holidays do).
+CONF_WEEKEND_CLOSED = "weekend_closed"
+WEEKEND_REASON = {"de": "Wochenende", "en": "Weekend"}
 DEFAULT_DEADLINE_TIME = "11:00:00"
 DEFAULT_LEAD_MINUTES = 120
 MAX_DEADLINE_DAYS = 14
