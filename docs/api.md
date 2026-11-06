@@ -34,6 +34,7 @@ Speiseplan scheint als PDF-Anhang im Schwarzen Brett zu kommen.
 | Speiseplan + Bestellungen | GET /vpp/bestelldaten | `kindId` (Gast: `vppKontoId`), `elternkontoId`, `startdatum`/`enddatum` (YYYY-MM-DD), `ignoriereSchliesstage` |
 | Buchungen (Kontobewegungen) | GET /vpp/buchungen | Felder: id, betrag, datum, bestellDatum, kindId, bezeichnung, buchungsdatum |
 | Essensplan als Datei | GET /vpp/einrichtungen/essensplan | `elternkontoId`, `woche`, `jahr` |
+| Bestellfrist der Kita | GET /vpp/einrichtungen/index | `data[]` je Einrichtung: `vppEinrichtungseinstellungen` mit `bestellfristEinzelText` („… 1 Tage vor Essenausgabe um 11:00 Uhr.“), `abbestellfristEinzelText`, `fristSonstigesText` („… auf den vorhergehenden Werktag verschoben, sofern das Bestellfristdatum ein Samstag, Sonntag oder Feiertag ist“), dazu Beispielsätze, Hilfetexte mit Kontaktdaten, Guthabenhinweis und Dateien. Es gibt **keine Zahlenfelder**, die Frist steht nur im Text. Der Client behält nur `bestellfristEinzelText` und `fristSonstigesText`. |
 | Standardwochen | GET /vpp/standardwochen | |
 | Bestellen (v2, nicht nutzen) | POST /vpp/bestellungen | `kindId`, `elternkontoId`, `bestellungen` (JSON), `pin` |
 

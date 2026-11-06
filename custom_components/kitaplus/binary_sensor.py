@@ -14,6 +14,7 @@ from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
 from .api.models import Child, MealEntry
+from .const import CONF_WEEKEND_CLOSED, WEEKEND_REASON
 from .coordinator import KitaPlusCoordinator
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
 from .helpers import closure_on, is_closed_on, meals_on
@@ -37,14 +38,26 @@ class ClosedSensor(KitaPlusEntity, BinarySensorEntity):
         return dt_util.now().date() + timedelta(days=self._offset)
 
     @property
+    def _weekend(self) -> bool:
+        """The day is a Saturday or Sunday and the user chose to count weekends as closed."""
+        return bool(
+            self.coordinator.config_entry.options.get(CONF_WEEKEND_CLOSED, False)
+            and self._day().weekday() >= 5
+        )
+
+    @property
     def is_on(self) -> bool:
-        return is_closed_on(self.coordinator.data.events, self._day())
+        return is_closed_on(self.coordinator.data.events, self._day()) or self._weekend
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Why the Kita is closed (the name KitaPlus gives the closure day), for notifications."""
         event = closure_on(self.coordinator.data.events, self._day())
-        return {"reason": (event.get("name") or None) if event else None}
+        reason = (event.get("name") or None) if event else None
+        if reason is None and self._weekend:
+            language = "de" if self.coordinator.hass.config.language.startswith("de") else "en"
+            reason = WEEKEND_REASON[language]
+        return {"reason": reason}
 
 
 class NoOrderTomorrowSensor(KitaPlusChildEntity, BinarySensorEntity):

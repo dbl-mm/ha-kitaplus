@@ -33,6 +33,7 @@ def api_answers(**overrides):
     kids = load("get_einrichtungen_kinder")
     answers = {
         "async_get_children": kids["kinder"],
+        "async_get_order_rules": [],
         "async_get_events": load("termine")["data"],
         "async_get_meals": load("bestelldaten")["data"][0]["tage"],
         "async_get_board": load("schwarzesbrett")["data"],

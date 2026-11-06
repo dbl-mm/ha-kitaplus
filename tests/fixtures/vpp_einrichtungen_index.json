@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": "1",
+      "vppEinrichtungseinstellungen": {
+        "bestellfristEinzelText": "Bestellfrist (Einzelbestellungen): 1 Tage vor Essenausgabe um 11:00 Uhr.",
+        "bestellfristEinzelBeispiel": "Einzelbestellungen für den heutigen Tag (Freitag) müssen bis spätestens Donnerstag, 05.11.2026 um 11:00 Uhr vorgenommen worden sein.",
+        "abbestellfristEinzelText": "Abbestellfrist (Einzelbestellungen): 1 Tage vor Essenausgabe um 11:00 Uhr.",
+        "hilfeseiteText": "Hilfetext der Einrichtung (anonymisiert).",
+        "fristSonstigesText": "Bitte beachten Sie, dass die Bestellfrist und Abbestellfrist auf den vorhergehenden Werktag verschoben werden, sofern das Bestellfristdatum ein Samstag, Sonntag oder Feiertag ist."
+      },
+      "ansprechpartner": [
+        {
+          "thema": "Mittagessen und Bestellung"
+        }
+      ]
+    }
+  ]
+}

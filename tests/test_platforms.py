@@ -367,3 +367,47 @@ async def test_pending_replies_follow_each_update_and_are_worked_out_once(hass, 
         assert spy.call_count == 1
     state = hass.states.get("sensor.kitaplus_pending_replies")
     assert state.state == "1" and state.attributes["messages"][0]["id"] == 8
+
+
+# -------------------------------------------------------------------------------- weekends as closed (option)
+
+
+def _at(freezer, day: str) -> None:
+    freezer.move_to(dt_util.parse_datetime(f"{day}T10:00:00").replace(tzinfo=dt_util.get_default_time_zone()))
+
+
+async def _closed(hass, stack, freezer, day: str, options: dict, language: str = "en", **answers):
+    _at(freezer, day)
+    hass.config.language = language
+    await setup_integration(hass, stack, entry=make_entry(options), **answers)
+    entity = "heute_geschlossen" if language == "de" else "closed_today"
+    return hass.states.get(f"binary_sensor.kitaplus_{entity}")
+
+
+async def test_a_weekend_is_not_closed_unless_the_user_says_so(hass, stack, freezer) -> None:
+    state = await _closed(hass, stack, freezer, "2026-11-07", {})  # a Saturday
+    assert state.state == "off" and state.attributes["reason"] is None
+
+
+async def test_with_the_option_a_weekend_counts_as_closed_and_says_why(hass, stack, freezer) -> None:
+    state = await _closed(hass, stack, freezer, "2026-11-08", {"weekend_closed": True})  # a Sunday
+    assert state.state == "on" and state.attributes["reason"] == "Weekend"
+
+
+async def test_the_weekend_reason_follows_the_language(hass, stack, freezer) -> None:
+    state = await _closed(hass, stack, freezer, "2026-11-07", {"weekend_closed": True}, "de")
+    assert state.attributes["reason"] == "Wochenende"
+
+
+async def test_weekdays_stay_open_with_the_option(hass, stack, freezer) -> None:
+    state = await _closed(hass, stack, freezer, "2026-11-06", {"weekend_closed": True})  # a Friday
+    assert state.state == "off" and state.attributes["reason"] is None
+
+
+async def test_a_closure_on_a_weekend_names_the_closure_not_the_weekend(hass, stack, freezer) -> None:
+    closure = {"id": 1, "name": "Tag der Einheit", "startdatum": "2026-11-07T00:00:00",
+               "enddatum": "2026-11-07T00:00:00", "istFeiertag": True}  # fmt: skip
+    state = await _closed(
+        hass, stack, freezer, "2026-11-07", {"weekend_closed": True}, async_get_events=[closure]
+    )
+    assert state.state == "on" and state.attributes["reason"] == "Tag der Einheit"

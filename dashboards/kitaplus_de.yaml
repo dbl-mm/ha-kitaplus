@@ -1,4 +1,4 @@
-# KitaPlus-Dashboard (Vorlage) · Version 0.3.6 · benötigt KitaPlus ab 0.3.1
+# KitaPlus-Dashboard (Vorlage) · Version 0.4.0 · benötigt KitaPlus ab 0.3.1
 # Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor.
 # Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben
 # (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.

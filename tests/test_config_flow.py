@@ -307,3 +307,9 @@ async def test_options_flow_saves_a_valid_interval(hass: HomeAssistant) -> None:
     done = await hass.config_entries.options.async_configure(form["flow_id"], {"scan_interval": 60})
     assert done["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["scan_interval"] == 60
+
+
+async def test_a_new_entry_asks_for_the_dashboard_hint_but_a_reauth_does_not(hass: HomeAssistant) -> None:
+    with patch(LOGIN, new=_ok_login()):
+        result = await hass.config_entries.flow.async_configure((await _start(hass))["flow_id"], CREDS)
+    assert result["data"]["show_dashboard_hint"] is True

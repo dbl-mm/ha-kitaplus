@@ -32,6 +32,7 @@ def _patches():
     days = load("bestelldaten")["data"][0]["tage"]
     return [
         patch(f"{CLIENT}.async_get_children", return_value=load("get_einrichtungen_kinder")["kinder"]),
+        patch(f"{CLIENT}.async_get_order_rules", return_value=[]),
         patch(f"{CLIENT}.async_get_events", return_value=load("termine")["data"]),
         patch(f"{CLIENT}.async_get_meals", return_value=days),
         patch(f"{CLIENT}.async_get_board", return_value=load("schwarzesbrett")["data"]),

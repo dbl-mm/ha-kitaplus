@@ -18,7 +18,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api.client import KitaPlusClient, Tokens
-from .api.exceptions import KitaPlusAuthError, KitaPlusError, KitaPlusMaintenanceError
+from .api.exceptions import KitaPlusApiError, KitaPlusAuthError, KitaPlusError, KitaPlusMaintenanceError
 from .api.models import Account, BoardPost, Child, Day, Event, Message
 from .const import (
     CONF_ACCOUNT_ID,
@@ -38,7 +38,7 @@ from .const import (
     EVENT_NEW_MESSAGE,
     EVENT_ORDER_DEADLINE,
 )
-from .helpers import DeadlineRule, OpenOrder, open_orders, plain_text
+from .helpers import DeadlineRule, OpenOrder, holiday_dates, open_orders, plain_text, rule_from_texts
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -79,7 +79,9 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
         )
         self.client = client
         client.set_token_listener(self._save_tokens)
-        self.deadline_rule = self._read_deadline_rule()
+        self._entered_rule = self._read_deadline_rule()
+        self._read_rule: DeadlineRule | None = None  # what KitaPlus itself says about the deadline
+        self._read_rule_at: datetime | None = None
         self._lead = timedelta(minutes=entry.options.get(CONF_LEAD_MINUTES, DEFAULT_LEAD_MINUTES))
         self._timers: dict[TimerKey, CALLBACK_TYPE] = {}
         self._reminded: set[tuple[int, date]] = set()
@@ -98,10 +100,30 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
         at = dt_util.parse_time(options.get(CONF_DEADLINE_TIME, DEFAULT_DEADLINE_TIME)) or time(11, 0)
         return DeadlineRule(int(days), at, bool(options.get(CONF_DEADLINE_WORKDAYS, False)))
 
+    @property
+    def deadline_rule(self) -> DeadlineRule | None:
+        """What the user entered, else what KitaPlus says, else None (only the meal flags count then)."""
+        return self._entered_rule or self._read_rule
+
+    @property
+    def deadline_source(self) -> str | None:
+        """Where the deadline comes from: "options", "kitaplus" or None."""
+        if self._entered_rule is not None:
+            return "options"
+        return "kitaplus" if self._read_rule is not None else None
+
+    def holidays(self, data: KitaPlusData | None = None) -> frozenset[date]:
+        """Public holidays among the polled appointments, for deadlines that move off a holiday."""
+        data = data or self.data
+        return holiday_dates(data.events) if data else frozenset()
+
     def next_open_order(self, child_id: int) -> OpenOrder | None:
         """The next day that can still be ordered for this child, if the Kita's deadline is known."""
         days = self.data.meals.get(child_id, [])
-        return next((o for o in open_orders(days, self.deadline_rule, dt_util.now()) if o.deadline), None)
+        return next(
+            (o for o in open_orders(days, self.deadline_rule, dt_util.now(), self.holidays()) if o.deadline),
+            None,
+        )
 
     @property
     def _issue_id(self) -> str:
@@ -161,12 +183,34 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
             self._children_at = now
         return self._children
 
+    async def _async_refresh_read_rule(self) -> None:
+        """Read the Kita's deadline from KitaPlus, like the list of children once a day.
+
+        A failed or unreadable answer keeps what was read before. It never fails the update: the rule only
+        makes the status exact to the minute, KitaPlus' per-meal answer works without it.
+        """
+        now = dt_util.utcnow()
+        if self._read_rule_at is not None and now - self._read_rule_at <= CHILDREN_REFRESH:
+            return
+        try:
+            rules = await self.client.async_get_order_rules()
+        except (
+            KitaPlusApiError
+        ) as err:  # other errors (login, connection, maintenance) are handled by the caller
+            _LOGGER.debug("Could not read the order deadline from KitaPlus: %s", err)
+            return
+        self._read_rule_at = now
+        self._read_rule = rule_from_texts(rules)
+        if self._read_rule is None:
+            _LOGGER.debug("The order deadline text from KitaPlus has an unknown form, so it is not used")
+
     async def _async_update_data(self) -> KitaPlusData:
         today = dt_util.now().date()
         try:
             await self._async_ensure_session()
             await self._async_ensure_account_id()
             children = await self._async_get_children()
+            await self._async_refresh_read_rule()
             events: list[Event] = []
             for offset in (0, 1):  # this and next month
                 month = today.month + offset
@@ -256,7 +300,9 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
         wanted: dict[TimerKey, datetime] = {}
         for child in data.children:
             child_id = child["id"]
-            for order in open_orders(data.meals.get(child_id, []), self.deadline_rule, now):
+            for order in open_orders(
+                data.meals.get(child_id, []), self.deadline_rule, now, self.holidays(data)
+            ):
                 if order.deadline is None:
                     continue
                 wanted[("deadline", child_id, order.day)] = order.deadline
@@ -294,12 +340,13 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
         try:
             await self.async_refresh()
             now = dt_util.now()
-            orders = open_orders(self.data.meals.get(child_id, []), self.deadline_rule, now)
+            orders = open_orders(self.data.meals.get(child_id, []), self.deadline_rule, now, self.holidays())
             order = next((o for o in orders if o.day == day), None)
             if order is None or order.deadline is None:
                 return  # ordered in the meantime, or the deadline has passed
             self._reminded.add(key)
             name = next((c.get("vorname") for c in self.data.children if c["id"] == child_id), None)
+            name = name.strip() if isinstance(name, str) else name
             self.hass.bus.async_fire(
                 EVENT_ORDER_DEADLINE,
                 {

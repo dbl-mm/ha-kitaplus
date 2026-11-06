@@ -91,6 +91,13 @@ class Message(TypedDict, total=False):
     nachricht: Note | None
 
 
+class OrderRules(TypedDict, total=False):
+    """What a Kita says about its order deadline. Only the two texts the integration reads."""
+
+    bestellfristEinzelText: str | None  # "... 1 Tage vor Essenausgabe um 11:00 Uhr."
+    fristSonstigesText: str | None  # e.g. the rule that a deadline on a weekend or holiday moves back
+
+
 class Account(TypedDict, total=False):
     id: int
     istAktiv: bool

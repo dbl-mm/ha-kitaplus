@@ -16,5 +16,5 @@ nach denen sie gebaut sind, damit Änderungen im selben Sinn bleiben.
 6. **Listen sind Auszüge.** Titel, Datum und ein kurzer Textanfang. Formatierungszeichen, die Kitas in Titel schreiben, werden
    entfernt, damit nie lose Sternchen erscheinen.
 7. **Nur eingebaute Karten.** Nichts muss nachinstalliert werden, und nichts bricht, wenn ein Zusatzpaket nicht mehr gepflegt wird.
-8. **Eine Quelle.** `scripts/build_dashboards.py` erzeugt die deutsche und die englische Fassung sowie die Einzelkarten.
+8. **Eine Quelle.** `custom_components/kitaplus/dashboard.py` (geschrieben von `scripts/build_dashboards.py`) erzeugt die deutsche und die englische Fassung sowie die Einzelkarten.
    `tests/test_dashboards.py` prüft die Regeln oben und dass jede Entity-ID existiert.

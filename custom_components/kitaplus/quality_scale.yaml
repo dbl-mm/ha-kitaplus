@@ -4,8 +4,8 @@
 rules:
   # ---------------------------------------------------------------- Bronze
   action-setup:
-    status: exempt
-    comment: The integration is read only and registers no actions.
+    status: done
+    comment: The action kitaplus.dashboard_yaml is registered once in async_setup (services.py), not per entry. It only reads, nothing is sent to KitaPlus.
   appropriate-polling:
     status: done
     comment: Default 30 minutes, configurable from 15 to 240 minutes (const.py, config_flow.py options flow).
@@ -25,8 +25,8 @@ rules:
     status: exempt
     comment: No external dependencies (requirements is empty). The API client lives in api/ and uses aiohttp from Home Assistant.
   docs-actions:
-    status: exempt
-    comment: No actions in this version.
+    status: done
+    comment: README (section Dashboard-Vorlagen) and dashboards/README.md describe the action and its fields.
   docs-conditions:
     status: exempt
     comment: The integration provides no conditions.
@@ -65,8 +65,8 @@ rules:
     comment: The unique id is the stable KitaPlus account id; an existing e-mail address is rejected before any request.
   # ---------------------------------------------------------------- Silver
   action-exceptions:
-    status: exempt
-    comment: No actions in this version.
+    status: done
+    comment: The action raises ServiceValidationError with translated messages (no_loaded_entry, choose_entry), covered in tests/test_dashboard_action.py.
   config-entry-unloading:
     status: done
     comment: async_unload_entry in __init__.py; covered by test_second_poll_reuses_the_session_and_entry_unloads_cleanly.

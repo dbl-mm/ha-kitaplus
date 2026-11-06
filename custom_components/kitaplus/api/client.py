@@ -24,7 +24,7 @@ from .exceptions import (
     KitaPlusMaintenanceError,
     KitaPlusTwoFactorRequired,
 )
-from .models import Account, BoardPost, Child, Day, Event, Message
+from .models import Account, BoardPost, Child, Day, Event, Message, OrderRules
 
 _TIMEOUT = aiohttp.ClientTimeout(total=30)
 _REFRESH_MARGIN = 60  # seconds before JWT expiry
@@ -220,6 +220,24 @@ class KitaPlusClient:
             )
             for kind in answer["kinder"]
         ]
+
+    async def async_get_order_rules(self) -> list[OrderRules]:
+        """The order deadline texts of every facility, one entry each.
+
+        The answer also holds help pages with contact details, an account balance notice and file ids.
+        They are dropped here, before the data leaves the client.
+        """
+        data = await self._get("/vpp/einrichtungen/index")
+        rules: list[OrderRules] = []
+        for row in data.get("data") or []:
+            settings = (row or {}).get("vppEinrichtungseinstellungen") or {}
+            rules.append(
+                OrderRules(
+                    bestellfristEinzelText=settings.get("bestellfristEinzelText"),
+                    fristSonstigesText=settings.get("fristSonstigesText"),
+                )
+            )
+        return rules
 
     async def async_get_file(self, source: str, attachment_id: int, max_bytes: int) -> tuple[bytes, str, str]:
         """A file attached to a bulletin board post ("board") or a message ("message").

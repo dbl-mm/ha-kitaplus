@@ -2,6 +2,19 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [0.4.0]
+### Neu
+- **Bestellfrist wird automatisch gelesen.** Die Integration holt die Frist der Kita (zum Beispiel „1 Tage vor Essenausgabe um 11:00 Uhr“) selbst aus KitaPlus (`/vpp/einrichtungen/index`), einmal pro Tag. Man muss sie nicht mehr eintragen. Was man unter **Konfigurieren** einträgt, hat weiter Vorrang. Versteht die Integration den Text nicht oder nennen mehrere Einrichtungen verschiedene Fristen, wird nichts geraten, und es gilt wie bisher die Angabe von KitaPlus je Mahlzeit. Aus der Antwort bleiben nur die beiden Fristtexte, Hilfetexte und Kontaktdaten werden sofort verworfen. Der Sensor **Nächste Bestellfrist** nennt im Attribut `rule_source`, woher die Frist stammt (`options` oder `kitaplus`).
+- **Wochenende und Feiertage:** KitaPlus verschiebt eine Frist, die auf einen Samstag, Sonntag oder Feiertag fällt, auf den vorhergehenden Werktag. Die Integration rechnet das jetzt genauso (Feiertage aus den Terminen von KitaPlus, Schließtage der Kita zählen nicht).
+- **Dashboard-Assistent:** Die Aktion **KitaPlus: Dashboard erzeugen** (`kitaplus.dashboard_yaml`) baut ein fertiges Dashboard für deine Kinder. Die Entity-IDs liest sie aus der Entity-Registry, sie stimmen also auch in der anderen Sprache oder nach dem Umbenennen, und es ist nichts mehr zu ersetzen. Die Antwort ist das Dashboard selbst und wird komplett in den Raw-Konfigurationseditor kopiert; wählbar sind Konto (bei mehreren) und Sprache (Standard: Sprache von Home Assistant). Die Aktion liest nur und sendet nichts an KitaPlus.
+- **Wochenende als geschlossen zählen (Option, Standard aus):** „Heute geschlossen“ und „Morgen geschlossen“ melden normalerweise nur Schließtage und Feiertage aus KitaPlus. Wer samstags und sonntags „Geschlossen“ sehen will, schaltet die Option unter **Konfigurieren** ein; der Grund heißt dann „Wochenende“. Wer sie nicht einschaltet, merkt keinen Unterschied.
+- **Hinweis nach der Einrichtung:** Ein neues Konto zeigt einmal eine Mitteilung, wie man das Dashboard erzeugt.
+### Behoben
+- Ein Vorname mit Leerzeichen am Ende (so liefert ihn KitaPlus manchmal) wird bereinigt: in Gerätenamen, im Ereignis `kitaplus_order_deadline` und im Dashboard.
+### Geändert
+- Der Dashboard-Generator liegt jetzt in der Integration (`custom_components/kitaplus/dashboard.py`), `scripts/build_dashboards.py` schreibt damit die Vorlagen. Die Dateien in `dashboards/` sind unverändert.
+- Die Option „Nur Werktage zählen“ heißt jetzt „Frist von Wochenende und Feiertag auf den Werktag davor verschieben“. Sie zählt nicht mehr nur Werktage, sondern verschiebt wie KitaPlus. Für „1 Tag vorher“ kommt dasselbe heraus (Montag schließt am Freitag), bei mehr Tagen kann es sich unterscheiden. Steht die Regel im Hilfetext von KitaPlus, ist die Option schon eingestellt.
+
 ## [0.3.6]
 ### Geändert
 - **Dashboard-Vorlage erklärt sich selbst:** Wer `KIND` und `kind` noch nicht ersetzt hat, sieht statt „Keine aktuellen Daten“ eine Anleitung („Noch nicht eingerichtet“, vier Schritte) und in der Kinderkarte „Noch keine Daten“ statt „Unbekannt“. Hat man den Namen eingetragen, verschwindet beides.

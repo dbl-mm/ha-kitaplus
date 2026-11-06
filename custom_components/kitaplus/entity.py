@@ -15,6 +15,7 @@ from .api.models import Child
 from .attachments import signed_link
 from .const import CONFIGURATION_URL, DOMAIN, MANUFACTURER
 from .coordinator import KitaPlusCoordinator
+from .helpers import child_name
 
 
 class KitaPlusEntity(CoordinatorEntity[KitaPlusCoordinator]):
@@ -61,7 +62,7 @@ class KitaPlusChildEntity(KitaPlusEntity):
         self._child_id: int = child["id"]
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{self._entry_id}_{self._child_id}")},
-            name=child.get("vorname") or "Kind",
+            name=child_name(child),
             manufacturer=MANUFACTURER,
             model="Kind",
             configuration_url=CONFIGURATION_URL,

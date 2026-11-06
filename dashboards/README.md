@@ -50,27 +50,26 @@ Farben tragen nie allein die Aussage: Jede Kachel schreibt den Zustand in Worten
 Farbwerte, nur Theme-Farben.
 
 ## Einbau (ca. 2 Minuten)
-1. **Einstellungen → Dashboards → Dashboard hinzufügen**, ein leeres Dashboard (von Grund auf) anlegen, Namen „Kita“ vergeben, öffnen.
-2. **⋮ (oben rechts) → Bearbeiten → ⋮ → Raw-Konfigurationseditor**, alles löschen und den Inhalt von `kitaplus_de.yaml` einfügen.
-3. Zwei Platzhalter ersetzen (Suchen und Ersetzen im Editor, **Groß-/Kleinschreibung beachten**):
-   - `KIND` → der Vorname deines Kindes, so wie er angezeigt werden soll (zum Beispiel `Finn`)
-   - `kind` → derselbe Name in Kleinbuchstaben, so heißen die Entities (zum Beispiel `finn`). Umlaute und Sonderzeichen
-     schreibt Home Assistant einfach, `Jörg` wird `jorg`, `Strauß` wird `strauss`.
-4. Speichern. Zeigt eine Karte „Entität nicht gefunden“, stimmt der Name nicht oder die Integration ist noch alt (siehe oben).
+**Empfohlen: die Integration erzeugt das Dashboard.** Sie kennt deine Kinder und die echten Entity-IDs (auch wenn du Entities umbenannt hast), du musst nichts ersetzen.
+1. **Entwicklerwerkzeuge → Aktionen → „KitaPlus: Dashboard erzeugen“** (`kitaplus.dashboard_yaml`), **Aktion ausführen**. Bei mehr als einem KitaPlus-Konto das Konto wählen, im Feld *Sprache* ist Deutsch oder Englisch einstellbar (Standard: Sprache von Home Assistant).
+2. Die **ganze Antwort** kopieren (alles, was rechts erscheint). Sie ist das Dashboard selbst, du musst nichts herauslösen.
+3. **Einstellungen → Dashboards → Dashboard hinzufügen**, ein leeres Dashboard (von Grund auf) anlegen, Namen „Kita“ vergeben, öffnen.
+4. **⋮ (oben rechts) → Bearbeiten → ⋮ → Raw-Konfigurationseditor**, alles löschen, einfügen, speichern.
 
-## Mehrere Kinder
-Entweder die Abschnitte „KIND“ im Editor kopieren und die Platzhalter ersetzen, oder fertig erzeugen lassen:
+Kommt später ein Kind dazu, die Aktion noch einmal ausführen und den Inhalt ersetzen.
 
-```bash
-python3 scripts/build_dashboards.py --language de --children Anna,Ben > kita.yaml
-```
-Das Skript verwendet die Namen, wie sie in Home Assistant stehen, und erzeugt die Entity-IDs genau wie Home Assistant
-(`Jörg` → `jorg`). Benötigt Python und `pip install pyyaml`. Bei mehreren Kindern nennen die Hinweise auch den Namen.
+### Von Hand mit der Vorlage
+Willst du die Vorlage selbst anpassen, nimm `kitaplus_de.yaml` (oder `_en`) und ersetze zwei Platzhalter (Suchen und Ersetzen im Editor, **Groß-/Kleinschreibung beachten**):
+- `KIND` → der Vorname deines Kindes, so wie er angezeigt werden soll (zum Beispiel `Finn`)
+- `kind` → derselbe Name in Kleinbuchstaben, so heißen die Entities (zum Beispiel `finn`). Umlaute und Sonderzeichen
+  schreibt Home Assistant einfach, `Jörg` wird `jorg`, `Strauß` wird `strauss`.
+
+Zeigt eine Karte „Entität nicht gefunden“, stimmt der Name nicht oder die Integration ist noch alt (siehe oben). Mehrere Kinder: die Abschnitte „KIND“ im Editor kopieren und die Platzhalter ersetzen. Mit der Aktion entfällt das alles.
 
 ## Hinweise
 - Die **Bestellfrist** wird angezeigt, sobald du sie bei der Integration eingetragen hast (README, Abschnitt „Bestellfristen“).
   Ohne sie steht dort „Unbekannt“, und es gilt nur die Angabe von KitaPlus, ob noch bestellt werden kann.
-- Die **Vorlagen werden erzeugt** (`scripts/build_dashboards.py`) und von Tests geprüft: gültiges YAML, nur eingebaute Karten,
+- Die **Vorlagen werden erzeugt** (`custom_components/kitaplus/dashboard.py`, geschrieben von `scripts/build_dashboards.py`) und von Tests geprüft: gültiges YAML, nur eingebaute Karten,
   jede Entity-ID existiert in der deutschen und der englischen Installation, jede Markdown-Karte rendert mit echten Zuständen.
   Ändere deshalb die Datei in deinem eigenen Dashboard, nicht hier im Repository.
 - Willst du das Aussehen von jemandem gestalten lassen? Das [Briefing für Designer](../docs/designer-briefing.md) listet alles auf,

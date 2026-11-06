@@ -2,6 +2,8 @@
 
 # KitaPlus für Home Assistant
 
+🇬🇧 [English version](README.en.md)
+
 Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern.kitaplus.de). Sie zeigt Schwarzes Brett, Postfach, Termine und Schließtage, Speiseplan und Bestellungen sowie den Verpflegungs-Kontostand in Home Assistant an.
 
 
@@ -27,6 +29,7 @@ Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern
 - **Kita:** **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“)
 - **Verpflegung:** pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Nächste Bestellfrist**, **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR)
 - **Diagnose:** **Sitzung gültig bis** (standardmäßig deaktiviert): bis wann die gespeicherte Anmeldung gilt
+- **Aktion:** **KitaPlus: Dashboard erzeugen** (`kitaplus.dashboard_yaml`) baut ein fertiges Dashboard für deine Kinder
 - **Ereignisse:** `kitaplus_new_board_post`, `kitaplus_new_message` (mit `id` und `title`; nicht beim ersten Abruf), `kitaplus_order_deadline` (vor der Bestellfrist, siehe unten)
 
 Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das Konto. Neue Kinder erscheinen ohne Neustart (spätestens nach 24 Stunden), Kinder, die KitaPlus nicht mehr nennt, werden als Gerät entfernt.
@@ -38,7 +41,7 @@ Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das
 1. In HACS nach **KitaPlus** suchen und herunterladen, dann Home Assistant neu starten. (Erscheint es noch nicht in der Suche: [Installation](#installation).)
 2. **Einstellungen → Geräte & Dienste → Integration hinzufügen → KitaPlus**, mit deinem KitaPlus-Zugang anmelden (E-Mail und Passwort, bei Bedarf Zwei-Faktor-Code).
 3. Unter **Konfigurieren** die **Bestellfrist deiner Kita** eintragen, damit „Frist verpasst“ und Erinnerungen stimmen. [Wie das geht](#bestellfristen).
-4. Ein [Blueprint](#blueprints) importieren und das [Dashboard](#dashboard-vorlagen) einfügen.
+4. Ein [Blueprint](#blueprints) importieren und das [Dashboard](#dashboard-vorlagen) erzeugen lassen (Aktion „KitaPlus: Dashboard erzeugen“).
 
 ## Installation
 
@@ -84,6 +87,7 @@ Felder der Einrichtung:
 **Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren:**
 
 - **Abfrageintervall** (Standard: 30 Minuten) — Wie oft Home Assistant bei KitaPlus nachfragt (15 bis 240 Minuten). Weniger als 15 ist nicht erlaubt, um die Server zu schonen.
+- **Wochenende als geschlossen zählen** (Standard: aus) — „Heute geschlossen“ und „Morgen geschlossen“ melden normalerweise nur Schließtage und Feiertage aus KitaPlus, am Wochenende also „Geöffnet“. Mit dieser Option melden sie samstags und sonntags „Geschlossen“ (Grund: „Wochenende“). Achtung: Automationen wie der Blueprint „Schließtag“ melden dann auch jedes Wochenende.
 
 ### Neu konfigurieren
 **⋮ → Neu konfigurieren** erlaubt, sich erneut anzumelden oder die E-Mail-Adresse zu ändern. Es wird nur **dasselbe KitaPlus-Konto** akzeptiert; ein anderes Konto wird abgelehnt und nichts verändert. Es gelten dieselben Schutzregeln wie bei der Einrichtung.
@@ -99,7 +103,7 @@ Die Integration fragt KitaPlus im eingestellten Intervall ab (Standard alle 30 M
 Jede Kita legt selbst fest, **bis wann** Essen bestellt oder abbestellt werden kann. Bei manchen gilt „1 Tag vor Essenausgabe um 11:00 Uhr“, bei anderen „bis 9:00 Uhr am selben Tag“. KitaPlus verrät die Uhrzeit nur im Hilfetext der App, nicht als Zahl. Die Integration arbeitet deshalb mit **zwei Angaben**:
 
 1. **Was KitaPlus meldet:** Pro Mahlzeit sagt der Server, ob sie **noch bestellbar** ist.
-2. **Was du einträgst (empfohlen):** die Frist deiner Kita, einmal. Dann wird alles auf die Minute genau.
+2. **Die Frist deiner Kita:** Die Integration liest sie selbst aus KitaPlus, einmal am Tag. Dann wird alles auf die Minute genau. Du kannst sie auch selbst eintragen, das hat Vorrang.
 
 Die vier Zustände des Bestellstatus:
 
@@ -108,25 +112,25 @@ Die vier Zustände des Bestellstatus:
 - **Frist verpasst** — Es gibt Essen, nichts ist bestellt, und die Frist ist **vorbei**. Daran lässt sich nichts mehr ändern.
 - **Kein Essen** — An diesem Tag wird kein Essen angeboten.
 
-### Die Frist deiner Kita eintragen
-Die Frist steht in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*, zum Beispiel:
+### Die Frist deiner Kita
+Normalerweise musst du nichts tun: Die Integration liest den Satz aus der KitaPlus-App („… 1 Tage vor Essenausgabe um 11:00 Uhr“) selbst. Ob das geklappt hat, zeigt der Sensor **Nächste Bestellfrist** im Attribut `rule_source` (`kitaplus`). Versteht sie den Satz nicht, steht dort `null`, und du trägst die Frist selbst ein. Sie steht in der KitaPlus-App unter *Verpflegung → Hilfe → Bestellfristen*, zum Beispiel:
 
 > Bestellfrist (Einzelbestellungen): **1 Tage vor Essenausgabe um 11:00 Uhr**. Einzelbestellungen für den heutigen Tag (Donnerstag) müssen bis spätestens Mittwoch, 28.10.2026 um 11:00 Uhr vorgenommen worden sein.
 
-Trage sie unter *Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren* ein:
+Zum Überschreiben oder Eintragen: *Einstellungen → Geräte & Dienste → KitaPlus → Konfigurieren*.
 
 - **Bestellfrist: Tage vor dem Essen** (Beispiel: `1`) — `0` heißt am Tag selbst. Leer lassen, wenn du sie nicht kennst.
 - **Bestellfrist: Uhrzeit** (Beispiel: `11:00`) — Zeitpunkt, zu dem die Bestellung schließt.
-- **Nur Werktage zählen** (Beispiel: aus) — Einschalten, wenn die Kita Samstag und Sonntag nicht mitzählt (Montag schließt dann am Freitag). Ob das bei dir so ist, siehst du im Beispielsatz der App an einem Montag.
+- **Frist von Wochenende und Feiertag auf den Werktag davor verschieben** (Beispiel: an) — Einschalten, wenn die Kita eine Frist, die auf Samstag, Sonntag oder einen Feiertag fällt, auf den vorhergehenden Werktag verschiebt (Montag schließt dann am Freitag). Steht das im Hilfetext von KitaPlus („… auf den vorhergehenden Werktag verschoben …“), ist es bei dir schon eingestellt.
 - **Erinnerung vor der Frist (Minuten)** (Beispiel: `120`) — Wie lange vor der Frist erinnert wird. `0` schaltet die Erinnerung aus.
 
 Mit der Frist passiert Folgendes:
 - Der **Bestellstatus** springt **genau zur Frist** auf „Frist verpasst“, auch wenn der letzte Abruf älter ist.
 - Der Sensor **Nächste Bestellfrist** zeigt, wann die nächste Bestellung schließt.
 - Die Integration löst **vor der Frist** das Ereignis `kitaplus_order_deadline` aus, aber nur, wenn der Tag noch nicht bestellt ist. Sie holt dafür **vorher frische Daten**. Der Blueprint „Erinnerung kurz vor der Bestellfrist“ macht daraus eine Mitteilung.
-- Öffentliche Feiertage kennt die Integration nicht. Zählt deine Kita sie bei der Frist mit, verlässt sich der Status dann auf die Angabe von KitaPlus.
+- Feiertage kennt die Integration aus den Terminen von KitaPlus (Schließtage der Kita zählen nicht). Verschiebt deine Kita die Frist vom Wochenende oder Feiertag auf den Werktag davor, rechnet die Integration das genauso.
 
-**Ohne eingetragene Frist** gilt nur die Angabe von KitaPlus. Sie ist so aktuell wie der letzte Abruf (Standard alle 30 Minuten). Der Blueprint „Erinnerung zu festen Uhrzeiten“ holt deshalb vor jeder Erinnerung frische Daten, und du stellst seine Uhrzeit **deutlich vor** deiner Frist ein.
+**Ohne bekannte Frist** (nichts eingetragen und der Satz bei KitaPlus nicht lesbar) gilt nur die Angabe von KitaPlus. Sie ist so aktuell wie der letzte Abruf (Standard alle 30 Minuten). Der Blueprint „Erinnerung zu festen Uhrzeiten“ holt deshalb vor jeder Erinnerung frische Daten, und du stellst seine Uhrzeit **deutlich vor** deiner Frist ein.
 
 Nach verpasster Frist fordern Blueprint und Dashboard **nicht** zum Bestellen auf. Die Integration **bestellt oder storniert nie selbst**. Auch künftige Bestell-Funktionen dürfen nur handeln, solange KitaPlus die Mahlzeit als bestellbar meldet, und müssen Erfolg oder Fehler eindeutig zurückmelden.
 
@@ -218,7 +222,16 @@ Blueprint importieren* und die Adresse der Datei aus [`blueprints/automation/kit
 
 ## Dashboard-Vorlagen
 
-Ein bewusst ruhiges Dashboard im neuen Sections-Layout, nur mit eingebauten Karten, auf Deutsch und Englisch:
+Ein bewusst ruhiges Dashboard im neuen Sections-Layout, nur mit eingebauten Karten, auf Deutsch und Englisch.
+
+**Am einfachsten: Lass dir das Dashboard erzeugen.** Die Integration kennt deine Kinder und die echten Entity-IDs und baut das Dashboard fertig, ohne dass du etwas ersetzen musst:
+1. *Entwicklerwerkzeuge → Aktionen → „KitaPlus: Dashboard erzeugen“* (`kitaplus.dashboard_yaml`) und **Aktion ausführen**.
+2. Die **ganze Antwort** kopieren (alles, was rechts erscheint). Sie ist das Dashboard selbst, du musst nichts herauslösen.
+3. *Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Bearbeiten → ⋮ → Raw-Konfigurationseditor*, alles löschen, einfügen, speichern.
+
+Die Aktion gibt es nur lesend, sie legt nichts an und sendet nichts an KitaPlus. Die Sprache der Texte ist die von Home Assistant, im Feld *Sprache* kannst du Deutsch oder Englisch wählen. Kommt später ein Kind dazu, führst du sie einfach noch einmal aus. Nach der Einrichtung zeigt Home Assistant dir einmal einen Hinweis darauf.
+
+Ohne die Aktion gibt es die Vorlagen zum Selbst-Anpassen:
 **Heute** (eine Statuskarte, die das Wichtigste sagt; Kita; Essen pro Kind; Brett, Postfach, Termine, Guthaben), **Wand** (Tablet, drei Spalten) und
 **Kalender**. Dazu einzelne Karten zum Einfügen in dein eigenes Dashboard. Einbau in zwei Minuten:
 [dashboards/README.md](dashboards/README.md). Die Gestaltungsregeln stehen in [docs/dashboards.md](docs/dashboards.md). Wenn du es
@@ -297,4 +310,4 @@ Jeder Blueprint endet in seiner Beschreibung mit „Version X · benötigt KitaP
 
 ---
 
-*English summary:* Unofficial, read-only Home Assistant integration for the kitaplus parent app. It uses the app's own endpoints, which can change at any time. Sign-in is one attempt per submit, pauses for 15 minutes after two failures, shows KitaPlus' own message, and never stores your password. Use at your own risk.
+*English:* see the [English README](README.en.md). In short: unofficial, read-only Home Assistant integration for the kitaplus parent app. It uses the app's own endpoints, which can change at any time. Sign-in is one attempt per submit, pauses for 15 minutes after two failures, shows KitaPlus' own message, and never stores your password. Use at your own risk.
