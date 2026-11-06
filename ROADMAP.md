@@ -24,13 +24,7 @@ nicht öffentlich, und alles, was schreibt, wird nur mit großer Vorsicht gebaut
   Anhangs und öffnet ihn. Ob sich die Gerichte zuverlässig auslesen lassen, ist offen.
 - **Mehrere Einrichtungen, Gastkinder und weitere Kitas testen.** Bisher getestet: ein Konto, eine Einrichtung,
   ein Kind.
-- **Englische Dokumentation:** Das README gibt es jetzt auch auf Englisch ([README.en.md](README.en.md)). Offen: das Wiki und die Dateien in `docs/`.
-
-## Von außen abhängig
-
-- **Icon in der HACS-Liste:** HACS zeigt für eigene Integrationen noch einen Platzhalter, obwohl der
-  `brand/`-Ordner stimmt. Laut HACS-Team behebt der „Marketplace“ ab Home Assistant 2026.11 das
-  ([hacs/integration#5402](https://github.com/hacs/integration/issues/5402)). Danach prüfen wir es erneut.
+- **Englische Dokumentation:** README und Wiki gibt es jetzt auch auf Englisch ([README.en.md](README.en.md)). Offen: die Dateien in `docs/`.
 
 ## Bewusst nicht geplant
 
