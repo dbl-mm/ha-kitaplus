@@ -2,6 +2,8 @@
 
 # KitaPlus für Home Assistant
 
+🇬🇧 [English version](README.en.md)
+
 Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern.kitaplus.de). Sie zeigt Schwarzes Brett, Postfach, Termine und Schließtage, Speiseplan und Bestellungen sowie den Verpflegungs-Kontostand in Home Assistant an.
 
 
@@ -297,4 +299,4 @@ Jeder Blueprint endet in seiner Beschreibung mit „Version X · benötigt KitaP
 
 ---
 
-*English summary:* Unofficial, read-only Home Assistant integration for the kitaplus parent app. It uses the app's own endpoints, which can change at any time. Sign-in is one attempt per submit, pauses for 15 minutes after two failures, shows KitaPlus' own message, and never stores your password. Use at your own risk.
+*English:* see the [English README](README.en.md). In short: unofficial, read-only Home Assistant integration for the kitaplus parent app. It uses the app's own endpoints, which can change at any time. Sign-in is one attempt per submit, pauses for 15 minutes after two failures, shows KitaPlus' own message, and never stores your password. Use at your own risk.

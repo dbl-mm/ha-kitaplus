@@ -24,7 +24,7 @@ nicht öffentlich, und alles, was schreibt, wird nur mit großer Vorsicht gebaut
   Anhangs und öffnet ihn. Ob sich die Gerichte zuverlässig auslesen lassen, ist offen.
 - **Mehrere Einrichtungen, Gastkinder und weitere Kitas testen.** Bisher getestet: ein Konto, eine Einrichtung,
   ein Kind.
-- **Englische Dokumentation** (README und Wiki).
+- **Englische Dokumentation:** Das README gibt es jetzt auch auf Englisch ([README.en.md](README.en.md)). Offen: das Wiki und die Dateien in `docs/`.
 
 ## Von außen abhängig
 
