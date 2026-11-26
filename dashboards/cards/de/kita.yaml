@@ -1,4 +1,4 @@
-# KitaPlus-Dashboard (Vorlage) · Version 0.4.3b1 · benötigt KitaPlus ab 0.3.1
+# KitaPlus-Dashboard (Vorlage) · Version 0.5.0b1 · benötigt KitaPlus ab 0.5.0
 type: grid
 columns: 2
 square: false
@@ -17,3 +17,7 @@ cards:
   state_content:
   - state
   - reason
+- type: tile
+  entity: sensor.kind_offnungszeiten_heute
+  name: Öffnungszeiten heute
+  icon: mdi:clock-time-eight-outline

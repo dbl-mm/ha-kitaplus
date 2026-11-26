@@ -14,16 +14,19 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
-from .api.models import Attachment, BoardPost, Child, MealEntry, Message, UpcomingEntry
+from .api.models import Attachment, BoardPost, Child, Contact, Hours, MealEntry, Message, UpcomingEntry
+from .const import CONF_SHOW_CONTACTS
 from .coordinator import KitaPlusCoordinator, KitaPlusData
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
 from .helpers import (
     ORDER_STATES,
     OpenOrder,
+    closure_on,
     deadline_for,
     meals_on,
     order_status,
@@ -36,6 +39,7 @@ PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the
 _MAX_ITEMS = 5
 _NOTHING_ORDERED = {"de": "Nichts bestellt", "en": "Nothing ordered"}
 _ORDERED = {"de": "Bestellt", "en": "Ordered"}
+_CLOSED = {"de": "Geschlossen", "en": "Closed"}
 
 
 Linker = Callable[[int], str | None]
@@ -89,6 +93,15 @@ def _messages_short(messages: list[Message], link: Linker) -> list[dict[str, Any
 async def async_setup_entry(
     hass: HomeAssistant, entry: KitaPlusConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
+    show_contacts = bool(entry.options.get(CONF_SHOW_CONTACTS, False))
+    if (
+        not show_contacts
+    ):  # switching the option off also removes the contact sensors that were created before
+        registry = er.async_get(hass)
+        for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+            if entity.domain == "sensor" and entity.unique_id.endswith("_contacts"):
+                registry.async_remove(entity.entity_id)
+
     def discover(coordinator: KitaPlusCoordinator) -> dict[str, Callable[[], KitaPlusEntity]]:
         found: dict[str, Callable[[], KitaPlusEntity]] = {
             "board": lambda: BoardSensor(coordinator),
@@ -105,6 +118,9 @@ async def async_setup_entry(
                         OrderStatusSensor, coordinator, child, offset
                     )
                 found[f"deadline-{child['id']}"] = partial(NextOrderDeadlineSensor, coordinator, child)
+            found[f"hours-{child['id']}"] = partial(OpeningHoursSensor, coordinator, child)
+            if show_contacts and "ansprechpartner" in child:
+                found[f"contacts-{child['id']}"] = partial(ContactsSensor, coordinator, child)
         for account in coordinator.data.accounts:
             if "id" in account and account.get("istAktiv", True):
                 found[f"balance-{account['id']}"] = partial(BalanceSensor, coordinator, account["id"])
@@ -327,6 +343,75 @@ class NextOrderDeadlineSensor(KitaPlusChildEntity, SensorEntity):
             "rule_set": self.coordinator.deadline_rule is not None,
             "rule_source": self.coordinator.deadline_source,
         }
+
+
+def _hours_text(hours: Hours) -> str:
+    return f"{hours['von']}–{hours['bis']}"
+
+
+class _FacilitySensor(KitaPlusChildEntity, SensorEntity):
+    """A sensor about the facility of one child. The data comes with the list of children (once a day)."""
+
+    def _child(self) -> Child | None:
+        return next((c for c in self.coordinator.data.children if c["id"] == self._child_id), None)
+
+
+class OpeningHoursSensor(_FacilitySensor):
+    """The Kita's opening hours today: unknown at weekends (no hours from KitaPlus), closed on closure days"""
+
+    _attr_translation_key = "opening_hours_today"
+    _follows_the_day = True
+
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child) -> None:
+        super().__init__(coordinator, child)
+        self._attr_unique_id = f"{self._entry_id}_{self._child_id}_opening_hours_today"
+
+    def _week(self) -> list[Hours | None]:
+        child = self._child()
+        return (child.get("oeffnungszeiten") if child else None) or []
+
+    @property
+    def native_value(self) -> str | None:
+        today = dt_util.now().date()
+        if closure_on(self.coordinator.data.events, today) is not None:
+            return _CLOSED.get(self.hass.config.language[:2], _CLOSED["en"])
+        week = self._week()
+        hours = week[today.weekday()] if today.weekday() < len(week) else None
+        return _hours_text(hours) if hours else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """The whole week: weekday 0 is Monday. Days without hours are left out."""
+        return {
+            "week": [
+                {"weekday": day, "from": hours["von"], "to": hours["bis"]}
+                for day, hours in enumerate(self._week())
+                if hours
+            ]
+        }
+
+
+class ContactsSensor(_FacilitySensor):
+    """The Kita's contact persons. Only created when the user switched on the option (personal data)."""
+
+    _attr_translation_key = "contacts"
+    _unrecorded_attributes = frozenset({"contacts"})  # names and numbers stay out of the database
+
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child) -> None:
+        super().__init__(coordinator, child)
+        self._attr_unique_id = f"{self._entry_id}_{self._child_id}_contacts"
+
+    def _contacts(self) -> list[Contact]:
+        child = self._child()
+        return (child.get("ansprechpartner") if child else None) or []
+
+    @property
+    def native_value(self) -> int:
+        return len(self._contacts())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"contacts": self._contacts()}
 
 
 class UpcomingSensor(KitaPlusEntity, SensorEntity):

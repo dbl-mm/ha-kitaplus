@@ -3,6 +3,10 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
+### Neu
+- **Öffnungszeiten:** Neuer Sensor **Öffnungszeiten heute** pro Kind (zum Beispiel `07:00–16:00`; „Geschlossen“ an Schließtagen und Feiertagen, am Wochenende unbekannt, weil KitaPlus dafür keine Zeiten liefert). Die ganze Woche steht im Attribut `week`. Die Daten kommen aus der Kinderliste, die ohnehin einmal pro Tag abgerufen wird. Das Dashboard zeigt sie bei den Kita-Kacheln.
+- **Ansprechpartner (Option, Standard aus):** Unter **Konfigurieren** lässt sich **Ansprechpartner der Kita anzeigen** einschalten. Dann gibt es pro Kind den Sensor **Ansprechpartner** (Name, Funktion, Telefon, E-Mail im Attribut `contacts`) und im Dashboard eine Karte mit Links zum Anrufen und Schreiben (Aktion „Dashboard erzeugen“). Es sind persönliche Daten der Mitarbeitenden: Ohne Option werden sie gar nicht eingelesen, mit Option nicht in der Datenbank aufgezeichnet und nicht in die Diagnose-Datei geschrieben. Beim Ausschalten der Option wird der Sensor wieder entfernt.
+
 ### Dokumentation
 - **Empfehlung: ein eigener KitaPlus-Zugang für Home Assistant**, weil KitaPlus pro Konto nur eine Sitzung erlaubt. Neuer FAQ-Abschnitt (README und Wiki) zu Abmeldungen, Passkeys und dem zweiten Zugang.
 

@@ -25,7 +25,7 @@ from .exceptions import (
     KitaPlusMaintenanceError,
     KitaPlusTwoFactorRequired,
 )
-from .models import Account, BoardPost, Child, Day, Event, Message, OrderRules
+from .models import Account, BoardPost, Child, Contact, Day, Event, Hours, Message, OrderRules
 
 _TIMEOUT = aiohttp.ClientTimeout(total=30)
 _REFRESH_MARGIN = 60  # seconds before JWT expiry
@@ -48,6 +48,43 @@ def _jwt_exp(jwt: str) -> float:
         return float(json.loads(base64.urlsafe_b64decode(payload))["exp"])
     except (IndexError, KeyError, TypeError, ValueError):
         return 0.0
+
+
+_WEEKDAYS = ("montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag", "sonntag")
+
+
+def _clock(value: Any) -> str | None:
+    """ "HH:MM" from KitaPlus' "1970-01-01T07:00:00"."""
+    text = str(value or "")
+    return text[11:16] if len(text) >= 16 and text[13] == ":" else None
+
+
+def _opening_hours(facility: dict[str, Any]) -> list[Hours | None]:
+    """Opening hours for Monday to Sunday. A day without hours is None (KitaPlus gives no weekend hours)."""
+    raw = ((facility.get("currentStammdaten") or {}).get("einrichtungOeffnungszeiten")) or {}
+    hours: list[Hours | None] = []
+    for day in _WEEKDAYS:
+        start, end = _clock(raw.get(f"{day}Von")), _clock(raw.get(f"{day}Bis"))
+        hours.append(Hours(von=start, bis=end) if start and end else None)
+    return hours
+
+
+def _contacts(facility: dict[str, Any]) -> list[Contact]:
+    """The facility's contact persons, in the order KitaPlus shows them."""
+    people = sorted(facility.get("einrichtungAnsprechpartners") or [], key=lambda p: p.get("sortRank") or 0)
+    contacts: list[Contact] = []
+    for person in people:
+        name = " ".join(str(person.get(k) or "").strip() for k in ("anrede", "vorname", "nachname")).strip()
+        function = " ".join(str(person.get("funktion") or "").replace(",", " ").split())
+        contact = Contact(
+            name=" ".join(name.split()),
+            funktion=function,
+            telefon=str(person.get("telefon") or "").strip(),
+            email=str(person.get("email") or "").strip(),
+        )
+        if contact["name"] or contact["telefon"] or contact["email"]:  # an empty entry says nothing
+            contacts.append(contact)
+    return contacts
 
 
 class KitaPlusClient:
@@ -229,22 +266,29 @@ class KitaPlusClient:
         """Stable id of the KitaPlus user. The rest of the (personal) answer is ignored."""
         return int((await self._get("/benutzer/get_own"))["data"]["id"])
 
-    async def async_get_children(self) -> list[Child]:
+    async def async_get_children(self, include_contacts: bool = False) -> list[Child]:
         """Children, reduced to what the integration needs.
 
-        The endpoint also returns contacts, addresses and birth dates. They are
-        dropped here, before the data leaves the client.
+        The endpoint also returns the children's contacts, addresses and birth dates. They are dropped here,
+        before the data leaves the client. The facility's opening hours are kept. Its contact persons are
+        kept only when `include_contacts` is set (an option the user has to switch on).
         """
         answer = await self._get("/benutzer/get_einrichtungen_kinder")
-        return [
-            Child(
+        children: list[Child] = []
+        for kind in answer["kinder"]:
+            account = kind.get("elternkonto") or {}
+            facility = account.get("einrichtung") or {}
+            child = Child(
                 id=kind["id"],
                 vorname=kind.get("vorname"),
                 istVppAktiv=bool(kind.get("istVppAktiv")),
-                elternkonto={"id": (kind.get("elternkonto") or {}).get("id")},
+                elternkonto={"id": account.get("id")},
+                oeffnungszeiten=_opening_hours(facility),
             )
-            for kind in answer["kinder"]
-        ]
+            if include_contacts:
+                child["ansprechpartner"] = _contacts(facility)
+            children.append(child)
+        return children
 
     async def async_get_order_rules(self) -> list[OrderRules]:
         """The order deadline texts of every facility, one entry each.

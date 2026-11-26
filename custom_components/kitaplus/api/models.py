@@ -6,7 +6,7 @@ surprise (a missing key, a different type) into a clear, translated error instea
 
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class ParentAccountRef(TypedDict):
@@ -15,13 +15,31 @@ class ParentAccountRef(TypedDict):
     id: int | None
 
 
+class Hours(TypedDict):
+    """Opening hours of one weekday, as "HH:MM"."""
+
+    von: str
+    bis: str
+
+
+class Contact(TypedDict):
+    """A contact person of the facility. Only read when the user switched the option on."""
+
+    name: str
+    funktion: str
+    telefon: str
+    email: str
+
+
 class Child(TypedDict):
-    """A child, reduced to what the integration needs (no contacts, no birth date)."""
+    """A child, reduced to what the integration needs (no birth date, no parents' contacts)."""
 
     id: int
     vorname: str | None
     istVppAktiv: bool
     elternkonto: ParentAccountRef
+    oeffnungszeiten: NotRequired[list[Hours | None]]  # Monday to Sunday, None = no hours given
+    ansprechpartner: NotRequired[list[Contact]]  # only with the option "show contacts"
 
 
 class Event(TypedDict, total=False):

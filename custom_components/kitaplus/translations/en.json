@@ -116,6 +116,12 @@
       },
       "upcoming": {
         "name": "Upcoming dates"
+      },
+      "opening_hours_today": {
+        "name": "Opening hours today"
+      },
+      "contacts": {
+        "name": "Contacts"
       }
     },
     "calendar": {
@@ -174,6 +180,7 @@
           "order_deadline_time": "Order deadline: time",
           "order_deadline_workdays": "Move the deadline off weekends and holidays",
           "weekend_closed": "Count weekends as closed",
+          "show_contacts": "Show the Kita's contact persons",
           "reminder_lead_minutes": "Reminder before the deadline (minutes)"
         },
         "data_description": {
@@ -182,6 +189,7 @@
           "order_deadline_time": "The time of day at which ordering closes, for example 11:00.",
           "order_deadline_workdays": "Switch on if your Kita moves a deadline that falls on a Saturday, Sunday or public holiday back to the previous workday (a Monday meal then closes on Friday). KitaPlus says so in its help text; if it does, this is set for you.",
           "weekend_closed": "Switch on if \"Closed today\" and \"Closed tomorrow\" should also say closed on Saturdays and Sundays. Off by default: they then only report closure days and public holidays from KitaPlus. Automations such as the closure blueprint then also report every weekend.",
+          "show_contacts": "Switch on to show name, role, phone number and e-mail of your Kita's contact persons as a sensor (\"Contacts\"). Off by default, because these are personal data of the staff. They are kept out of the database and the diagnostics file.",
           "reminder_lead_minutes": "How long before the deadline the event kitaplus_order_deadline is fired, if the day is still not ordered. 0 turns it off."
         }
       }

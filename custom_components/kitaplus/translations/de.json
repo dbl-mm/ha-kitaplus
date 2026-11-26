@@ -116,6 +116,12 @@
       },
       "upcoming": {
         "name": "Nächste Termine"
+      },
+      "opening_hours_today": {
+        "name": "Öffnungszeiten heute"
+      },
+      "contacts": {
+        "name": "Ansprechpartner"
       }
     },
     "calendar": {
@@ -174,6 +180,7 @@
           "order_deadline_time": "Bestellfrist: Uhrzeit",
           "order_deadline_workdays": "Frist von Wochenende und Feiertag auf den Werktag davor verschieben",
           "weekend_closed": "Wochenende als geschlossen zählen",
+          "show_contacts": "Ansprechpartner der Kita anzeigen",
           "reminder_lead_minutes": "Erinnerung vor der Frist (Minuten)"
         },
         "data_description": {
@@ -182,6 +189,7 @@
           "order_deadline_time": "Die Uhrzeit, zu der die Bestellung schließt, zum Beispiel 11:00.",
           "order_deadline_workdays": "Einschalten, wenn deine Kita eine Frist, die auf Samstag, Sonntag oder einen Feiertag fällt, auf den vorhergehenden Werktag verschiebt (eine Mahlzeit am Montag schließt dann am Freitag). Steht das im Hilfetext von KitaPlus, ist es für dich schon eingestellt.",
           "weekend_closed": "Einschalten, wenn „Heute geschlossen“ und „Morgen geschlossen“ auch samstags und sonntags „Geschlossen“ melden sollen. Standardmäßig aus: Dann melden sie nur Schließtage und Feiertage aus KitaPlus. Automationen wie der Blueprint „Schließtag“ melden dann auch jedes Wochenende.",
+          "show_contacts": "Einschalten, um Name, Funktion, Telefonnummer und E-Mail der Ansprechpartner deiner Kita als Sensor („Ansprechpartner“) zu zeigen. Standardmäßig aus, weil es persönliche Daten der Mitarbeitenden sind. Sie bleiben aus der Datenbank und aus der Diagnose-Datei heraus.",
           "reminder_lead_minutes": "Wie lange vor der Frist das Ereignis kitaplus_order_deadline ausgelöst wird, falls der Tag noch nicht bestellt ist. 0 schaltet es aus."
         }
       }

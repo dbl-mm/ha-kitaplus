@@ -1,4 +1,4 @@
-# KitaPlus-Dashboard (Vorlage) · Version 0.4.3b1 · benötigt KitaPlus ab 0.3.1
+# KitaPlus-Dashboard (Vorlage) · Version 0.5.0b1 · benötigt KitaPlus ab 0.5.0
 # Einbau: Einstellungen → Dashboards → Dashboard hinzufügen → öffnen → ⋮ → Raw-Konfigurationseditor.
 # Ersetze KIND durch den Vornamen deines Kindes (Anzeige) und kind durch denselben Namen in Kleinbuchstaben
 # (so heißen die Entities, siehe Einstellungen → Entitäten). Mehrere Kinder: README in diesem Ordner.
@@ -94,6 +94,10 @@ views:
       state_content:
       - state
       - reason
+    - type: tile
+      entity: sensor.kind_offnungszeiten_heute
+      name: Öffnungszeiten heute
+      icon: mdi:clock-time-eight-outline
   - type: grid
     cards:
     - type: markdown
@@ -309,6 +313,10 @@ views:
       state_content:
       - state
       - reason
+    - type: tile
+      entity: sensor.kind_offnungszeiten_heute
+      name: Öffnungszeiten heute
+      icon: mdi:clock-time-eight-outline
   - type: grid
     cards:
     - type: markdown
