@@ -1,4 +1,4 @@
-# KitaPlus dashboard (template) · version 0.4.2 · needs KitaPlus 0.3.1 or newer
+# KitaPlus dashboard (template) · version 0.4.3b1 · needs KitaPlus 0.3.1 or newer
 type: markdown
 content: |
   {%- set wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] -%}
