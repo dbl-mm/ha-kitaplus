@@ -15,6 +15,12 @@ Unofficial Home Assistant integration for the **kitaplus parent app** (eltern.ki
 
 **Jump to:** [Installation](#installation) · [Setup](#setup-and-sign-in) · [Order deadlines](#order-deadlines) · [Blueprints](#blueprints) · [Dashboard](#dashboard-templates) · [Help](#troubleshooting) · [Wiki](https://github.com/dbl-mm/ha-kitaplus/wiki)
 
+## New in 0.6.0
+
+- **Menu from the PDF** (option, experimental): dishes, alternative and allergens per day from the menu plan on the bulletin board, as **Menu today** and **Menu tomorrow**.
+- **Group:** the main group of each child, plus selectable project groups.
+- Before (0.5.0): **opening hours**, optional **contacts**, steadier sign-in. Everything else is in the [changelog](CHANGELOG.md).
+
 ## What it looks like
 
 > Design draft (mockups with made-up data, in German). In your Home Assistant it looks a little plainer, because colours, fonts and corner radii come from your theme. Real screenshots will follow.

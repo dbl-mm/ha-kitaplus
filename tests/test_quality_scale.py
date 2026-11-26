@@ -120,3 +120,11 @@ def test_the_session_sensor_is_the_only_diagnostic_and_disabled_entity() -> None
     source = (ROOT / "sensor.py").read_text()
     assert source.count("EntityCategory.DIAGNOSTIC") == 1
     assert source.count("_attr_entity_registry_enabled_default = False") == 1
+
+
+def test_the_readmes_say_what_is_new_in_the_current_version() -> None:
+    """The Marketplace page shows the README, so a release needs its "New in" block (see scripts/)."""
+    version = json.loads((ROOT / "manifest.json").read_text())["version"].split("b")[0]
+    root = ROOT.parent.parent
+    assert f"## Neu in {version}" in (root / "README.md").read_text()
+    assert f"## New in {version}" in (root / "README.en.md").read_text()
