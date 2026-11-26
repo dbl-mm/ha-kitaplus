@@ -39,7 +39,7 @@ Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das
 
 ## Schnellstart
 
-1. In HACS nach **KitaPlus** suchen und herunterladen, dann Home Assistant neu starten. (Erscheint es noch nicht in der Suche: [Installation](#installation).)
+1. Im **Marktplatz** von Home Assistant nach **KitaPlus** suchen und herunterladen, dann Home Assistant neu starten. (Erscheint es noch nicht in der Suche: [Installation](#installation).)
 2. **Einstellungen → Geräte & Dienste → Integration hinzufügen → KitaPlus**, mit deinem KitaPlus-Zugang anmelden (E-Mail und Passwort, bei Bedarf Zwei-Faktor-Code).
 3. Unter **Konfigurieren** die **Bestellfrist deiner Kita** eintragen, damit „Frist verpasst“ und Erinnerungen stimmen. [Wie das geht](#bestellfristen).
 4. Ein [Blueprint](#blueprints) importieren und das [Dashboard](#dashboard-vorlagen) erzeugen lassen (Aktion „KitaPlus: Dashboard erzeugen“).
@@ -48,23 +48,23 @@ Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das
 
 ## Installation
 
-### HACS (empfohlen)
-1. In HACS nach **KitaPlus** suchen und herunterladen.
+### Marktplatz (empfohlen)
+1. Im **Marktplatz** (ab Home Assistant 2026.11 fest eingebaut, früher HACS) nach **KitaPlus** suchen und herunterladen.
 2. Home Assistant neu starten.
 3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → KitaPlus**.
 
-Findest du KitaPlus in der Suche noch nicht (neue Einträge erscheinen mit Verzögerung), füge es als **benutzerdefiniertes Repository** hinzu: HACS → ⋮ → **Benutzerdefinierte Repositories** → `https://github.com/dbl-mm/ha-kitaplus`, Kategorie **Integration**.
+Findest du KitaPlus in der Suche noch nicht (neue Einträge erscheinen mit Verzögerung), füge es als **benutzerdefiniertes Repository** hinzu: Marktplatz (bzw. HACS) → ⋮ → **Benutzerdefinierte Repositories** → `https://github.com/dbl-mm/ha-kitaplus`, Kategorie **Integration**.
 
 ### Manuell
 Den Ordner `custom_components/kitaplus` nach `<config>/custom_components/kitaplus` kopieren und neu starten.
 
 ## Updates
 
-Über HACS bekommst du Updates wie bei jeder anderen Integration: HACS legt eine **Update-Entität** an, Home Assistant zeigt unter **Einstellungen → System → Updates** ein Update an, und du installierst es mit einem Klick. Danach ist ein **Neustart von Home Assistant** nötig. Die gespeicherte Anmeldung bleibt erhalten, es gibt **keine neue Anmeldung** bei KitaPlus.
+Über den Marktplatz (bzw. HACS) bekommst du Updates wie bei jeder anderen Integration: Er legt eine **Update-Entität** an, Home Assistant zeigt unter **Einstellungen → System → Updates** ein Update an, und du installierst es mit einem Klick. Danach ist ein **Neustart von Home Assistant** nötig. Die gespeicherte Anmeldung bleibt erhalten, es gibt **keine neue Anmeldung** bei KitaPlus.
 
 > **Wichtig: nach jedem Update neu starten.** Erst nach dem Neustart läuft der neue Code, und neue Entitäten (zum Beispiel
 > **Nächste Termine**) erscheinen erst dann. Solange nicht neu gestartet wurde, zeigt Home Assistant weiter die alte Version.
-> Siehst du das Update nicht: in HACS bei KitaPlus **⋮ → Daten neu laden** bzw. **Neu herunterladen** wählen, die Version
+> Siehst du das Update nicht: im Marktplatz (bzw. HACS) bei KitaPlus **⋮ → Daten neu laden** bzw. **Neu herunterladen** wählen, die Version
 > auswählen und danach Home Assistant neu starten. Welche Version läuft, steht unter *Einstellungen → Geräte & Dienste → KitaPlus*.
 
 Was jede Version ändert, steht im [Changelog](CHANGELOG.md) und in den [GitHub-Releases](https://github.com/dbl-mm/ha-kitaplus/releases). Versionen folgen [SemVer](https://semver.org/lang/de/).
@@ -284,7 +284,7 @@ Was du siehst und was es bedeutet:
 ## Entfernen
 
 1. **Einstellungen → Geräte & Dienste → KitaPlus → ⋮ → Löschen.** Damit werden alle Geräte und Entities entfernt.
-2. In HACS: KitaPlus → ⋮ → **Entfernen**, danach Home Assistant neu starten (oder bei manueller Installation den Ordner `custom_components/kitaplus` löschen).
+2. Im Marktplatz (bzw. HACS): KitaPlus → ⋮ → **Entfernen**, danach Home Assistant neu starten (oder bei manueller Installation den Ordner `custom_components/kitaplus` löschen).
 3. Die gespeicherte Anmeldung wird mit dem Eintrag gelöscht. Falls die KitaPlus-App eine Geräteliste zu deinem Konto anzeigt, kannst du dort den Eintrag „Home Assistant“ entfernen (nicht geprüft).
 
 ## Datenschutz und Sicherheit
@@ -326,7 +326,7 @@ python3 scripts/bump_version.py 0.2.0        # setzt die Version in manifest.jso
 # CHANGELOG.md ergänzen, committen und pushen, dann:
 git tag v0.2.0 && git push origin v0.2.0     # startet .github/workflows/release.yml
 ```
-Der Workflow prüft, dass Tag und `manifest.json` übereinstimmen, lässt die Tests laufen, baut `kitaplus.zip` und erstellt das GitHub-Release. Erst damit erscheint das Update in HACS.
+Der Workflow prüft, dass Tag und `manifest.json` übereinstimmen, lässt die Tests laufen, baut `kitaplus.zip` und erstellt das GitHub-Release. Erst damit erscheint das Update im Marktplatz (bzw. HACS).
 
 ### Versionen in Blueprints und Dashboards
 Jeder Blueprint endet in seiner Beschreibung mit „Version X · benötigt KitaPlus ab Y · Home Assistant ab Z“, und jede Dashboard-Datei beginnt mit einem Kommentar „Version X · benötigt KitaPlus ab Y“. X ist die Version des Releases, aus dem die Datei stammt. Y ist die älteste Version der Integration, mit der die Datei funktioniert. Prüfe nach einem Update der Integration, ob du auch die Blueprints und das Dashboard neu importieren solltest: Steht dort eine neuere Version als bei dir, hilft ein erneuter Import. `bump_version.py` schreibt die Angaben, und die Tests schlagen fehl, wenn eine veraltet ist.
