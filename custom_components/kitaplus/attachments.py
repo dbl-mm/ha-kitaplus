@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import mimetypes
 import re
 import time
 from datetime import timedelta
@@ -34,12 +35,37 @@ _LOGGER = logging.getLogger(__name__)
 URL_BASE = "/api/kitaplus/attachment"
 # Shown inline in the browser. Everything else is offered as a download, never opened.
 INLINE_TYPES = {"application/pdf", "image/png", "image/jpeg", "image/webp", "image/gif"}
+# Office and text documents are offered as a download with their real type. Without it Android (Companion
+# App) derives the file extension from the type and turns "plan.docx" into "plan.bin". The list is short on
+# purpose: no HTML, SVG or other active types, those stay "application/octet-stream".
+DOWNLOAD_TYPES = {
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.oasis.opendocument.text",
+    "application/vnd.oasis.opendocument.spreadsheet",
+    "application/vnd.oasis.opendocument.presentation",
+    "text/plain",
+    "text/csv",
+}
 MAX_BYTES = 15 * 1024 * 1024
 CACHE_SECONDS = 600
 # Files live only in memory (nothing is written to disk). The cache is small, expires, and is emptied when the
 # integration is unloaded, so opening many files never fills up memory or storage.
 MAX_CACHE_BYTES = 20 * 1024 * 1024
 _SAFE_NAME = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def download_type(content_type: str, filename: str) -> str:
+    """The type for a download: its own if safe, else guessed from the file name."""
+    base = content_type.split(";")[0].strip().lower()
+    if base in DOWNLOAD_TYPES:
+        return base
+    guessed = mimetypes.guess_type(filename)[0]
+    return guessed if guessed in DOWNLOAD_TYPES else "application/octet-stream"
 
 
 def attachment_ids(data: KitaPlusData) -> set[tuple[str, int]]:
@@ -123,7 +149,7 @@ class KitaPlusAttachmentView(HomeAssistantView):
         safe = _SAFE_NAME.sub("_", filename).strip("._") or "file"
         return web.Response(
             body=content,
-            content_type=content_type if inline else "application/octet-stream",
+            content_type=content_type if inline else download_type(content_type, filename),
             headers={
                 "Content-Disposition": f'{"inline" if inline else "attachment"}; filename="{safe}"',
                 "X-Content-Type-Options": "nosniff",
