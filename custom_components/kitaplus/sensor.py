@@ -34,7 +34,6 @@ from .helpers import (
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
 _MAX_ITEMS = 5
-_MAX_TEXT = 500
 _NOTHING_ORDERED = {"de": "Nichts bestellt", "en": "Nothing ordered"}
 _ORDERED = {"de": "Bestellt", "en": "Ordered"}
 
@@ -64,7 +63,7 @@ def _board_short(posts: list[BoardPost], link: Linker) -> list[dict[str, Any]]:
             "id": post.get("id"),
             "datum": post.get("datum"),
             "titel": post.get("titel"),
-            "text": (post.get("text") or "")[:_MAX_TEXT],
+            "text": post.get("text") or "",
             "attachments": _attachments(post.get("anhaenge"), link),
         }
         for post in posts[:_MAX_ITEMS]
@@ -80,7 +79,7 @@ def _messages_short(messages: list[Message], link: Linker) -> list[dict[str, Any
                 "id": msg.get("id"),
                 "datum": note.get("datum") or msg.get("abrufDatum"),
                 "titel": note.get("titel"),
-                "text": (note.get("text") or "")[:_MAX_TEXT],
+                "text": note.get("text") or "",
                 "attachments": _attachments(note.get("anhaenge"), link),
             }
         )

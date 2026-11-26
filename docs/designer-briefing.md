@@ -19,7 +19,7 @@ Nutzung vor allem **mobil und kurz** (Blick aufs Handy), dazu ein Wand-Tablet. H
 | Inhalt | Art | Werte / Zustand | Zusatzangaben (Attribute) |
 |---|---|---|---|
 | Kita heute, Kita morgen | Ja/Nein | **Geschlossen** / **Geöffnet** (Schließtage und Feiertage) | `reason`: Name des Schließtags, zum Beispiel „Brückentag“ (kann leer sein) |
-| Schwarzes Brett | Text | Titel des neuesten Beitrags | `posts`: bis zu 5 Beiträge mit `titel`, `datum`, `text` (bis 500 Zeichen), `id` |
+| Schwarzes Brett | Text | Titel des neuesten Beitrags | `posts`: bis zu 5 Beiträge mit `titel`, `datum`, `text` (voller Text), `id` |
 | Postfach | Zahl | Anzahl der Nachrichten (nicht nur ungelesene) | `messages`: bis zu 5 Nachrichten (`titel`, `datum`, `text`, `id`) |
 | Offene Rückmeldungen | Zahl | Nachrichten, die bestätigt werden müssen | `messages`: `titel`, `frist` (Datum), `id` |
 | Guthaben Verpflegung | Betrag in EUR | zum Beispiel 87,55 | – |
