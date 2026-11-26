@@ -245,7 +245,7 @@ Ist an einem Beitrag am Schwarzen Brett oder an einer Nachricht eine Datei angeh
 
 Was du siehst und was es bedeutet:
 
-- **Reparatur „Anmeldung abgelehnt“** — KitaPlus hat die gespeicherte Sitzung abgelehnt. Prüfe dein Passwort in der KitaPlus-App und melde dich über **⋮ → Neu konfigurieren** einmal neu an. Nicht mehrfach probieren.
+- **Reparatur „Anmeldung abgelehnt“** — KitaPlus hat die gespeicherte Sitzung abgelehnt. Häufigste Ursache: Du hast dich in der KitaPlus-App angemeldet, denn pro Konto gilt nur eine Sitzung (siehe [Bekannte Einschränkungen](#bekannte-einschränkungen)). Prüfe dein Passwort in der KitaPlus-App und melde dich über **⋮ → Neu konfigurieren** einmal neu an. Nicht mehrfach probieren.
 - **Reparatur „Zugang gesperrt“** — KitaPlus hat das Konto gesperrt. Nur die **Kita-Leitung** kann entsperren. Home Assistant fragt nichts mehr ab.
 - **„Pausiert für 15 Minuten“** — Zu viele Fehlversuche. Das schützt dein Konto. Prüfe die Zugangsdaten in der KitaPlus-App und versuche es danach.
 - **Meldung über Wartungsarbeiten** — Kein Passwortproblem. Home Assistant versucht es später automatisch erneut.
@@ -276,6 +276,7 @@ Was du siehst und was es bedeutet:
 - Gastkinder und mehrere Einrichtungen sind nicht getestet.
 - Die Schnittstelle ist nicht dokumentiert und kann sich ohne Vorwarnung ändern.
 - Neue Kinder erscheinen spätestens nach 24 Stunden von selbst.
+- **Pro KitaPlus-Konto gibt es nur eine aktive Sitzung.** Meldest du dich in der KitaPlus-App an, wirft das die Integration raus (Reparatur „Anmeldung abgelehnt“), und eine Anmeldung in Home Assistant wirft die App raus. Abhilfe: ein **zweites Konto** nur für Home Assistant. Die Kita-Leitung kann einen weiteren Elternzugang anlegen, er muss dieselben Kinder sehen.
 
 Was als Nächstes denkbar ist, steht in der [Roadmap](https://github.com/dbl-mm/ha-kitaplus/blob/main/ROADMAP.md).
 

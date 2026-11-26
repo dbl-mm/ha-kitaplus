@@ -272,6 +272,7 @@ What you see and what it means:
 - Guest children and multiple facilities are untested.
 - The interface is undocumented and can change without notice.
 - New children appear by themselves after 24 hours at the latest.
+- **KitaPlus allows only one active session per account.** Signing in to the KitaPlus app ends the integration's session (repair "Sign-in rejected"), and signing in in Home Assistant ends the app's. Workaround: a **second account** just for Home Assistant. The Kita management can create another parent login; it must see the same children.
 
 What may come next is in the [roadmap](https://github.com/dbl-mm/ha-kitaplus/blob/main/ROADMAP.md) (German).
 

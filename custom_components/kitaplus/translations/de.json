@@ -25,7 +25,7 @@
       },
       "reauth_confirm": {
         "title": "Erneut anmelden",
-        "description": "Die Anmeldung für {email} ist abgelaufen oder wurde abgelehnt. Bitte gib dein aktuelles Passwort ein. Es wird genau ein Anmeldeversuch gemacht. Zu viele Fehlversuche sperren das Konto, nur die Kita-Leitung kann es entsperren.",
+        "description": "Die Anmeldung für {email} ist abgelaufen oder wurde abgelehnt. Bitte gib dein aktuelles Passwort ein. Es wird genau ein Anmeldeversuch gemacht. Zu viele Fehlversuche sperren das Konto, nur die Kita-Leitung kann es entsperren. Hast du dich gerade in der KitaPlus-App angemeldet? KitaPlus erlaubt pro Konto nur eine aktive Sitzung: Eine Anmeldung in der App beendet die in Home Assistant und umgekehrt. Ein zweites Konto für Home Assistant verhindert das.",
         "data": {
           "password": "Passwort"
         },

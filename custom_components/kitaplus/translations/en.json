@@ -25,7 +25,7 @@
       },
       "reauth_confirm": {
         "title": "Sign in again",
-        "description": "The sign-in for {email} has expired or was rejected. Enter your current password. Exactly one sign-in attempt is made. Too many failed attempts lock the account, only the Kita management can unlock it.",
+        "description": "The sign-in for {email} has expired or was rejected. Enter your current password. Exactly one sign-in attempt is made. Too many failed attempts lock the account, only the Kita management can unlock it. Did you just sign in to the KitaPlus app? KitaPlus allows only one active session per account, so a sign-in in the app ends the one in Home Assistant, and the other way round. A second account for Home Assistant avoids this.",
         "data": {
           "password": "Password"
         },

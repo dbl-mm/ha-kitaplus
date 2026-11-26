@@ -108,6 +108,17 @@ async def test_balance_board_mailbox_and_pending_replies(hass, stack, freezer) -
     assert board.state and len(board.attributes["posts"]) == 5
 
 
+async def test_long_texts_are_not_cut_off(hass, stack) -> None:
+    long_text = "Wort " * 1000  # far beyond the old 500 character limit
+    posts = [{"id": 1, "datum": "2026-06-12T08:00:00", "titel": "Lang", "text": long_text}]
+    messages = [
+        {"id": 2, "abrufDatum": "2026-06-12T08:00:00", "nachricht": {"titel": "Lang", "text": long_text}}
+    ]
+    await setup_integration(hass, stack, async_get_board=posts, async_get_messages=messages)
+    assert hass.states.get("sensor.kitaplus_bulletin_board").attributes["posts"][0]["text"] == long_text
+    assert hass.states.get("sensor.kitaplus_mailbox").attributes["messages"][0]["text"] == long_text
+
+
 async def test_balance_accepts_decimal_comma_and_skips_inactive_accounts(hass, stack) -> None:
     accounts = [
         {"id": 1, "istAktiv": True, "kontostand": "12,50"},
