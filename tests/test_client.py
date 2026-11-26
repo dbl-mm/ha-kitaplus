@@ -162,6 +162,8 @@ async def test_children_are_reduced_to_the_minimum(client):
             "vorname": "Anna",
             "istVppAktiv": True,
             "elternkonto": {"id": 7},
+            "gruppe": None,
+            "projektgruppen": [],
             "oeffnungszeiten": [None] * 7,  # no hours in this answer
         }
     ]

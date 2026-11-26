@@ -48,6 +48,15 @@
       },
       "contacts": {
         "default": "mdi:account-box-outline"
+      },
+      "menu_today": {
+        "default": "mdi:food"
+      },
+      "menu_tomorrow": {
+        "default": "mdi:food-variant"
+      },
+      "group": {
+        "default": "mdi:account-group"
       }
     },
     "binary_sensor": {

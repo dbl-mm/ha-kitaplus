@@ -51,6 +51,8 @@ SLUGS: dict[str, dict[str, str]] = {
         "next_deadline": "nachste_bestellfrist",
         "hours_today": "offnungszeiten_heute",
         "contacts": "ansprechpartner",
+        "menu_today": "speiseplan_heute",
+        "menu_tomorrow": "speiseplan_morgen",
         "upcoming": "nachste_termine",
     },
     "en": {
@@ -72,6 +74,8 @@ SLUGS: dict[str, dict[str, str]] = {
         "next_deadline": "next_order_deadline",
         "hours_today": "opening_hours_today",
         "contacts": "contacts",
+        "menu_today": "menu_today",
+        "menu_tomorrow": "menu_tomorrow",
         "upcoming": "upcoming_dates",
     },
 }
@@ -88,6 +92,11 @@ TEXT: dict[str, dict[str, Any]] = {
         "kita_tomorrow": "Kita morgen",
         "kita_hours": "Öffnungszeiten heute",
         "contacts_title": "Ansprechpartner",
+        "menu_title": "Speiseplan",
+        "menu_today": "Heute",
+        "menu_tomorrow": "Morgen",
+        "menu_alt": "Alternativ",
+        "menu_none": "Kein Plan",
         "weekdays": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
         "weekdays_short": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
         "months": [
@@ -177,6 +186,11 @@ TEXT: dict[str, dict[str, Any]] = {
         "kita_tomorrow": "Kita tomorrow",
         "kita_hours": "Opening hours today",
         "contacts_title": "Contacts",
+        "menu_title": "Menu",
+        "menu_today": "Today",
+        "menu_tomorrow": "Tomorrow",
+        "menu_alt": "Alternative",
+        "menu_none": "No plan",
         "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         "weekdays_short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         "months": [
@@ -283,6 +297,11 @@ class Ids:
         ready-made files (which cannot know) leave its card out."""
         return key != "contacts"
 
+    def account_available(self, domain: str, key: str) -> bool:
+        """Does this account entity exist? The menu sensors only do with the option, so the ready-made files
+        (which cannot know) leave the menu card out."""
+        return key not in ("menu_today", "menu_tomorrow")
+
 
 # The unique id suffix of each entity key (see sensor.py, binary_sensor.py, calendar.py). Unique ids start with
 # the config entry id, child entities continue with the child id.
@@ -296,6 +315,8 @@ ACCOUNT_UNIQUE = {
     "appointments": "calendar_appointments",
     "closures": "calendar_closures",
     "upcoming": "upcoming",
+    "menu_today": "menu_today",
+    "menu_tomorrow": "menu_tomorrow",
 }
 CHILD_UNIQUE = {
     "status_today": "order_status_today",
@@ -332,6 +353,9 @@ class RegistryIds(Ids):
 
     def available(self, domain: str, key: str) -> bool:
         return self._lookup(domain, f"{self._entry_id}_{self._child_id}_{CHILD_UNIQUE[key]}") is not None
+
+    def account_available(self, domain: str, key: str) -> bool:
+        return self._lookup(domain, f"{self._entry_id}_{ACCOUNT_UNIQUE[key]}") is not None
 
 
 def slugify(name: str) -> str:
@@ -689,6 +713,35 @@ def contacts_card(t: dict[str, Any], ids: Ids, name: str, *, several: bool) -> d
     return markdown(content)
 
 
+MENU = """
+@@HELPERS@@
+### <ha-icon icon="mdi:food"></ha-icon> @@TITLE@@
+{% for entity, label in [('@@TODAY@@', '@@LABEL_TODAY@@'), ('@@TOMORROW@@', '@@LABEL_TOMORROW@@')] %}
+{%- set dish = states(entity) -%}
+{%- set alt = state_attr(entity, 'alternative') %}
+**{{ label }}:** {{ clean(dish) if dish not in ['unknown', 'unavailable', 'none'] else '@@NONE@@' }}{% if alt %} · @@ALT@@: {{ clean(alt) }}{% endif %}
+
+{% endfor -%}
+"""
+
+
+def menu_card(t: dict[str, Any], account: Ids) -> dict[str, Any]:
+    """Today's and tomorrow's dish from the menu plan PDF. Allergens stay in the sensor attributes: a plan
+    read from a PDF is never shown as a safe answer to an allergy."""
+    content = fill(
+        MENU,
+        HELPERS=helpers(t),
+        TITLE=t["menu_title"],
+        TODAY=account.account("sensor", "menu_today"),
+        TOMORROW=account.account("sensor", "menu_tomorrow"),
+        LABEL_TODAY=t["menu_today"],
+        LABEL_TOMORROW=t["menu_tomorrow"],
+        NONE=t["menu_none"],
+        ALT=t["menu_alt"],
+    )
+    return markdown(content)
+
+
 def kid_card(t: dict[str, Any], ids: Ids, name: str) -> dict[str, Any]:
     content = fill(
         KID,
@@ -810,6 +863,9 @@ def build_for(language: str, account: Ids, kids: Sequence[tuple[Ids, str]]) -> d
         for ids, name in kids
         if ids.available("sensor", "contacts")
     ]
+
+    if account.account_available("sensor", "menu_today"):
+        contacts.append(menu_card(t, account))
 
     phone = [
         _grid([header_card(t), hero_card(t, account, kids), *kita_cards(t, account, kids), *contacts]),

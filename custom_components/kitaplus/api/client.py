@@ -31,6 +31,12 @@ _TIMEOUT = aiohttp.ClientTimeout(total=30)
 _REFRESH_MARGIN = 60  # seconds before JWT expiry
 
 
+def _group_names(links: list[dict[str, Any]] | None, key: str) -> list[str]:
+    """Names of the groups a child is linked to (`kindToGruppes` / `kindToProjektgruppen`), trimmed."""
+    names = ((link.get(key) or {}).get("name") for link in links or [])
+    return [name.strip() for name in names if isinstance(name, str) and name.strip()]
+
+
 @dataclass
 class Tokens:
     """JWT plus refresh token."""
@@ -283,6 +289,8 @@ class KitaPlusClient:
                 vorname=kind.get("vorname"),
                 istVppAktiv=bool(kind.get("istVppAktiv")),
                 elternkonto={"id": account.get("id")},
+                gruppe=next(iter(_group_names(kind.get("kindToGruppes"), "gruppe")), None),
+                projektgruppen=_group_names(kind.get("kindToProjektgruppen"), "projektgruppe"),
                 oeffnungszeiten=_opening_hours(facility),
             )
             if include_contacts:

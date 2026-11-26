@@ -563,3 +563,25 @@ def test_several_children_get_one_opening_hours_tile_each_named_after_the_child(
     dash = gen.build("en", ["Anna", "Ben"])
     names = [c["name"] for c in walk(dash["views"][0]) if "opening_hours" in str(c.get("entity", ""))]
     assert names == ["Anna · Opening hours today", "Ben · Opening hours today"]
+
+
+def test_the_menu_card_appears_only_when_the_menu_sensors_exist() -> None:
+    assert "speiseplan" not in gen.dump(gen.build("de")), "a ready-made file cannot know the option"
+    known = {("sensor", "entry_menu_today"): "sensor.kitaplus_menu_today"}
+    ids = gen.RegistryIds("en", "entry", lambda domain, unique: known.get((domain, unique)), 5)
+    assert ids.account_available("sensor", "menu_today")
+    assert not gen.RegistryIds("en", "entry", lambda *_: None, 5).account_available("sensor", "menu_today")
+    dash = gen.build_for("en", ids, [(ids, "Anna")])
+    card = next(c for c in walk(dash["views"][0]) if "Menu" in c.get("content", ""))
+    assert "sensor.kitaplus_menu_today" in card["content"] and "alternative" in card["content"]
+    assert "allergens" not in card["content"], "allergens are never shown as an answer on the dashboard"
+
+
+async def test_the_menu_card_renders_the_dish_the_alternative_and_a_missing_plan(hass: HomeAssistant) -> None:
+    t = gen.TEXT["en"]
+    content = gen.menu_card(t, gen.Ids("en"))["content"]
+    hass.states.async_set("sensor.kitaplus_menu_today", "Wurstgulasch", {"alternative": "Geflügel"})
+    hass.states.async_set("sensor.kitaplus_menu_tomorrow", "unknown")
+    out = Template(content, hass).async_render(parse_result=False)
+    assert "Today:** Wurstgulasch · Alternative: Geflügel" in out
+    assert "Tomorrow:** No plan" in out

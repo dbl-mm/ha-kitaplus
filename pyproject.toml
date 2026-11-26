@@ -4,7 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13"
 
 [dependency-groups]
-dev = ["pytest-homeassistant-custom-component", "aioresponses", "pytest-cov", "mypy", "ruff", "pillow"]
+dev = ["pytest-homeassistant-custom-component", "aioresponses", "pytest-cov", "mypy", "ruff", "pillow", "pypdf==6.21.4"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

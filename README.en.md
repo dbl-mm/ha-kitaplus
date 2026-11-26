@@ -27,6 +27,8 @@ Unofficial Home Assistant integration for the **kitaplus parent app** (eltern.ki
 - **Mailbox:** number of messages, the last 5 as attribute `messages`; **Pending replies**: messages that need a confirmation, with their deadline
 - **Calendars:** **Appointments**, **Closures** (including public holidays) and, per child, **Ordered meals**; **Upcoming dates**: the next appointments and closure days in one list (attribute `entries`)
 - **Kita:** **Closed today**, **Closed tomorrow** (attribute `reason` gives the reason, for example "Brückentag", a bridge day); per child **Opening hours today** (for example `07:00–16:00`, "Closed" on closure days, unknown at weekends; the whole week in the attribute `week`)
+- **Menu** (optional, experimental): the dishes per day from the menu plan PDF on the bulletin board as **Menu today** and **Menu tomorrow**, with the alternative and allergens in the attributes (no guarantee)
+- **Group:** the main group of each child, plus selectable project groups in an attribute
 - **Contacts** (optional, an option under **Configure**): per child name, role, phone and e-mail of your Kita's contact persons in the attribute `contacts`; the dashboard shows them with links to call and write
 - **Meals:** per child **Meal today**, **Meal tomorrow**, **Order status today**, **Order status tomorrow** (Ordered, Open, Deadline missed, No meal), **Next order deadline**, **Nothing ordered tomorrow**; per account **Meal account balance** (EUR)
 - **Diagnostics:** **Session valid until** (disabled by default): how long the stored sign-in is valid
@@ -92,6 +94,8 @@ Fields of the setup:
 - **Polling interval** (default: 30 minutes): how often Home Assistant asks KitaPlus (15 to 240 minutes). Less than 15 is not allowed, to go easy on the servers.
 - **Count weekends as closed** (default: off): "Closed today" and "Closed tomorrow" normally report only closure days and public holidays from KitaPlus, so they say "Open" on a weekend. With this option they say "Closed" on Saturdays and Sundays (reason: "Weekend"). Note: automations such as the "Schließtag" blueprint then also report every weekend.
 
+- **Read the menu from the PDF** (default: off, experimental): reads the dishes from a PDF on the bulletin board whose post has the **search word** (default "Mittagessen") in its title, text or attachment name. Expects a plan with a date ("23.-27. November"), then "Mo.", "Di." … with the dish. If the layout is not recognised the sensor stays empty. Allergens are only in the attribute `allergens`, and only if the plan has one line per day: **always compare with the original**.
+- **Show project groups**: which of your child's project groups appear in the attribute of the **Group** sensor.
 - **Show the Kita's contact persons** (default: off): shows name, role, phone and e-mail of your Kita's contact persons as the sensor **Contacts** and as a card in the dashboard (with links to call and write). Off by default, because these are personal data of the staff: without the option they are not even read. With it they are kept out of the database (not recorded) and out of the diagnostics file. Switching it off again removes the sensor. Run the action "KitaPlus: Create dashboard" again afterwards to get the dashboard.
 
 ### Reconfigure

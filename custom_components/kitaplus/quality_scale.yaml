@@ -22,8 +22,8 @@ rules:
     status: done
     comment: tests/test_config_flow.py and tests/test_gold.py cover every branch including error recovery.
   dependency-transparency:
-    status: exempt
-    comment: No external dependencies (requirements is empty). The API client lives in api/ and uses aiohttp from Home Assistant.
+    status: done
+    comment: One pinned dependency, pypdf (BSD licence, PyPI, public source), used only to read the optional menu plan PDF (menu.py). The API client lives in api/ and uses aiohttp from Home Assistant.
   docs-actions:
     status: done
     comment: README (section Dashboard-Vorlagen) and dashboards/README.md describe the action and its fields.
@@ -161,7 +161,7 @@ rules:
   # ---------------------------------------------------------------- Platinum
   async-dependency:
     status: done
-    comment: The API client (api/client.py) is fully asynchronous and lives in this repository.
+    comment: The API client (api/client.py) is fully asynchronous and lives in this repository. pypdf is synchronous, so its text extraction runs in the executor.
   inject-websession:
     status: done
     comment: KitaPlusClient receives Home Assistant's aiohttp session (async_get_clientsession in __init__.py and config_flow.py).
