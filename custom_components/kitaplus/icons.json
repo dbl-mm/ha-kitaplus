@@ -42,6 +42,12 @@
       },
       "upcoming": {
         "default": "mdi:calendar-clock"
+      },
+      "opening_hours_today": {
+        "default": "mdi:clock-time-eight-outline"
+      },
+      "contacts": {
+        "default": "mdi:account-box-outline"
       }
     },
     "binary_sensor": {

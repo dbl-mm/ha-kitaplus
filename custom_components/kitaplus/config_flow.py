@@ -55,6 +55,7 @@ from .const import (
     CONF_REFRESH_EXPIRES,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
+    CONF_SHOW_CONTACTS,
     CONF_WEEKEND_CLOSED,
     DEFAULT_DEADLINE_TIME,
     DEFAULT_LEAD_MINUTES,
@@ -319,6 +320,9 @@ class KitaPlusOptionsFlow(OptionsFlowWithReload):
                     ): BooleanSelector(),
                     vol.Optional(
                         CONF_WEEKEND_CLOSED, default=current.get(CONF_WEEKEND_CLOSED, False)
+                    ): BooleanSelector(),
+                    vol.Optional(
+                        CONF_SHOW_CONTACTS, default=current.get(CONF_SHOW_CONTACTS, False)
                     ): BooleanSelector(),
                     vol.Optional(
                         CONF_LEAD_MINUTES, default=current.get(CONF_LEAD_MINUTES, DEFAULT_LEAD_MINUTES)

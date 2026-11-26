@@ -7,6 +7,7 @@ login attempt counter.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import time
@@ -24,7 +25,7 @@ from .exceptions import (
     KitaPlusMaintenanceError,
     KitaPlusTwoFactorRequired,
 )
-from .models import Account, BoardPost, Child, Day, Event, Message, OrderRules
+from .models import Account, BoardPost, Child, Contact, Day, Event, Hours, Message, OrderRules
 
 _TIMEOUT = aiohttp.ClientTimeout(total=30)
 _REFRESH_MARGIN = 60  # seconds before JWT expiry
@@ -49,6 +50,43 @@ def _jwt_exp(jwt: str) -> float:
         return 0.0
 
 
+_WEEKDAYS = ("montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag", "sonntag")
+
+
+def _clock(value: Any) -> str | None:
+    """ "HH:MM" from KitaPlus' "1970-01-01T07:00:00"."""
+    text = str(value or "")
+    return text[11:16] if len(text) >= 16 and text[13] == ":" else None
+
+
+def _opening_hours(facility: dict[str, Any]) -> list[Hours | None]:
+    """Opening hours for Monday to Sunday. A day without hours is None (KitaPlus gives no weekend hours)."""
+    raw = ((facility.get("currentStammdaten") or {}).get("einrichtungOeffnungszeiten")) or {}
+    hours: list[Hours | None] = []
+    for day in _WEEKDAYS:
+        start, end = _clock(raw.get(f"{day}Von")), _clock(raw.get(f"{day}Bis"))
+        hours.append(Hours(von=start, bis=end) if start and end else None)
+    return hours
+
+
+def _contacts(facility: dict[str, Any]) -> list[Contact]:
+    """The facility's contact persons, in the order KitaPlus shows them."""
+    people = sorted(facility.get("einrichtungAnsprechpartners") or [], key=lambda p: p.get("sortRank") or 0)
+    contacts: list[Contact] = []
+    for person in people:
+        name = " ".join(str(person.get(k) or "").strip() for k in ("anrede", "vorname", "nachname")).strip()
+        function = " ".join(str(person.get("funktion") or "").replace(",", " ").split())
+        contact = Contact(
+            name=" ".join(name.split()),
+            funktion=function,
+            telefon=str(person.get("telefon") or "").strip(),
+            email=str(person.get("email") or "").strip(),
+        )
+        if contact["name"] or contact["telefon"] or contact["email"]:  # an empty entry says nothing
+            contacts.append(contact)
+    return contacts
+
+
 class KitaPlusClient:
     """Talk to eappbroker.kitaplus.de."""
 
@@ -57,6 +95,7 @@ class KitaPlusClient:
         self._client_id = client_id
         self._tokens: Tokens | None = None
         self._on_tokens: Callable[[Tokens], None] | None = None
+        self._refresh_lock = asyncio.Lock()  # a refresh token is used by one request at a time
 
     def set_token_listener(self, listener: Callable[[Tokens], None] | None) -> None:
         """Called right after every new token pair, so a rotated refresh token is saved at once."""
@@ -134,6 +173,18 @@ class KitaPlusClient:
             raise KitaPlusApiError("Login response without token")
         self._store(body)
 
+    async def _async_renew(self, stale_jwt: str) -> None:
+        """Renew a JWT that is expired or was rejected, even if several requests need it at the same moment.
+
+        KitaPlus may hand out a new refresh token with every renewal and then reject the old one. Two
+        renewals with the same token would make the second one fail and look like a lost session, so they
+        wait for each other, and the later one sees that the first has already replaced the JWT.
+        """
+        async with self._refresh_lock:
+            if self._tokens is not None and self._tokens.jwt != stale_jwt:
+                return
+            await self._async_refresh()
+
     async def _async_refresh(self) -> None:
         if self._tokens is None or self._tokens.refresh_expires < time.time():
             raise KitaPlusAuthError("Refresh token expired")
@@ -158,14 +209,25 @@ class KitaPlusClient:
         if self._tokens is None:
             raise KitaPlusAuthError("Not logged in")
         if _jwt_exp(self._tokens.jwt) - time.time() < _REFRESH_MARGIN:
-            await self._async_refresh()
+            await self._async_renew(self._tokens.jwt)
         return {
             "Authorization": f"Bearer {self._tokens.jwt}",
             "X-Requested-With": "XMLHttpRequest",
         }
 
     async def _get(self, path: str, **params: str | int) -> dict[str, Any]:
-        headers = await self._async_headers()
+        headers = await self._async_headers()  # a failing renewal is a lost session and ends here
+        try:
+            return await self._get_with(path, headers, params)
+        except KitaPlusAuthError:
+            # A JWT can be rejected while the refresh token still works (for example when the server
+            # restarted). Renewing is not a login and does not count as a failed attempt, so try it once.
+            await self._async_renew(headers["Authorization"].removeprefix("Bearer "))
+            return await self._get_with(path, await self._async_headers(), params)
+
+    async def _get_with(
+        self, path: str, headers: dict[str, str], params: dict[str, str | int]
+    ) -> dict[str, Any]:
         try:
             async with self._session.get(
                 f"{API_BASE_URL}{path}", params=params, headers=headers, timeout=_TIMEOUT
@@ -204,22 +266,29 @@ class KitaPlusClient:
         """Stable id of the KitaPlus user. The rest of the (personal) answer is ignored."""
         return int((await self._get("/benutzer/get_own"))["data"]["id"])
 
-    async def async_get_children(self) -> list[Child]:
+    async def async_get_children(self, include_contacts: bool = False) -> list[Child]:
         """Children, reduced to what the integration needs.
 
-        The endpoint also returns contacts, addresses and birth dates. They are
-        dropped here, before the data leaves the client.
+        The endpoint also returns the children's contacts, addresses and birth dates. They are dropped here,
+        before the data leaves the client. The facility's opening hours are kept. Its contact persons are
+        kept only when `include_contacts` is set (an option the user has to switch on).
         """
         answer = await self._get("/benutzer/get_einrichtungen_kinder")
-        return [
-            Child(
+        children: list[Child] = []
+        for kind in answer["kinder"]:
+            account = kind.get("elternkonto") or {}
+            facility = account.get("einrichtung") or {}
+            child = Child(
                 id=kind["id"],
                 vorname=kind.get("vorname"),
                 istVppAktiv=bool(kind.get("istVppAktiv")),
-                elternkonto={"id": (kind.get("elternkonto") or {}).get("id")},
+                elternkonto={"id": account.get("id")},
+                oeffnungszeiten=_opening_hours(facility),
             )
-            for kind in answer["kinder"]
-        ]
+            if include_contacts:
+                child["ansprechpartner"] = _contacts(facility)
+            children.append(child)
+        return children
 
     async def async_get_order_rules(self) -> list[OrderRules]:
         """The order deadline texts of every facility, one entry each.

@@ -49,6 +49,8 @@ SLUGS: dict[str, dict[str, str]] = {
         "status_today": "bestellstatus_heute",
         "status_tomorrow": "bestellstatus_morgen",
         "next_deadline": "nachste_bestellfrist",
+        "hours_today": "offnungszeiten_heute",
+        "contacts": "ansprechpartner",
         "upcoming": "nachste_termine",
     },
     "en": {
@@ -68,6 +70,8 @@ SLUGS: dict[str, dict[str, str]] = {
         "status_today": "order_status_today",
         "status_tomorrow": "order_status_tomorrow",
         "next_deadline": "next_order_deadline",
+        "hours_today": "opening_hours_today",
+        "contacts": "contacts",
         "upcoming": "upcoming_dates",
     },
 }
@@ -82,6 +86,8 @@ TEXT: dict[str, dict[str, Any]] = {
         "app": "KitaPlus",
         "kita_today": "Kita heute",
         "kita_tomorrow": "Kita morgen",
+        "kita_hours": "Öffnungszeiten heute",
+        "contacts_title": "Ansprechpartner",
         "weekdays": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
         "weekdays_short": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
         "months": [
@@ -169,6 +175,8 @@ TEXT: dict[str, dict[str, Any]] = {
         "app": "KitaPlus",
         "kita_today": "Kita today",
         "kita_tomorrow": "Kita tomorrow",
+        "kita_hours": "Opening hours today",
+        "contacts_title": "Contacts",
         "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         "weekdays_short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         "months": [
@@ -270,6 +278,11 @@ class Ids:
     def of_child(self, domain: str, key: str) -> str:
         return f"{domain}.{self.child}_{self.slug[key]}"
 
+    def available(self, domain: str, key: str) -> bool:
+        """Does this child entity exist? The contact sensor only does when the user switched it on, so the
+        ready-made files (which cannot know) leave its card out."""
+        return key != "contacts"
+
 
 # The unique id suffix of each entity key (see sensor.py, binary_sensor.py, calendar.py). Unique ids start with
 # the config entry id, child entities continue with the child id.
@@ -289,6 +302,8 @@ CHILD_UNIQUE = {
     "status_tomorrow": "order_status_tomorrow",
     "next_deadline": "next_order_deadline",
     "meals": "calendar_meals",
+    "hours_today": "opening_hours_today",
+    "contacts": "contacts",
 }
 
 # Finds the entity id for a platform and a unique id (a prefix match when the unique id ends with "_").
@@ -314,6 +329,9 @@ class RegistryIds(Ids):
     def of_child(self, domain: str, key: str) -> str:
         unique = f"{self._entry_id}_{self._child_id}_{CHILD_UNIQUE[key]}"
         return self._lookup(domain, unique) or super().of_child(domain, key)
+
+    def available(self, domain: str, key: str) -> bool:
+        return self._lookup(domain, f"{self._entry_id}_{self._child_id}_{CHILD_UNIQUE[key]}") is not None
 
 
 def slugify(name: str) -> str:
@@ -614,8 +632,20 @@ def hero_card(t: dict[str, Any], account: Ids, kids: Sequence[tuple[Ids, str]]) 
     return markdown(weekdays_helpers + body, text_only=True)  # the alert is the frame, no second card border
 
 
-def kita_cards(t: dict[str, Any], account: Ids) -> list[dict[str, Any]]:
-    """Is the Kita open today and tomorrow? The state in words; the reason (for example a bridge day) follows."""
+def kita_cards(t: dict[str, Any], account: Ids, kids: Sequence[tuple[Ids, str]] = ()) -> list[dict[str, Any]]:
+    """Is the Kita open today and tomorrow? The state in words; the reason (for example a bridge day) follows.
+
+    Then the opening hours of today, one tile per child (the children can be at different facilities).
+    """
+    hours = [
+        tile(
+            ids.of_child("sensor", "hours_today"),
+            t["kita_hours"] if len(kids) == 1 else f"{name} · {t['kita_hours']}",
+            "mdi:clock-time-eight-outline",
+        )
+        for ids, name in kids
+        if ids.available("sensor", "hours_today")
+    ]
     return [
         tile(
             account.account("binary_sensor", "closed_today"),
@@ -629,7 +659,34 @@ def kita_cards(t: dict[str, Any], account: Ids) -> list[dict[str, Any]]:
             "mdi:school-outline",
             content=["state", "reason"],
         ),
+        *hours,
     ]
+
+
+CONTACTS = """
+@@HELPERS@@
+{%- set people = state_attr('@@ENTITY@@', 'contacts') or [] -%}
+### <ha-icon icon="mdi:account-box-outline"></ha-icon> @@TITLE@@
+{% for p in people %}
+{%- set tel = (p.telefon or '') | regex_replace('[^0-9+]', '') -%}
+{%- set mail = (p.email or '') | regex_replace('[^A-Za-z0-9@._+-]', '') %}
+**{{ clean(p.name) }}**{% if p.funktion %} · {{ clean(p.funktion) }}{% endif %}
+{% if tel %}[📞 {{ tel }}](tel:{{ tel }}){% endif %}{% if tel and mail %} · {% endif %}{% if mail %}[✉ {{ mail }}](mailto:{{ mail }}){% endif %}
+{% endfor -%}
+"""
+
+
+def contacts_card(t: dict[str, Any], ids: Ids, name: str, *, several: bool) -> dict[str, Any]:
+    """The facility's contact persons with links to call or write. Phone and address are cut down to the
+    characters they may have, so nothing else can end up in a link."""
+    title = f"{name} · {t['contacts_title']}" if several else t["contacts_title"]
+    content = fill(
+        CONTACTS,
+        HELPERS=helpers(t),
+        ENTITY=ids.of_child("sensor", "contacts"),
+        TITLE=title.replace("{", "").replace("%", ""),
+    )
+    return markdown(content)
 
 
 def kid_card(t: dict[str, Any], ids: Ids, name: str) -> dict[str, Any]:
@@ -748,16 +805,23 @@ def build_for(language: str, account: Ids, kids: Sequence[tuple[Ids, str]]) -> d
     """The dashboard for given entity ids: one (ids, display name) pair per child."""
     t = TEXT[language]
     ids_for = [ids for ids, _ in kids]
+    contacts = [
+        contacts_card(t, ids, name, several=len(kids) > 1)
+        for ids, name in kids
+        if ids.available("sensor", "contacts")
+    ]
 
     phone = [
-        _grid([header_card(t), hero_card(t, account, kids), *kita_cards(t, account)]),
+        _grid([header_card(t), hero_card(t, account, kids), *kita_cards(t, account, kids), *contacts]),
         _grid([kid_card(t, ids, name) for ids, name in kids]),
         _grid(
             [board_card(t, account), mail_card(t, account), next_card(t, account), balance_card(t, account)]
         ),
     ]
     wall = [
-        _grid([header_card(t, wall=True), hero_card(t, account, kids), *kita_cards(t, account)]),
+        _grid(
+            [header_card(t, wall=True), hero_card(t, account, kids), *kita_cards(t, account, kids), *contacts]
+        ),
         _grid([kid_card(t, ids, name) for ids, name in kids]),
         _grid(
             [
@@ -787,7 +851,7 @@ def single_cards(language: str) -> dict[str, dict[str, Any]]:
     de = language == "de"
     return {
         "status" if not de else "status": hero_card(t, account, kids),
-        "kita": {"type": "grid", "columns": 2, "square": False, "cards": kita_cards(t, account)},
+        "kita": {"type": "grid", "columns": 2, "square": False, "cards": kita_cards(t, account, kids)},
         "essen" if de else "meals": kid_card(t, ids, PLACEHOLDER_NAME),
         "schwarzes_brett" if de else "bulletin_board": board_card(t, account),
         "postfach" if de else "mailbox": mail_card(t, account),
@@ -819,7 +883,7 @@ def _version() -> str:
 
 # The oldest integration the template works with: the status card needs the order status and deadline
 # sensors, "Als Nächstes" needs the sensor "Nächste Termine" (0.3.1); attached files appear from 0.3.3.
-MIN_INTEGRATION = "0.3.1"
+MIN_INTEGRATION = "0.5.0"
 HEADERS = {
     "de": (
         "# KitaPlus-Dashboard (Vorlage) · Version {version} · benötigt KitaPlus ab {minimum}\n"

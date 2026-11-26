@@ -26,7 +26,8 @@ Unofficial Home Assistant integration for the **kitaplus parent app** (eltern.ki
 - **Bulletin board:** latest title, the last 5 posts as attribute `posts`
 - **Mailbox:** number of messages, the last 5 as attribute `messages`; **Pending replies**: messages that need a confirmation, with their deadline
 - **Calendars:** **Appointments**, **Closures** (including public holidays) and, per child, **Ordered meals**; **Upcoming dates**: the next appointments and closure days in one list (attribute `entries`)
-- **Kita:** **Closed today**, **Closed tomorrow** (attribute `reason` gives the reason, for example "Brückentag", a bridge day)
+- **Kita:** **Closed today**, **Closed tomorrow** (attribute `reason` gives the reason, for example "Brückentag", a bridge day); per child **Opening hours today** (for example `07:00–16:00`, "Closed" on closure days, unknown at weekends; the whole week in the attribute `week`)
+- **Contacts** (optional, an option under **Configure**): per child name, role, phone and e-mail of your Kita's contact persons in the attribute `contacts`; the dashboard shows them with links to call and write
 - **Meals:** per child **Meal today**, **Meal tomorrow**, **Order status today**, **Order status tomorrow** (Ordered, Open, Deadline missed, No meal), **Next order deadline**, **Nothing ordered tomorrow**; per account **Meal account balance** (EUR)
 - **Diagnostics:** **Session valid until** (disabled by default): how long the stored sign-in is valid
 - **Action:** **KitaPlus: Create dashboard** (`kitaplus.dashboard_yaml`) builds a ready-made dashboard for your children
@@ -90,6 +91,8 @@ Fields of the setup:
 
 - **Polling interval** (default: 30 minutes): how often Home Assistant asks KitaPlus (15 to 240 minutes). Less than 15 is not allowed, to go easy on the servers.
 - **Count weekends as closed** (default: off): "Closed today" and "Closed tomorrow" normally report only closure days and public holidays from KitaPlus, so they say "Open" on a weekend. With this option they say "Closed" on Saturdays and Sundays (reason: "Weekend"). Note: automations such as the "Schließtag" blueprint then also report every weekend.
+
+- **Show the Kita's contact persons** (default: off): shows name, role, phone and e-mail of your Kita's contact persons as the sensor **Contacts** and as a card in the dashboard (with links to call and write). Off by default, because these are personal data of the staff: without the option they are not even read. With it they are kept out of the database (not recorded) and out of the diagnostics file. Switching it off again removes the sensor. Run the action "KitaPlus: Create dashboard" again afterwards to get the dashboard.
 
 ### Reconfigure
 **⋮ → Reconfigure** lets you sign in again or change the e-mail address. Only **the same KitaPlus account** is accepted; a different account is rejected and nothing is changed. The same protection rules apply as in the setup.

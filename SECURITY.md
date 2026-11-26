@@ -10,5 +10,6 @@ Die Diagnostics-Datei der Integration schwärzt diese Daten, prüfe sie trotzdem
 
 ## Was die Integration speichert
 - E-Mail-Adresse und das Refresh-Token von KitaPlus in den Home-Assistant-Konfigurationsdaten (`.storage`).
+- Die **Ansprechpartner der Kita** (Name, Telefon, E-Mail) werden nur eingelesen, wenn du die Option dafür einschaltest. Sie werden nicht in der Datenbank aufgezeichnet und stehen nicht in der Diagnose-Datei.
 - Das **Passwort wird nie gespeichert**. Es wird nur während der Anmeldung im Arbeitsspeicher gehalten.
 - Es werden keine Daten an Dritte gesendet. Die einzige Gegenstelle ist `eappbroker.kitaplus.de` über HTTPS.

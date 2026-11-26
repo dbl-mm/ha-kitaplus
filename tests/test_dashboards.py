@@ -466,7 +466,13 @@ def test_phone_is_one_column_and_the_wall_has_three(hass=None) -> None:
 def test_the_phone_order_is_status_kids_then_lists() -> None:
     first = gen.build("de")["views"][0]["sections"]
     assert "ha-alert" in first[0]["cards"][1]["content"]
-    assert [c["type"] for c in first[0]["cards"]] == ["markdown", "markdown", "tile", "tile"]
+    assert [c["type"] for c in first[0]["cards"]] == [
+        "markdown",
+        "markdown",
+        "tile",
+        "tile",
+        "tile",
+    ]  # status, hero, closed x2, hours
     assert first[2]["cards"][-1]["type"] == "tile", "the balance comes last"
 
 
@@ -530,3 +536,30 @@ async def test_the_child_card_of_an_unfinished_template_explains_instead_of_show
     assert t["todo_kid"] not in out and t["state_words"]["unknown"] in out, (
         "a real child is not told to set up"
     )
+
+
+def test_the_ready_made_files_leave_out_the_contacts_card_but_show_the_opening_hours() -> None:
+    """The contact sensor exists only when switched on, so a file that cannot know leaves it out."""
+    text = gen.dump(gen.build("de"))
+    assert "sensor.kind_offnungszeiten_heute" in text
+    assert "ansprechpartner" not in text and "tel:" not in text
+
+
+def test_a_contacts_card_appears_when_the_sensor_exists_and_cuts_links_down_to_safe_characters() -> None:
+    known = {("sensor", "entry_5_contacts"): "sensor.anna_contacts"}
+    ids = gen.RegistryIds("en", "entry", lambda domain, unique: known.get((domain, unique)), 5)
+    assert ids.available("sensor", "contacts") and not gen.RegistryIds(
+        "en", "entry", lambda *_: None, 5
+    ).available("sensor", "contacts")
+    dash = gen.build_for("en", gen.Ids("en"), [(ids, "Anna")])
+    card = next(c for c in walk(dash["views"][0]) if "tel:" in c.get("content", ""))
+    assert "sensor.anna_contacts" in card["content"] and "Contacts" in card["content"]
+    # the template keeps only digits and "+" in the number, and letters, digits and "@._+-" in the address
+    assert "regex_replace('[^0-9+]', '')" in card["content"]
+    assert "regex_replace('[^A-Za-z0-9@._+-]', '')" in card["content"]
+
+
+def test_several_children_get_one_opening_hours_tile_each_named_after_the_child() -> None:
+    dash = gen.build("en", ["Anna", "Ben"])
+    names = [c["name"] for c in walk(dash["views"][0]) if "opening_hours" in str(c.get("entity", ""))]
+    assert names == ["Anna · Opening hours today", "Ben · Opening hours today"]

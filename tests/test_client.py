@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import time
@@ -79,10 +80,60 @@ async def test_rejected_token_raises_auth_error_without_relogin(client):
     with aioresponses() as m:
         m.post(f"{API_BASE_URL}/app/login_check", payload=_ok())
         m.get(f"{API_BASE_URL}/orga_nachrichten/index?limit=15&page=1&start=0", status=401)
+        m.post(f"{API_BASE_URL}/app/refresh_token", status=401, payload={})  # the refresh is rejected too
         await client.async_login("a@b.de", "pw")
         with pytest.raises(KitaPlusAuthError):
             await client.async_get_board()
+        assert sum(1 for k in m.requests if "login_check" in str(k[1])) == 1  # never a second login
+
+
+async def test_a_rejected_jwt_is_renewed_once_and_the_request_repeated(client):
+    url = f"{API_BASE_URL}/orga_nachrichten/index?limit=15&page=1&start=0"
+    with aioresponses() as m:
+        m.post(f"{API_BASE_URL}/app/login_check", payload=_ok())
+        m.get(url, status=401)
+        m.post(f"{API_BASE_URL}/app/refresh_token", payload=_ok())
+        m.get(url, payload={"success": True, "data": [{"id": 1}]})
+        await client.async_login("a@b.de", "pw")
+        assert await client.async_get_board() == [{"id": 1}]
+        assert sum(1 for k in m.requests if "refresh_token" in str(k[1])) == 1
         assert sum(1 for k in m.requests if "login_check" in str(k[1])) == 1
+
+
+async def test_a_second_rejection_after_the_renewal_is_a_lost_session(client):
+    url = f"{API_BASE_URL}/orga_nachrichten/index?limit=15&page=1&start=0"
+    with aioresponses() as m:
+        m.post(f"{API_BASE_URL}/app/login_check", payload=_ok())
+        m.get(url, status=401)
+        m.post(f"{API_BASE_URL}/app/refresh_token", payload=_ok())
+        m.get(url, status=401)
+        await client.async_login("a@b.de", "pw")
+        with pytest.raises(KitaPlusAuthError):
+            await client.async_get_board()
+        assert sum(1 for k in m.requests if "refresh_token" in str(k[1])) == 1  # no loop
+
+
+async def test_simultaneous_requests_renew_the_token_only_once(client):
+    """The renewals wait for each other: the second one finds the JWT already replaced."""
+    client.set_tokens(
+        Tokens(_jwt(time.time() + 5), "r", time.time() + 3600)
+    )  # expires soon: all want a renewal
+    renewals = []
+
+    async def slow_refresh():
+        renewals.append(1)
+        await asyncio.sleep(0.01)  # others arrive while this one is still running
+        client.set_tokens(Tokens(_jwt(time.time() + 3600), "r2", time.time() + 3600))
+
+    client._async_refresh = slow_refresh
+    with aioresponses() as m:
+        m.get(
+            f"{API_BASE_URL}/orga_nachrichten/index?limit=15&page=1&start=0",
+            payload={"success": True, "data": []},
+            repeat=True,
+        )
+        await asyncio.gather(*(client.async_get_board() for _ in range(5)))
+    assert len(renewals) == 1
 
 
 async def test_children_are_reduced_to_the_minimum(client):
@@ -105,7 +156,15 @@ async def test_children_are_reduced_to_the_minimum(client):
         m.get(f"{API_BASE_URL}/benutzer/get_einrichtungen_kinder", payload=raw)
         await client.async_login("a@b.de", "pw")
         children = await client.async_get_children()
-    assert children == [{"id": 1, "vorname": "Anna", "istVppAktiv": True, "elternkonto": {"id": 7}}]
+    assert children == [
+        {
+            "id": 1,
+            "vorname": "Anna",
+            "istVppAktiv": True,
+            "elternkonto": {"id": 7},
+            "oeffnungszeiten": [None] * 7,  # no hours in this answer
+        }
+    ]
 
 
 async def test_restored_session_without_jwt_refreshes_instead_of_crashing(client):
@@ -238,6 +297,7 @@ async def test_get_errors_are_classified(client):
         with aioresponses() as m:
             await _logged_in(client, m)
             m.get(url, **reply)
+            m.post(f"{API_BASE_URL}/app/refresh_token", status=401, payload={})  # only the 403 case gets here
             with pytest.raises(expected):
                 await client.async_get_board()
 
@@ -358,3 +418,70 @@ async def test_order_rules_keep_only_the_two_deadline_texts(client):
             "fristSonstigesText": raw["data"][0]["vppEinrichtungseinstellungen"]["fristSonstigesText"],
         }
     ]
+
+
+FACILITY_ANSWER = {
+    "success": True,
+    "kinder": [
+        {
+            "id": 1,
+            "vorname": "Anna",
+            "istVppAktiv": False,
+            "kindKontakte": [{"telefon": "kind-telefon"}],
+            "elternkonto": {
+                "id": 7,
+                "einrichtung": {
+                    "currentStammdaten": {
+                        "einrichtungOeffnungszeiten": {
+                            "montagVon": "1970-01-01T07:00:00",
+                            "montagBis": "1970-01-01T16:00:00",
+                            "freitagVon": "1970-01-01T07:30:00",
+                            "freitagBis": None,  # a day with a start but no end counts as no hours
+                        }
+                    },
+                    "einrichtungAnsprechpartners": [
+                        {
+                            "anrede": "Herr",
+                            "vorname": "Zweiter",
+                            "nachname": "Test",
+                            "telefon": " 02 ",
+                            "email": "b@example.org",
+                            "funktion": "Stellvertretung, \n",
+                            "sortRank": 2,
+                        },
+                        {
+                            "anrede": "Frau",
+                            "vorname": "Erste ",
+                            "nachname": "Muster",
+                            "telefon": "01",
+                            "email": "a@example.org",
+                            "funktion": "Leitung, \n",
+                            "sortRank": 1,
+                        },
+                        {"id": 3},  # an entry without any data must not break anything
+                    ],
+                },
+            },
+        }
+    ],
+}
+
+
+async def test_opening_hours_are_kept_and_contacts_only_on_request(client):
+    with aioresponses() as m:
+        await _logged_in(client, m)
+        m.get(f"{API_BASE_URL}/benutzer/get_einrichtungen_kinder", payload=FACILITY_ANSWER, repeat=True)
+        plain = (await client.async_get_children())[0]
+        asked = (await client.async_get_children(include_contacts=True))[0]
+    assert plain["oeffnungszeiten"] == [{"von": "07:00", "bis": "16:00"}, None, None, None, None, None, None]
+    assert "ansprechpartner" not in plain, "contact persons are dropped unless asked for"
+    assert "kind-telefon" not in str(plain) and "kind-telefon" not in str(asked), "the child's contacts never"
+    assert asked["ansprechpartner"] == [
+        {"name": "Frau Erste Muster", "funktion": "Leitung", "telefon": "01", "email": "a@example.org"},
+        {
+            "name": "Herr Zweiter Test",
+            "funktion": "Stellvertretung",
+            "telefon": "02",
+            "email": "b@example.org",
+        },
+    ]  # the entry without any data is left out

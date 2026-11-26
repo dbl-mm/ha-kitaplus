@@ -30,6 +30,7 @@ from .const import (
     CONF_REFRESH_EXPIRES,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
+    CONF_SHOW_CONTACTS,
     DEFAULT_DEADLINE_TIME,
     DEFAULT_LEAD_MINUTES,
     DEFAULT_SCAN_INTERVAL,
@@ -179,7 +180,9 @@ class KitaPlusCoordinator(DataUpdateCoordinator[KitaPlusData]):
     async def _async_get_children(self) -> list[Child]:
         now = dt_util.utcnow()
         if not self._children or self._children_at is None or now - self._children_at > CHILDREN_REFRESH:
-            self._children = await self.client.async_get_children()
+            self._children = await self.client.async_get_children(
+                include_contacts=bool(self.config_entry.options.get(CONF_SHOW_CONTACTS, False))
+            )
             self._children_at = now
         return self._children
 

@@ -422,3 +422,89 @@ async def test_a_closure_on_a_weekend_names_the_closure_not_the_weekend(hass, st
         hass, stack, freezer, "2026-11-07", {"weekend_closed": True}, async_get_events=[closure]
     )
     assert state.state == "on" and state.attributes["reason"] == "Tag der Einheit"
+
+
+def _kid_with_facility(**extra):
+    """The fixture child plus the data the client adds: opening hours Monday to Sunday and maybe contacts."""
+    child = dict(load("get_einrichtungen_kinder")["kinder"][0])
+    child["oeffnungszeiten"] = [{"von": "07:00", "bis": "16:00"}] * 4 + [
+        {"von": "07:00", "bis": "15:00"},
+        None,
+        None,
+    ]
+    child.update(extra)
+    return [child]
+
+
+async def test_opening_hours_today_follow_the_weekday(hass, stack, freezer) -> None:
+    at(freezer, "2026-11-27T10:00:00")  # a Friday
+    await setup_integration(hass, stack, async_get_children=_kid_with_facility())
+    friday = hass.states.get("sensor.vorname_1_opening_hours_today")
+    assert friday.state == "07:00–15:00"
+    assert [d["weekday"] for d in friday.attributes["week"]] == [0, 1, 2, 3, 4]  # the weekend has no hours
+    assert friday.attributes["week"][4] == {"weekday": 4, "from": "07:00", "to": "15:00"}
+
+
+async def test_opening_hours_are_unknown_at_the_weekend_and_closed_on_a_closure_day(
+    hass, stack, freezer
+) -> None:
+    at(freezer, "2026-11-28T10:00:00")  # a Saturday
+    await setup_integration(hass, stack, async_get_children=_kid_with_facility())
+    assert hass.states.get("sensor.vorname_1_opening_hours_today").state == "unknown"
+
+
+async def test_a_closure_day_overrides_the_opening_hours(hass, stack, freezer) -> None:
+    at(freezer, "2026-11-27T10:00:00")
+    closure = {
+        "id": 1,
+        "istSchliesstag": True,
+        "startdatum": "2026-11-27T00:00:00",
+        "enddatum": "2026-11-27T00:00:00",
+    }
+    await setup_integration(hass, stack, async_get_children=_kid_with_facility(), async_get_events=[closure])
+    assert hass.states.get("sensor.vorname_1_opening_hours_today").state == "Closed"
+
+
+async def test_a_child_without_opening_hours_has_an_unknown_state(hass, stack, freezer) -> None:
+    at(freezer, "2026-11-27T10:00:00")
+    await setup_integration(hass, stack)  # the plain fixture child carries no hours
+    state = hass.states.get("sensor.vorname_1_opening_hours_today")
+    assert state.state == "unknown" and state.attributes["week"] == []
+
+
+CONTACTS = [{"name": "Frau Muster", "funktion": "Leitung", "telefon": "01", "email": "a@example.org"}]
+
+
+async def test_contacts_exist_only_with_the_option_and_are_not_recorded(hass, stack, freezer) -> None:
+    at(freezer, "2026-11-27T10:00:00")
+    kids = _kid_with_facility(ansprechpartner=CONTACTS)
+    await setup_integration(
+        hass, stack, entry=make_entry(options={"show_contacts": True}), async_get_children=kids
+    )
+    state = hass.states.get("sensor.vorname_1_contacts")
+    assert state.state == "1" and state.attributes["contacts"] == CONTACTS
+    entity = hass.data["sensor"].get_entity("sensor.vorname_1_contacts")
+    assert "contacts" in entity._unrecorded_attributes
+
+
+async def test_without_the_option_there_is_no_contact_sensor(hass, stack, freezer) -> None:
+    at(freezer, "2026-11-27T10:00:00")
+    await setup_integration(hass, stack, async_get_children=_kid_with_facility())
+    assert hass.states.get("sensor.vorname_1_contacts") is None
+
+
+async def test_switching_the_option_off_removes_the_contact_sensor_again(hass, stack, freezer) -> None:
+    from homeassistant.helpers import entity_registry as er
+
+    at(freezer, "2026-11-27T10:00:00")
+    kids = _kid_with_facility(ansprechpartner=CONTACTS)
+    entry = await setup_integration(
+        hass, stack, entry=make_entry(options={"show_contacts": True}), async_get_children=kids
+    )
+    registry = er.async_get(hass)
+    assert registry.async_get("sensor.vorname_1_contacts") is not None
+    hass.config_entries.async_update_entry(entry, options={})
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert registry.async_get("sensor.vorname_1_contacts") is None
+    assert hass.states.get("sensor.vorname_1_contacts") is None
