@@ -14,7 +14,7 @@ Gebaut im Sections-Layout, nur mit **eingebauten Karten** (nichts zusätzlich in
 > IDs bei dir stimmen. Schau unter *Einstellungen → Entitäten* nach „kitaplus“.
 
 > **Voraussetzung:** die aktuelle Integration (Bestellstatus und Bestellfrist gibt es ab 0.2.0 bzw. 0.3.0). Zeigt eine Karte
-> „Entität nicht gefunden“, ist meist die Integration noch alt: in HACS aktualisieren und Home Assistant neu starten.
+> „Entität nicht gefunden“, ist meist die Integration noch alt: im Marktplatz (bzw. HACS) aktualisieren und Home Assistant neu starten.
 
 > **Version:** Jede Datei beginnt mit einem Kommentar „Version X · benötigt KitaPlus ab Y“. Ist X höher als bei deiner eingefügten Fassung, lohnt sich ein erneutes Einfügen, nachdem du die Integration aktualisiert hast.
 

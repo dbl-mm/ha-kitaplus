@@ -39,7 +39,7 @@ Every child appears as its own device, plus a "KitaPlus" device for the account.
 
 ## Quick start
 
-1. Search for **KitaPlus** in HACS and download it, then restart Home Assistant. (If it does not show up in the search yet: [Installation](#installation).)
+1. Search for **KitaPlus** in the **Marketplace** of Home Assistant and download it, then restart Home Assistant. (If it does not show up in the search yet: [Installation](#installation).)
 2. **Settings → Devices & services → Add integration → KitaPlus**, sign in with your KitaPlus account (e-mail and password, plus a two-factor code if needed).
 3. Under **Configure**, enter **your Kita's order deadline**, so that "Deadline missed" and the reminders are right. [How to](#order-deadlines).
 4. Import a [blueprint](#blueprints) and let the integration build the [dashboard](#dashboard-templates) (action "KitaPlus: Create dashboard").
@@ -48,23 +48,23 @@ Every child appears as its own device, plus a "KitaPlus" device for the account.
 
 ## Installation
 
-### HACS (recommended)
-1. Search for **KitaPlus** in HACS and download it.
+### Marketplace (recommended)
+1. Search for **KitaPlus** in the **Marketplace** (built into Home Assistant since 2026.11, formerly HACS) and download it.
 2. Restart Home Assistant.
 3. **Settings → Devices & services → Add integration → KitaPlus**.
 
-If you cannot find KitaPlus in the search yet (new entries appear with a delay), add it as a **custom repository**: HACS → ⋮ → **Custom repositories** → `https://github.com/dbl-mm/ha-kitaplus`, category **Integration**.
+If you cannot find KitaPlus in the search yet (new entries appear with a delay), add it as a **custom repository**: Marketplace (or HACS) → ⋮ → **Custom repositories** → `https://github.com/dbl-mm/ha-kitaplus`, category **Integration**.
 
 ### Manual
 Copy the folder `custom_components/kitaplus` to `<config>/custom_components/kitaplus` and restart.
 
 ## Updates
 
-Updates come through HACS like for any other integration: HACS creates an **update entity**, Home Assistant shows the update under **Settings → System → Updates**, and you install it with one click. After that you need to **restart Home Assistant**. The stored sign-in is kept, there is **no new sign-in** at KitaPlus.
+Updates come through the Marketplace (or HACS) like for any other integration: it creates an **update entity**, Home Assistant shows the update under **Settings → System → Updates**, and you install it with one click. After that you need to **restart Home Assistant**. The stored sign-in is kept, there is **no new sign-in** at KitaPlus.
 
 > **Important: restart after every update.** Only after the restart does the new code run, and new entities (for example
 > **Upcoming dates**) appear only then. Until you restart, Home Assistant keeps showing the old version.
-> If you do not see the update: in HACS choose **⋮ → Reload data** or **Redownload** on KitaPlus, select the version,
+> If you do not see the update: in the Marketplace (or HACS) choose **⋮ → Reload data** or **Redownload** on KitaPlus, select the version,
 > and restart Home Assistant. Which version is running is shown under *Settings → Devices & services → KitaPlus*.
 
 What each version changes is listed in the [changelog](CHANGELOG.md) and in the [GitHub releases](https://github.com/dbl-mm/ha-kitaplus/releases). Versions follow [SemVer](https://semver.org/).
@@ -280,7 +280,7 @@ What you see and what it means:
 ## Removal
 
 1. **Settings → Devices & services → KitaPlus → ⋮ → Delete.** This removes all devices and entities.
-2. In HACS: KitaPlus → ⋮ → **Remove**, then restart Home Assistant (or delete the folder `custom_components/kitaplus` for a manual installation).
+2. In the Marketplace (or HACS): KitaPlus → ⋮ → **Remove**, then restart Home Assistant (or delete the folder `custom_components/kitaplus` for a manual installation).
 3. The stored sign-in is deleted with the entry. If the KitaPlus app shows a device list for your account, you can remove the "Home Assistant" entry there (not verified).
 
 ## Privacy and security
@@ -322,7 +322,7 @@ python3 scripts/bump_version.py 0.2.0        # sets the version in manifest.json
 # extend CHANGELOG.md, commit and push, then:
 git tag v0.2.0 && git push origin v0.2.0     # starts .github/workflows/release.yml
 ```
-The workflow checks that the tag matches `manifest.json`, runs the tests, builds `kitaplus.zip` and creates the GitHub release. Only then does the update appear in HACS.
+The workflow checks that the tag matches `manifest.json`, runs the tests, builds `kitaplus.zip` and creates the GitHub release. Only then does the update appear in the Marketplace (or HACS).
 
 ### Versions in blueprints and dashboards
 Every blueprint ends its description with "Version X · benötigt KitaPlus ab Y · Home Assistant ab Z" (needs KitaPlus from Y, Home Assistant from Z), and every dashboard file starts with a comment "Version X · benötigt KitaPlus ab Y". X is the version of the release the file comes from. Y is the oldest version of the integration the file works with. After updating the integration, check whether you should re-import the blueprints and the dashboard too: if the file shows a newer version than yours, importing again helps. `bump_version.py` writes these details, and the tests fail if one is out of date.
