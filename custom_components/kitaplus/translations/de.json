@@ -205,7 +205,7 @@
           "reminder_lead_minutes": "Wie lange vor der Frist das Ereignis kitaplus_order_deadline ausgelöst wird, falls der Tag noch nicht bestellt ist. 0 schaltet es aus.",
           "menu_from_pdf": "Liest die Gerichte aus einer PDF am Schwarzen Brett (zum Beispiel „Menüplan 23.-27. November“). Funktioniert nur für Pläne mit erkennbarem Aufbau (Datum, dann Mo., Di., … mit Gericht). Erkennt die Integration den Aufbau nicht, zeigt sie nichts an. Angaben ohne Gewähr.",
           "menu_keyword": "Ein Beitrag am Schwarzen Brett wird gelesen, wenn dieses Wort in Titel, Text oder Anhangsname steht (ohne Beachtung der Groß-/Kleinschreibung). Standard: Mittagessen.",
-          "project_groups": "Wähle die Projektgruppen (zum Beispiel Altersgruppe), die neben der Stammgruppe erscheinen. Die Liste kommt aus den Gruppen deines Kindes in KitaPlus."
+          "project_groups": "Zusätzliche Gruppen deines Kindes in KitaPlus, zum Beispiel für ein Projekt oder eine Telefonliste. Nur die hier gewählten stehen im Attribut project_groups des Sensors „Gruppe“. Die Stammgruppe zeigt der Sensor immer. Ohne Auswahl bleibt das Attribut leer."
         }
       }
     }
