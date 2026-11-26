@@ -303,7 +303,7 @@ What may come next is in the [roadmap](https://github.com/dbl-mm/ha-kitaplus/blo
 
 ## Quality scale
 
-By its own assessment, the integration meets all rules of the [Home Assistant Quality Scale](https://www.home-assistant.io/docs/quality_scale/) up to **Platinum**. This is a **self-assessment**: Home Assistant only awards the tiers to integrations in core, and this one is distributed through HACS only. Every rule is listed with status and reasoning in [`quality_scale.yaml`](custom_components/kitaplus/quality_scale.yaml). CI runs `mypy --strict`, 95 % coverage per module (currently 100 %), hassfest and HACS on every change.
+By its own assessment, the integration meets all rules of the [Home Assistant Quality Scale](https://www.home-assistant.io/docs/quality_scale/) up to **Platinum**. This is a **self-assessment**: Home Assistant only awards the tiers to integrations in core, and this one is distributed through the Marketplace (formerly HACS) only. Every rule is listed with status and reasoning in [`quality_scale.yaml`](custom_components/kitaplus/quality_scale.yaml). CI runs `mypy --strict`, 95 % coverage per module (currently 100 %), hassfest and the HACS validation (a check of the Marketplace metadata) on every change.
 
 ## Development
 

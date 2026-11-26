@@ -1,5 +1,5 @@
 # Self-assessment against the Home Assistant Integration Quality Scale.
-# Home Assistant only awards tiers to core integrations; this integration is distributed through HACS.
+# Home Assistant only awards tiers to core integrations; this integration is distributed through the Home Assistant Marketplace (formerly HACS).
 # Each rule names where it is met. Rules marked "exempt" explain why they do not apply.
 rules:
   # ---------------------------------------------------------------- Bronze
