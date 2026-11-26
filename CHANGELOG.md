@@ -2,6 +2,10 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [0.4.2]
+### Behoben
+- **Anhänge wie .docx oder .xlsx hießen auf Android .bin** (Companion App). Office- und Textdokumente (Word, Excel, PowerPoint, OpenDocument, TXT, CSV) werden jetzt mit ihrem echten Typ ausgeliefert. Nennt KitaPlus keinen brauchbaren Typ, wird er aus dem Dateinamen abgeleitet. Sie bleiben ein Download (nie im Browser geöffnet), mit `nosniff` und Sandbox-Schutz. HTML, SVG und andere aktive Typen bleiben unverändert `application/octet-stream`. Danke an Tofi80 für Fund und Vorschlag (#18).
+
 ## [0.4.1]
 ### Behoben
 - **Schwarzes Brett und Postfach zeigen den vollen Text.** Die Attribute `posts` und `messages` waren auf 500 Zeichen gekürzt. Sie werden nicht in der Datenbank aufgezeichnet, die Kürzung war also unnötig. Das Dashboard kürzt weiterhin selbst für die Anzeige.

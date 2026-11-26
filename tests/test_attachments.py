@@ -65,6 +65,41 @@ async def test_other_file_types_are_only_offered_as_a_download(hass: HomeAssista
     assert response.headers["Content-Disposition"].startswith("attachment;")
 
 
+@pytest.mark.parametrize(
+    ("answer", "expected"),
+    [
+        # KitaPlus knows the type: it is passed on, so Android keeps ".docx"
+        (
+            (b"x", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "Plan.docx"),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ),
+        # KitaPlus gives no useful type: it is guessed from the file name
+        (
+            (b"x", "application/octet-stream", "Zahlen.xlsx"),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ),
+        ((b"x", "", "notiz.txt"), "text/plain"),
+        ((b"x", "application/octet-stream", "liste.csv"), "text/csv"),
+        # active or unknown types stay opaque, even when the file name claims otherwise
+        ((b"<svg/>", "image/svg+xml", "bild.svg"), "application/octet-stream"),
+        ((b"<html>", "application/octet-stream", "seite.html"), "application/octet-stream"),
+        (
+            (b"<html>", "text/html", "Plan.docx"),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ),
+        ((b"x", "application/octet-stream", "unbekannt.xyz"), "application/octet-stream"),
+    ],
+)
+async def test_documents_keep_their_real_type_for_the_download(
+    hass: HomeAssistant, hass_client, answer, expected
+) -> None:
+    response, _, _ = await open_file(hass, hass_client, "/api/kitaplus/attachment/{entry}/board/7", answer)
+    assert response.headers["Content-Type"].split(";")[0] == expected
+    assert response.headers["Content-Disposition"].startswith("attachment;")  # never opened in the browser
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert "sandbox" in response.headers["Content-Security-Policy"]
+
+
 async def test_kitaplus_problems_give_a_clear_error(hass: HomeAssistant, hass_client) -> None:
     response, _, _ = await open_file(
         hass, hass_client, "/api/kitaplus/attachment/{entry}/board/7", side_effect=KitaPlusApiError("x")
