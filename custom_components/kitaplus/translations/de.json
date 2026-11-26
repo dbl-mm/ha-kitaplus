@@ -122,6 +122,15 @@
       },
       "contacts": {
         "name": "Ansprechpartner"
+      },
+      "menu_today": {
+        "name": "Speiseplan heute"
+      },
+      "menu_tomorrow": {
+        "name": "Speiseplan morgen"
+      },
+      "group": {
+        "name": "Gruppe"
       }
     },
     "calendar": {
@@ -181,7 +190,10 @@
           "order_deadline_workdays": "Frist von Wochenende und Feiertag auf den Werktag davor verschieben",
           "weekend_closed": "Wochenende als geschlossen zählen",
           "show_contacts": "Ansprechpartner der Kita anzeigen",
-          "reminder_lead_minutes": "Erinnerung vor der Frist (Minuten)"
+          "reminder_lead_minutes": "Erinnerung vor der Frist (Minuten)",
+          "menu_from_pdf": "Experimentell: Gerichte aus dem Menüplan-PDF lesen",
+          "menu_keyword": "Speiseplan: Suchbegriff",
+          "project_groups": "Projektgruppen anzeigen"
         },
         "data_description": {
           "scan_interval": "Wie oft Home Assistant bei KitaPlus nach neuen Daten fragt. Weniger als 15 Minuten ist nicht erlaubt.",
@@ -190,7 +202,10 @@
           "order_deadline_workdays": "Einschalten, wenn deine Kita eine Frist, die auf Samstag, Sonntag oder einen Feiertag fällt, auf den vorhergehenden Werktag verschiebt (eine Mahlzeit am Montag schließt dann am Freitag). Steht das im Hilfetext von KitaPlus, ist es für dich schon eingestellt.",
           "weekend_closed": "Einschalten, wenn „Heute geschlossen“ und „Morgen geschlossen“ auch samstags und sonntags „Geschlossen“ melden sollen. Standardmäßig aus: Dann melden sie nur Schließtage und Feiertage aus KitaPlus. Automationen wie der Blueprint „Schließtag“ melden dann auch jedes Wochenende.",
           "show_contacts": "Einschalten, um Name, Funktion, Telefonnummer und E-Mail der Ansprechpartner deiner Kita als Sensor („Ansprechpartner“) zu zeigen. Standardmäßig aus, weil es persönliche Daten der Mitarbeitenden sind. Sie bleiben aus der Datenbank und aus der Diagnose-Datei heraus.",
-          "reminder_lead_minutes": "Wie lange vor der Frist das Ereignis kitaplus_order_deadline ausgelöst wird, falls der Tag noch nicht bestellt ist. 0 schaltet es aus."
+          "reminder_lead_minutes": "Wie lange vor der Frist das Ereignis kitaplus_order_deadline ausgelöst wird, falls der Tag noch nicht bestellt ist. 0 schaltet es aus.",
+          "menu_from_pdf": "Liest die Gerichte aus einer PDF am Schwarzen Brett (zum Beispiel „Menüplan 23.-27. November“). Funktioniert nur für Pläne mit erkennbarem Aufbau (Datum, dann Mo., Di., … mit Gericht). Erkennt die Integration den Aufbau nicht, zeigt sie nichts an. Angaben ohne Gewähr.",
+          "menu_keyword": "Ein Beitrag am Schwarzen Brett wird gelesen, wenn dieses Wort in Titel, Text oder Anhangsname steht (ohne Beachtung der Groß-/Kleinschreibung). Standard: Mittagessen.",
+          "project_groups": "Wähle die Projektgruppen (zum Beispiel Altersgruppe), die neben der Stammgruppe erscheinen. Die Liste kommt aus den Gruppen deines Kindes in KitaPlus."
         }
       }
     }

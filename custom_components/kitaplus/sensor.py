@@ -20,7 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from . import KitaPlusConfigEntry
 from .api.models import Attachment, BoardPost, Child, Contact, Hours, MealEntry, Message, UpcomingEntry
-from .const import CONF_SHOW_CONTACTS
+from .const import CONF_MENU_PDF, CONF_PROJECT_GROUPS, CONF_SHOW_CONTACTS
 from .coordinator import KitaPlusCoordinator, KitaPlusData
 from .entity import KitaPlusChildEntity, KitaPlusEntity, async_add_when_new
 from .helpers import (
@@ -33,6 +33,7 @@ from .helpers import (
     pending_replies,
     upcoming_entries,
 )
+from .menu import MenuDay
 
 PARALLEL_UPDATES = 0  # data comes from the coordinator, entities never call the API
 
@@ -110,7 +111,11 @@ async def async_setup_entry(
             "session": lambda: SessionSensor(coordinator),
             "upcoming": lambda: UpcomingSensor(coordinator),
         }
+        if coordinator.config_entry.options.get(CONF_MENU_PDF):  # experimental, see menu.py
+            found["menu-0"] = lambda: MenuSensor(coordinator, 0)
+            found["menu-1"] = lambda: MenuSensor(coordinator, 1)
         for child in coordinator.data.children:
+            found[f"group-{child['id']}"] = partial(GroupSensor, coordinator, child)
             if child["id"] in coordinator.data.meals:
                 for offset in (0, 1):
                     found[f"meal-{child['id']}-{offset}"] = partial(MealSensor, coordinator, child, offset)
@@ -260,6 +265,66 @@ class MealSensor(_ChildDaySensor):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {"offered": self._meals()}
+
+
+class GroupSensor(KitaPlusChildEntity, SensorEntity):
+    """The main group of a child (for example the class). Chosen project groups are an attribute."""
+
+    _attr_translation_key = "group"
+
+    def __init__(self, coordinator: KitaPlusCoordinator, child: Child) -> None:
+        super().__init__(coordinator, child)
+        self._attr_unique_id = f"{self._entry_id}_{self._child_id}_group"
+
+    def _child(self) -> Child | None:
+        return next((c for c in self.coordinator.data.children if c["id"] == self._child_id), None)
+
+    @property
+    def native_value(self) -> str | None:
+        child = self._child()
+        return child.get("gruppe") if child else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Only the project groups picked in the options (a Kita has many, for example phone lists)."""
+        child = self._child()
+        chosen = self.coordinator.config_entry.options.get(CONF_PROJECT_GROUPS) or []
+        return {
+            "project_groups": [g for g in (child.get("projektgruppen") if child else []) or [] if g in chosen]
+        }
+
+
+class MenuSensor(KitaPlusEntity, SensorEntity):
+    """The dish of today or tomorrow, read from the weekly menu plan PDF (experimental, off by default)."""
+
+    _follows_the_day = True
+
+    def __init__(self, coordinator: KitaPlusCoordinator, offset: int) -> None:
+        super().__init__(coordinator)
+        self._offset = offset
+        key = "menu_tomorrow" if offset else "menu_today"
+        self._attr_translation_key = key
+        self._attr_unique_id = f"{self._entry_id}_{key}"
+
+    def _entry(self) -> MenuDay | None:
+        return self.coordinator.data.menu.get(dt_util.now().date() + timedelta(days=self._offset))
+
+    @property
+    def native_value(self) -> str | None:
+        entry = self._entry()
+        return entry.dish if entry else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        entry = self._entry()
+        return {
+            "vegetarian": entry.vegetarian if entry else None,
+            "uncertain": entry.uncertain if entry else None,  # a character could not be read with certainty
+            "alternative": entry.alternative if entry else None,
+            # in the order of the plan, never checked against the dish: always compare with the original
+            "allergens": list(entry.allergens) if entry else [],
+            "source": "menu_pdf",
+        }
 
 
 class SessionSensor(KitaPlusEntity, SensorEntity):

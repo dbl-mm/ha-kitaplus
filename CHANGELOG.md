@@ -2,6 +2,11 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [0.6.0]
+### Neu
+- **Speiseplan aus dem PDF (Option, Standard aus, experimentell):** Veröffentlicht deine Kita den Speiseplan als PDF am Schwarzen Brett (Titel zum Beispiel „Mittagessen“), liest die Integration die Gerichte pro Tag und zeigt sie als Sensoren **Speiseplan heute** und **Speiseplan morgen**. Im Attribut stehen auch die **Alternative** („Alt: Geflügel“), vegetarische Kennzeichnung und die **Allergene** (nur, wenn der Plan genau eine „enthält“-Zeile pro Tag hat; immer mit dem Original vergleichen, Angaben ohne Gewähr). Das Dashboard bekommt eine Speiseplan-Karte. Das PDF wird nur einmal pro neuem Anhang geladen. Erkennt die Integration den Aufbau nicht, zeigt sie nichts an und rät nicht. Der Suchbegriff (Standard „Mittagessen“) steht in Titel, Text oder Anhangsname des Beitrags. Braucht die Bibliothek `pypdf` (wird von Home Assistant automatisch installiert).
+- **Gruppe:** Neuer Sensor **Gruppe** pro Kind (Stammgruppe aus KitaPlus). Projektgruppen lassen sich unter **Konfigurieren** auswählen und stehen dann im Attribut `project_groups`.
+
 ## [0.5.0]
 ### Neu
 - **Öffnungszeiten:** Neuer Sensor **Öffnungszeiten heute** pro Kind (zum Beispiel `07:00–16:00`; „Geschlossen“ an Schließtagen und Feiertagen, am Wochenende unbekannt, weil KitaPlus dafür keine Zeiten liefert). Die ganze Woche steht im Attribut `week`. Die Daten kommen aus der Kinderliste, die ohnehin einmal pro Tag abgerufen wird. Das Dashboard zeigt sie bei den Kita-Kacheln.

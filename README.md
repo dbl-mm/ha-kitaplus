@@ -27,6 +27,8 @@ Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern
 - **Postfach:** Anzahl der Nachrichten, die letzten 5 als Attribut `messages`; **Offene Rückmeldungen**: Nachrichten, die bestätigt werden müssen, mit Frist
 - **Kalender:** **Termine**, **Schließtage** (inkl. Feiertage) und pro Kind **Bestelltes Essen**; **Nächste Termine**: die nächsten Termine und Schließtage in einer Liste (Attribut `entries`)
 - **Kita:** **Heute geschlossen**, **Morgen geschlossen** (Attribut `reason` nennt den Grund, zum Beispiel „Brückentag“); pro Kind **Öffnungszeiten heute** (zum Beispiel `07:00–16:00`, „Geschlossen“ an Schließtagen, am Wochenende unbekannt; die ganze Woche im Attribut `week`)
+- **Speiseplan** (optional, experimentell): Gerichte pro Tag aus dem Speiseplan-PDF am Schwarzen Brett als **Speiseplan heute** und **Speiseplan morgen**, mit Alternative und Allergenen im Attribut (ohne Gewähr)
+- **Gruppe:** pro Kind die Stammgruppe, dazu wählbare Projektgruppen im Attribut
 - **Ansprechpartner** (optional, Option unter **Konfigurieren**): pro Kind Name, Funktion, Telefon und E-Mail der Ansprechpartner deiner Kita im Attribut `contacts`; das Dashboard zeigt sie mit Links zum Anrufen und Schreiben
 - **Verpflegung:** pro Kind **Essen heute**, **Essen morgen**, **Bestellstatus heute**, **Bestellstatus morgen** (Bestellt, Offen, Frist verpasst, Kein Essen), **Nächste Bestellfrist**, **Morgen nicht bestellt**; pro Konto **Kontostand Verpflegung** (EUR)
 - **Diagnose:** **Sitzung gültig bis** (standardmäßig deaktiviert): bis wann die gespeicherte Anmeldung gilt
@@ -92,6 +94,8 @@ Felder der Einrichtung:
 - **Abfrageintervall** (Standard: 30 Minuten) — Wie oft Home Assistant bei KitaPlus nachfragt (15 bis 240 Minuten). Weniger als 15 ist nicht erlaubt, um die Server zu schonen.
 - **Wochenende als geschlossen zählen** (Standard: aus) — „Heute geschlossen“ und „Morgen geschlossen“ melden normalerweise nur Schließtage und Feiertage aus KitaPlus, am Wochenende also „Geöffnet“. Mit dieser Option melden sie samstags und sonntags „Geschlossen“ (Grund: „Wochenende“). Achtung: Automationen wie der Blueprint „Schließtag“ melden dann auch jedes Wochenende.
 
+- **Speiseplan aus dem PDF lesen** (Standard: aus, experimentell) — Liest die Gerichte aus einem PDF am Schwarzen Brett, dessen Beitrag den **Suchbegriff** (Standard „Mittagessen“) in Titel, Text oder Anhangsname hat. Erwartet einen Plan mit Datum („23.-27. November“), dann „Mo.“, „Di.“ … mit dem Gericht. Wird der Aufbau nicht erkannt, bleibt der Sensor leer. Allergene stehen nur im Attribut `allergens` und nur, wenn der Plan eine Zeile pro Tag hat: **immer mit dem Original vergleichen**.
+- **Projektgruppen anzeigen** — Welche Projektgruppen deines Kindes im Attribut des Sensors **Gruppe** erscheinen.
 - **Ansprechpartner der Kita anzeigen** (Standard: aus) — Zeigt Name, Funktion, Telefon und E-Mail der Ansprechpartner deiner Kita als Sensor **Ansprechpartner** und als Karte im Dashboard (mit Links zum Anrufen und Schreiben). Standardmäßig aus, weil es persönliche Daten der Mitarbeitenden sind: Ohne die Option werden sie gar nicht erst eingelesen. Mit Option landen sie nicht in der Datenbank (nicht aufgezeichnet) und nicht in der Diagnose-Datei. Schaltest du die Option wieder aus, wird der Sensor entfernt. Das Dashboard bekommst du danach mit der Aktion „KitaPlus: Dashboard erzeugen“ neu.
 
 ### Neu konfigurieren

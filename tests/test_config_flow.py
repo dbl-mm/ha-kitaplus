@@ -313,3 +313,29 @@ async def test_a_new_entry_asks_for_the_dashboard_hint_but_a_reauth_does_not(has
     with patch(LOGIN, new=_ok_login()):
         result = await hass.config_entries.flow.async_configure((await _start(hass))["flow_id"], CREDS)
     assert result["data"]["show_dashboard_hint"] is True
+
+
+async def test_options_offer_the_project_groups_of_the_children(hass: HomeAssistant) -> None:
+    from contextlib import ExitStack
+
+    from .common import make_entry, setup_integration
+    from .conftest import load
+
+    kids = [
+        {
+            **load("get_einrichtungen_kinder")["kinder"][0],
+            "gruppe": "Sterne",
+            "projektgruppen": ["Gruppe Blau"],
+        }
+    ]
+    with ExitStack() as stack:
+        entry = await setup_integration(hass, stack, make_entry(), async_get_children=kids)
+        form = await hass.config_entries.options.async_init(entry.entry_id)
+        field = next(k for k in form["data_schema"].schema if k == "project_groups")
+        assert form["data_schema"].schema[field].config["options"] == ["Gruppe Blau"]
+        done = await hass.config_entries.options.async_configure(
+            form["flow_id"],
+            {"scan_interval": 60, "reminder_lead_minutes": 60, "project_groups": ["Gruppe Blau"]},
+        )
+    assert done["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["project_groups"] == ["Gruppe Blau"]

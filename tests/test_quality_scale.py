@@ -54,7 +54,7 @@ def test_the_manifest_claims_exactly_what_the_file_supports() -> None:
     assert manifest["quality_scale"] == "platinum"
     assert list(manifest)[:2] == ["domain", "name"]  # hassfest wants these first, the rest sorted
     assert list(manifest)[2:] == sorted(list(manifest)[2:])
-    assert manifest["requirements"] == []  # dependency-transparency: nothing external to vouch for
+    assert manifest["requirements"] == ["pypdf==6.21.4"]  # the one pinned dependency, for the menu PDF
 
 
 def test_every_platform_sets_parallel_updates() -> None:

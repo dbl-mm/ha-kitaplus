@@ -122,6 +122,15 @@
       },
       "contacts": {
         "name": "Contacts"
+      },
+      "menu_today": {
+        "name": "Menu today"
+      },
+      "menu_tomorrow": {
+        "name": "Menu tomorrow"
+      },
+      "group": {
+        "name": "Group"
       }
     },
     "calendar": {
@@ -181,7 +190,10 @@
           "order_deadline_workdays": "Move the deadline off weekends and holidays",
           "weekend_closed": "Count weekends as closed",
           "show_contacts": "Show the Kita's contact persons",
-          "reminder_lead_minutes": "Reminder before the deadline (minutes)"
+          "reminder_lead_minutes": "Reminder before the deadline (minutes)",
+          "menu_from_pdf": "Experimental: read the dishes from the menu plan PDF",
+          "menu_keyword": "Menu plan: search word",
+          "project_groups": "Project groups to show"
         },
         "data_description": {
           "scan_interval": "How often Home Assistant asks KitaPlus for new data. Shorter than 15 minutes is not allowed.",
@@ -190,7 +202,10 @@
           "order_deadline_workdays": "Switch on if your Kita moves a deadline that falls on a Saturday, Sunday or public holiday back to the previous workday (a Monday meal then closes on Friday). KitaPlus says so in its help text; if it does, this is set for you.",
           "weekend_closed": "Switch on if \"Closed today\" and \"Closed tomorrow\" should also say closed on Saturdays and Sundays. Off by default: they then only report closure days and public holidays from KitaPlus. Automations such as the closure blueprint then also report every weekend.",
           "show_contacts": "Switch on to show name, role, phone number and e-mail of your Kita's contact persons as a sensor (\"Contacts\"). Off by default, because these are personal data of the staff. They are kept out of the database and the diagnostics file.",
-          "reminder_lead_minutes": "How long before the deadline the event kitaplus_order_deadline is fired, if the day is still not ordered. 0 turns it off."
+          "reminder_lead_minutes": "How long before the deadline the event kitaplus_order_deadline is fired, if the day is still not ordered. 0 turns it off.",
+          "menu_from_pdf": "Reads the dishes from a PDF on the bulletin board (for example \"Menu 23.-27. November\"). Works only for plans with a recognisable layout (a date, then Mo., Di., … with the dish). If the layout is not recognised nothing is shown. Without guarantee.",
+          "menu_keyword": "A bulletin board post is read when this word appears in its title, text or attachment name (not case sensitive). Default: Mittagessen.",
+          "project_groups": "Pick the project groups (for example a class or age group) that appear next to the main group. The list comes from your child's groups in KitaPlus."
         }
       }
     }

@@ -40,6 +40,8 @@ class Child(TypedDict):
     elternkonto: ParentAccountRef
     oeffnungszeiten: NotRequired[list[Hours | None]]  # Monday to Sunday, None = no hours given
     ansprechpartner: NotRequired[list[Contact]]  # only with the option "show contacts"
+    gruppe: str | None  # main group ("Stammgruppe"), for example the name of the class
+    projektgruppen: list[str]  # project groups the child belongs to
 
 
 class Event(TypedDict, total=False):

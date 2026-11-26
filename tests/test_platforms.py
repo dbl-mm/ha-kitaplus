@@ -508,3 +508,69 @@ async def test_switching_the_option_off_removes_the_contact_sensor_again(hass, s
     await hass.async_block_till_done()
     assert registry.async_get("sensor.vorname_1_contacts") is None
     assert hass.states.get("sensor.vorname_1_contacts") is None
+
+
+def _children_with_groups() -> list[dict]:
+    kids = load("get_einrichtungen_kinder")["kinder"]
+    return [{**kids[0], "gruppe": "Sterne", "projektgruppen": ["Liste Rot", "Gruppe Blau"]}]
+
+
+async def test_the_group_sensor_shows_the_main_group_and_only_the_chosen_project_groups(
+    hass, stack, freezer
+) -> None:
+    at(freezer, "2026-06-13T10:00:00")
+    await setup_integration(
+        hass,
+        stack,
+        make_entry({"project_groups": ["Gruppe Blau"]}),
+        async_get_children=_children_with_groups(),
+    )
+    state = hass.states.get("sensor.vorname_1_group")
+    assert state.state == "Sterne"
+    assert state.attributes["project_groups"] == ["Gruppe Blau"]
+
+
+async def test_the_group_sensor_without_any_group_is_unknown(hass, stack, freezer) -> None:
+    at(freezer, "2026-06-13T10:00:00")
+    await setup_integration(hass, stack)
+    state = hass.states.get("sensor.vorname_1_group")
+    assert state.state == "unknown" and state.attributes["project_groups"] == []
+
+
+async def test_a_public_holiday_switches_the_closed_sensor_on_with_its_name(hass, stack, freezer) -> None:
+    at(freezer, "2026-10-02T10:00:00")
+    holiday = {
+        "id": 3,
+        "name": "Tag der Deutschen Einheit",
+        "istSchliesstag": False,
+        "istFeiertag": True,
+        "startdatum": "2026-10-03T00:00:00",
+        "enddatum": "2026-10-03T23:59:00",
+    }
+    await setup_integration(hass, stack, async_get_events=[holiday])
+    tomorrow = hass.states.get("binary_sensor.kitaplus_closed_tomorrow")
+    assert tomorrow.state == "on"
+    assert tomorrow.attributes["reason"] == "Tag der Deutschen Einheit"
+    assert hass.states.get("binary_sensor.kitaplus_closed_today").state == "off"
+
+
+async def test_odd_calendar_entries_do_not_break_the_closed_sensors(hass, stack, freezer) -> None:
+    at(freezer, "2026-06-15T10:00:00")
+    odd = [
+        {"id": 1, "istSchliesstag": True},  # no dates at all
+        {"id": 2, "istSchliesstag": True, "startdatum": "not a date", "enddatum": None},
+        {"id": 3, "istFeiertag": True, "startdatum": "2026-06-15T00:00:00"},  # open ended: first day only
+    ]
+    await setup_integration(hass, stack, async_get_events=odd)
+    assert hass.states.get("binary_sensor.kitaplus_closed_today").state == "on"
+    assert hass.states.get("binary_sensor.kitaplus_closed_tomorrow").state == "off"
+
+
+async def test_a_child_without_meal_service_still_gets_a_group_and_no_meal_entities(
+    hass, stack, freezer
+) -> None:
+    at(freezer, "2026-06-15T10:00:00")
+    kids = [{**load("get_einrichtungen_kinder")["kinder"][0], "istVppAktiv": False, "gruppe": "Sterne"}]
+    await setup_integration(hass, stack, async_get_children=kids, async_get_meals=[])
+    assert hass.states.get("sensor.vorname_1_group").state == "Sterne"
+    assert hass.states.get("sensor.vorname_1_meal_today") is None
