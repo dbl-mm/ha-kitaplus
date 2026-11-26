@@ -31,7 +31,12 @@ jobs:
         run: |
           flags=""
           if [[ "${GITHUB_REF_NAME}" =~ b[0-9]+$ ]]; then flags="--prerelease"; fi
-          gh release create "${GITHUB_REF_NAME}" kitaplus.zip --title "${GITHUB_REF_NAME}" --generate-notes ${flags}
+          # The release notes are the CHANGELOG section of this version (the update dialog shows them);
+          # without such a section (a beta of an unfinished version) GitHub generates them.
+          version="${GITHUB_REF_NAME#v}"; version="${version%%b*}"
+          awk -v v="## [${version}]" '$0 == v {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > notes.md
+          if [ -s notes.md ]; then notes=(--notes-file notes.md); else notes=(--generate-notes); fi
+          gh release create "${GITHUB_REF_NAME}" kitaplus.zip --title "${GITHUB_REF_NAME}" "${notes[@]}" ${flags}
       - name: Remove older pre-releases
         # A new pre-release replaces the older ones, a stable release removes all of them, so the version
         # list in HACS only shows what is current. Their tags go with them.

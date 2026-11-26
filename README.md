@@ -15,6 +15,12 @@ Inoffizielle Home-Assistant-Integration für die **kitaplus Eltern-App** (eltern
 
 **Schnell zu:** [Installation](#installation) · [Einrichtung](#einrichtung-und-anmeldung) · [Bestellfristen](#bestellfristen) · [Blueprints](#blueprints) · [Dashboard](#dashboard-vorlagen) · [Hilfe](#fehlerbehebung) · [Wiki](https://github.com/dbl-mm/ha-kitaplus/wiki)
 
+## Neu in 0.6.0
+
+- **Speiseplan aus dem PDF** (Option, experimentell): Gerichte, Alternative und Allergene pro Tag aus dem Speiseplan am Schwarzen Brett, als **Speiseplan heute** und **Speiseplan morgen**.
+- **Gruppe:** pro Kind die Stammgruppe, dazu wählbare Projektgruppen.
+- Davor (0.5.0): **Öffnungszeiten**, optional **Ansprechpartner**, stabilere Anmeldung. Alles Weitere im [Changelog](CHANGELOG.md).
+
 ## So sieht es aus
 
 > Entwurf des Designs (Mockups mit erfundenen Daten). In deinem Home Assistant wirkt es etwas schlichter, weil Farben, Schriften und Rundungen von deinem Theme kommen. Echte Bildschirmfotos folgen.
