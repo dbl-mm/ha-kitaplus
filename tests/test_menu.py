@@ -273,7 +273,7 @@ def test_allergens_are_left_out_when_the_lines_do_not_match_the_days() -> None:
 async def test_the_default_search_word_finds_a_post_titled_mittagessen(
     hass: HomeAssistant, stack, freezer
 ) -> None:
-    """The option is on, the search word is left at its default, and the plan has an alternative and allergens."""
+    """Option on, default search word: a plan with an alternative and allergens is found."""
     freezer.move_to("2026-11-26T08:00:00+00:00")
     plan = [
         line.replace("\xa0", " ")
