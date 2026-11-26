@@ -1,4 +1,4 @@
-# KitaPlus-Dashboard (Vorlage) · Version 0.5.0b1 · benötigt KitaPlus ab 0.5.0
+# KitaPlus-Dashboard (Vorlage) · Version 0.5.0 · benötigt KitaPlus ab 0.5.0
 type: tile
 entity: sensor.kitaplus_kontostand_verpflegung
 name: Guthaben Verpflegung
