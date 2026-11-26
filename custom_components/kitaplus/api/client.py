@@ -7,6 +7,7 @@ login attempt counter.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import time
@@ -57,6 +58,7 @@ class KitaPlusClient:
         self._client_id = client_id
         self._tokens: Tokens | None = None
         self._on_tokens: Callable[[Tokens], None] | None = None
+        self._refresh_lock = asyncio.Lock()  # a refresh token is used by one request at a time
 
     def set_token_listener(self, listener: Callable[[Tokens], None] | None) -> None:
         """Called right after every new token pair, so a rotated refresh token is saved at once."""
@@ -134,6 +136,18 @@ class KitaPlusClient:
             raise KitaPlusApiError("Login response without token")
         self._store(body)
 
+    async def _async_renew(self, stale_jwt: str) -> None:
+        """Renew a JWT that is expired or was rejected, even if several requests need it at the same moment.
+
+        KitaPlus may hand out a new refresh token with every renewal and then reject the old one. Two
+        renewals with the same token would make the second one fail and look like a lost session, so they
+        wait for each other, and the later one sees that the first has already replaced the JWT.
+        """
+        async with self._refresh_lock:
+            if self._tokens is not None and self._tokens.jwt != stale_jwt:
+                return
+            await self._async_refresh()
+
     async def _async_refresh(self) -> None:
         if self._tokens is None or self._tokens.refresh_expires < time.time():
             raise KitaPlusAuthError("Refresh token expired")
@@ -158,14 +172,25 @@ class KitaPlusClient:
         if self._tokens is None:
             raise KitaPlusAuthError("Not logged in")
         if _jwt_exp(self._tokens.jwt) - time.time() < _REFRESH_MARGIN:
-            await self._async_refresh()
+            await self._async_renew(self._tokens.jwt)
         return {
             "Authorization": f"Bearer {self._tokens.jwt}",
             "X-Requested-With": "XMLHttpRequest",
         }
 
     async def _get(self, path: str, **params: str | int) -> dict[str, Any]:
-        headers = await self._async_headers()
+        headers = await self._async_headers()  # a failing renewal is a lost session and ends here
+        try:
+            return await self._get_with(path, headers, params)
+        except KitaPlusAuthError:
+            # A JWT can be rejected while the refresh token still works (for example when the server
+            # restarted). Renewing is not a login and does not count as a failed attempt, so try it once.
+            await self._async_renew(headers["Authorization"].removeprefix("Bearer "))
+            return await self._get_with(path, await self._async_headers(), params)
+
+    async def _get_with(
+        self, path: str, headers: dict[str, str], params: dict[str, str | int]
+    ) -> dict[str, Any]:
         try:
             async with self._session.get(
                 f"{API_BASE_URL}{path}", params=params, headers=headers, timeout=_TIMEOUT

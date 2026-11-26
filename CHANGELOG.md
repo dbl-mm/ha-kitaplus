@@ -6,6 +6,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 ### Dokumentation
 - **Empfehlung: ein eigener KitaPlus-Zugang für Home Assistant**, weil KitaPlus pro Konto nur eine Sitzung erlaubt. Neuer FAQ-Abschnitt (README und Wiki) zu Abmeldungen, Passkeys und dem zweiten Zugang.
 
+### Geändert
+- **Weniger unnötige Abmeldungen.** Wird das Token erneuert, warten gleichzeitige Abfragen aufeinander, damit nicht zwei dasselbe Refresh-Token benutzen (KitaPlus kann das alte danach ablehnen). Lehnt KitaPlus bei einer Abfrage das JWT ab, wird einmal erneuert und die Abfrage wiederholt, bevor die Sitzung als verloren gilt. Eine Erneuerung ist keine Anmeldung und zählt nicht als Fehlversuch. Meldest du dich in der KitaPlus-App an, bleibt es dabei: KitaPlus erlaubt nur eine Sitzung pro Konto.
+
 ## [0.4.2]
 ### Behoben
 - **Anhänge wie .docx oder .xlsx hießen auf Android .bin** (Companion App). Office- und Textdokumente (Word, Excel, PowerPoint, OpenDocument, TXT, CSV) werden jetzt mit ihrem echten Typ ausgeliefert. Nennt KitaPlus keinen brauchbaren Typ, wird er aus dem Dateinamen abgeleitet. Sie bleiben ein Download (nie im Browser geöffnet), mit `nosniff` und Sandbox-Schutz. HTML, SVG und andere aktive Typen bleiben unverändert `application/octet-stream`. Danke an Tofi80 für Fund und Vorschlag (#18).
