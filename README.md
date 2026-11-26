@@ -43,6 +43,8 @@ Jedes Kind erscheint als eigenes Gerät, dazu ein Gerät „KitaPlus“ für das
 3. Unter **Konfigurieren** die **Bestellfrist deiner Kita** eintragen, damit „Frist verpasst“ und Erinnerungen stimmen. [Wie das geht](#bestellfristen).
 4. Ein [Blueprint](#blueprints) importieren und das [Dashboard](#dashboard-vorlagen) erzeugen lassen (Aktion „KitaPlus: Dashboard erzeugen“).
 
+> **Empfehlung: ein eigener Zugang für Home Assistant.** KitaPlus erlaubt pro Konto nur **eine aktive Sitzung**. Meldest du dich in der KitaPlus-App an, wirft das die Integration raus, und umgekehrt. Bitte die **Kita-Leitung um einen zusätzlichen Eltern-Zugang** nur für Home Assistant (er muss dieselben Kinder sehen). Dann stören sich App und Integration nie. Mehr dazu in den [häufigen Fragen](#häufige-fragen-faq).
+
 ## Installation
 
 ### HACS (empfohlen)
@@ -240,6 +242,26 @@ von einem Designer gestalten lassen möchtest: [Briefing für Designer](docs/des
 ## Anhänge (zum Beispiel der Menüplan)
 
 Ist an einem Beitrag am Schwarzen Brett oder an einer Nachricht eine Datei angehängt (oft der Menüplan als PDF), zeigt das Dashboard beim neuesten Beitrag „Anhang: …“ als Link. Er öffnet die Datei in einem neuen Tab, die Integration holt sie dafür mit deiner Anmeldung bei KitaPlus. Die Links sind von Home Assistant **signiert und laufen ab**, sie sind keine dauerhaften öffentlichen Adressen. Angezeigt werden PDF und Bilder, andere Dateitypen werden nur zum Download angeboten. Die Namen stehen auch im Attribut `attachments` der Sensoren **Schwarzes Brett** und **Postfach**.
+
+## Häufige Fragen (FAQ)
+
+**Warum werde ich in Home Assistant immer wieder abgemeldet („Anmeldung abgelaufen oder abgelehnt“)?**
+KitaPlus erlaubt pro Konto nur **eine aktive Sitzung**. Jede neue Anmeldung beendet die vorherige, egal von welchem Gerät. Meldest du dich also in der KitaPlus-App an, ist die Sitzung der Integration ungültig. Das ist eine Regel von KitaPlus und lässt sich in der Integration nicht umgehen.
+
+**Und umgekehrt: Warum fliegt die App raus, wenn ich mich in Home Assistant anmelde?**
+Aus demselben Grund. Die Anmeldung in Home Assistant beendet die Sitzung der App.
+
+**Was ist die beste Lösung?**
+Ein **zweiter Eltern-Zugang nur für Home Assistant**. Bitte die Kita-Leitung darum. Er muss dieselben Kinder sehen (zum Beispiel der Zugang des Partners oder der Partnerin). Melde die Integration mit diesem Zugang an, und nutze die App weiter mit deinem eigenen. Dann stören sich beide nie.
+
+**Muss ich mich nach jedem Rauswurf neu anmelden?**
+Ja, über **Einstellungen → Geräte & Dienste → KitaPlus → „Erneut anmelden“**. Die Integration meldet sich nie von selbst neu an, damit dein Konto nicht gesperrt wird. Jeder Klick ist genau **ein** Anmeldeversuch.
+
+**Kann ich mit mehreren Passkeys arbeiten (einer für die App, einer für Home Assistant)?**
+Das hilft vermutlich nicht, weil sich die Regel auf das Konto bezieht, nicht auf die Anmeldeart. Passkeys werden von der Integration außerdem nicht unterstützt. Der zweite Zugang ist der sichere Weg.
+
+**Ich werde abgemeldet, obwohl ich die App nicht benutzt habe.**
+Dann schau unter **Einstellungen → Reparaturen** nach der Meldung von KitaPlus, und öffne ein [Issue](https://github.com/dbl-mm/ha-kitaplus/issues) mit dem Text und dem Protokoll (Filter `kitaplus`). Ohne Passwörter und Namen.
 
 ## Fehlerbehebung
 

@@ -43,6 +43,8 @@ Every child appears as its own device, plus a "KitaPlus" device for the account.
 3. Under **Configure**, enter **your Kita's order deadline**, so that "Deadline missed" and the reminders are right. [How to](#order-deadlines).
 4. Import a [blueprint](#blueprints) and let the integration build the [dashboard](#dashboard-templates) (action "KitaPlus: Create dashboard").
 
+> **Recommendation: a separate login for Home Assistant.** KitaPlus allows only **one active session** per account. Signing in to the KitaPlus app ends the integration's session, and the other way round. Please **ask the Kita management for an additional parent login** just for Home Assistant (it must see the same children). Then the app and the integration never get in each other's way. More in the [FAQ](#faq).
+
 ## Installation
 
 ### HACS (recommended)
@@ -236,6 +238,26 @@ Without the action there are templates to adapt yourself: **Heute** (today: one 
 ## Attachments (for example the menu plan)
 
 If a file is attached to a bulletin board post or a message (often the menu plan as a PDF), the dashboard shows "Anhang: …" (attachment) as a link on the latest post. It opens the file in a new tab; the integration fetches it with your KitaPlus sign-in. The links are **signed by Home Assistant and expire**, they are not permanent public addresses. PDFs and images are displayed, other file types are only offered as a download. The names are also in the attribute `attachments` of the **Bulletin board** and **Mailbox** sensors.
+
+## FAQ
+
+**Why am I signed out of Home Assistant again and again ("sign-in expired or was rejected")?**
+KitaPlus allows only **one active session** per account. Every new sign-in ends the previous one, whatever the device. So when you sign in to the KitaPlus app, the integration's session is no longer valid. This is a KitaPlus rule and the integration cannot work around it.
+
+**And the other way round: why does the app sign out when I sign in to Home Assistant?**
+For the same reason. Signing in in Home Assistant ends the app's session.
+
+**What is the best solution?**
+A **second parent login just for Home Assistant**. Ask the Kita management for it. It must see the same children (for example your partner's login). Sign the integration in with that login and keep using the app with your own. Then they never get in each other's way.
+
+**Do I have to sign in again after every sign-out?**
+Yes, via **Settings → Devices & services → KitaPlus → "Sign in again"**. The integration never signs in by itself, so your account does not get locked. Every click is exactly **one** sign-in attempt.
+
+**Can I use several passkeys (one for the app, one for Home Assistant)?**
+That probably does not help, because the rule applies to the account, not to the way you sign in. The integration does not support passkeys anyway. The second login is the safe way.
+
+**I get signed out although I did not use the app.**
+Then look under **Settings → Repairs** for the message from KitaPlus and open an [issue](https://github.com/dbl-mm/ha-kitaplus/issues) with the text and the log (filter `kitaplus`). Without passwords and names.
 
 ## Troubleshooting
 

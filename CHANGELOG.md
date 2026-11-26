@@ -2,6 +2,10 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+### Dokumentation
+- **Empfehlung: ein eigener KitaPlus-Zugang für Home Assistant**, weil KitaPlus pro Konto nur eine Sitzung erlaubt. Neuer FAQ-Abschnitt (README und Wiki) zu Abmeldungen, Passkeys und dem zweiten Zugang.
+
 ## [0.4.2]
 ### Behoben
 - **Anhänge wie .docx oder .xlsx hießen auf Android .bin** (Companion App). Office- und Textdokumente (Word, Excel, PowerPoint, OpenDocument, TXT, CSV) werden jetzt mit ihrem echten Typ ausgeliefert. Nennt KitaPlus keinen brauchbaren Typ, wird er aus dem Dateinamen abgeleitet. Sie bleiben ein Download (nie im Browser geöffnet), mit `nosniff` und Sandbox-Schutz. HTML, SVG und andere aktive Typen bleiben unverändert `application/octet-stream`. Danke an Tofi80 für Fund und Vorschlag (#18).
