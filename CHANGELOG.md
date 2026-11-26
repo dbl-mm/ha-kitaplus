@@ -2,7 +2,7 @@
 
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [0.4.1]
 ### Behoben
 - **Schwarzes Brett und Postfach zeigen den vollen Text.** Die Attribute `posts` und `messages` waren auf 500 Zeichen gekürzt. Sie werden nicht in der Datenbank aufgezeichnet, die Kürzung war also unnötig. Das Dashboard kürzt weiterhin selbst für die Anzeige.
 
