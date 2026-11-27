@@ -317,7 +317,7 @@ Was als Nächstes denkbar ist, steht in der [Roadmap](https://github.com/dbl-mm/
 
 ## Qualitätsstufe
 
-Die Integration erfüllt nach eigener Prüfung alle Regeln der [Home Assistant Quality Scale](https://www.home-assistant.io/docs/quality_scale/) bis **Platinum**. Das ist eine **Selbsteinstufung**: Home Assistant vergibt die Stufen nur für Integrationen im Core, diese hier wird nur über HACS verteilt. Jede Regel steht mit Status und Begründung in [`quality_scale.yaml`](custom_components/kitaplus/quality_scale.yaml). Die CI prüft `mypy --strict`, 95 % Abdeckung je Modul (aktuell 100 %), hassfest und HACS bei jeder Änderung.
+Die Integration erfüllt nach eigener Prüfung alle Regeln der [Home Assistant Quality Scale](https://www.home-assistant.io/docs/quality_scale/) bis **Platinum**. Das ist eine **Selbsteinstufung**: Home Assistant vergibt die Stufen nur für Integrationen im Core, diese hier wird nur über den Marktplatz (früher HACS) verteilt. Jede Regel steht mit Status und Begründung in [`quality_scale.yaml`](custom_components/kitaplus/quality_scale.yaml). Die CI prüft `mypy --strict`, 95 % Abdeckung je Modul (aktuell 100 %), hassfest und die HACS-Validierung (Prüfung der Marktplatz-Metadaten) bei jeder Änderung.
 
 ## Entwicklung
 

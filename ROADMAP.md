@@ -28,4 +28,4 @@ konkrete Probleme gehören weiterhin in die [Issues](https://github.com/dbl-mm/h
   nachinstalliert werden muss.
 - **Passwort speichern.** Die Anmeldung bleibt ohne gespeichertes Passwort, und die Integration meldet sich nie
   selbstständig erneut an.
-- **Aufnahme in den Home-Assistant-Core.** Das Projekt bleibt eine HACS-Integration.
+- **Aufnahme in den Home-Assistant-Core.** Das Projekt bleibt eine Community-Integration über den Marktplatz (früher HACS).
